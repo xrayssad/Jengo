@@ -22,7 +22,6 @@ const sideLinks = [
   { label: "Picha zilizohifadhiwa", href: "/saved", icon: Bookmark },
   { label: "Malipo (Payments)", href: "/payments", icon: CreditCard },
   { label: "Weka Tangazo", href: "/weka-tangazo", icon: Plus },
-  { label: "Tafuta", href: "/search", icon: Search },
 ];
 
 export default function HomePage() {

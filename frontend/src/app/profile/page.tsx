@@ -27,7 +27,7 @@ export default function ProfilePage() {
     <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.4)" }}>
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center shadow-warm-sm">
+          <Link href="/home" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center shadow-warm-sm">
             <ArrowLeft size={18} strokeWidth={2.2} />
           </Link>
           <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Profile</h1>
