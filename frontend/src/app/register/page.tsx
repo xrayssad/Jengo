@@ -47,7 +47,7 @@ export default function RegisterPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Majibrio: ruhusu data zozote
-    window.location.href = "/nyumba";
+    window.location.href = "/home";
   };
 
   const slide = slides[current];
