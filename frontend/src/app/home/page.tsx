@@ -1,14 +1,14 @@
 "use client";
 
-import { Home, Store, BrickWall, Gavel, Search, Plus, User, Menu } from "lucide-react";
+import { Home, Store, Building2, KeyRound, Search, Plus, User, Menu } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 const categories = [
-  { title: "Nyumba & Vyumba", description: "Panga au uze nyumba", icon: Home, href: "/nyumba" },
-  { title: "Maduka & Godown", description: "Frame na maduka", icon: Store, href: "/maduka" },
-  { title: "Vifaa vya Ujenzi", description: "Saruji, chuma, matofali", icon: BrickWall, href: "/vifaa" },
-  { title: "Mnada", description: "Bei bora inashinda", icon: Gavel, href: "/mnada" },
+  { title: "Apartments", description: "Vyumba na nyumba za mwezi", icon: Building2, href: "/nyumba" },
+  { title: "Airbnb", description: "Makazi ya siku / wiki", icon: KeyRound, href: "/airbnb" },
+  { title: "Store & Maduka", description: "Duka na frame za biashara", icon: Store, href: "/maduka" },
+  { title: "Godown", description: "Maghala ya kuhifadhi", icon: Home, href: "/maduka" },
 ];
 
 export default function HomePage() {
@@ -31,8 +31,8 @@ export default function HomePage() {
         </div>
         {menuOpen && (
           <div className="max-w-md mx-auto mt-3 rounded-2xl overflow-hidden" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
-            <Link href="/profile" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium border-b" style={{ color: "#2E1A0F", borderColor: "rgba(61,36,21,0.1)" }}>Profile</Link>
-            <Link href="/weka-tangazo" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium border-b" style={{ color: "#2E1A0F", borderColor: "rgba(61,36,21,0.1)" }}>Weka Tangazo</Link>
+            <Link href="/profile" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium" style={{ color: "#2E1A0F", borderBottom: "1px solid rgba(61,36,21,0.1)" }}>Profile</Link>
+            <Link href="/weka-tangazo" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium" style={{ color: "#2E1A0F", borderBottom: "1px solid rgba(61,36,21,0.1)" }}>Weka Tangazo</Link>
             <Link href="/login" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium" style={{ color: "#A6452E" }}>Tokaa</Link>
           </div>
         )}
@@ -40,19 +40,27 @@ export default function HomePage() {
 
       <div className="max-w-md mx-auto px-4 pt-6">
         <h2 className="text-2xl font-bold mb-1" style={{ color: "#2E1A0F" }}>Chagua unachotafuta</h2>
-        <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Bei wazi • Wauzaji waliothibitishwa</p>
+        <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Apartments · Airbnb · Store · Godown</p>
 
         <Link href="/search" className="flex items-center gap-3 px-4 py-3.5 mb-6 rounded-[18px]" style={{ backgroundColor: "white", border: "1.5px solid rgba(210,166,121,0.6)" }}>
           <Search size={18} color="#8B5E3C" />
-          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta nyumba, duka, vifaa...</span>
+          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta apartment, airbnb, store...</span>
         </Link>
 
         <div className="grid grid-cols-2 gap-3.5">
           {categories.map((cat) => {
             const Icon = cat.icon;
             return (
-              <Link key={cat.title} href={cat.href} className="card-lift text-left p-5 rounded-[20px] relative overflow-hidden"
-                style={{ background: "linear-gradient(165deg, #3D2415 0%, #2E1A0F 55%, #1A0F08 100%)", border: "1px solid rgba(210,166,121,0.25)", boxShadow: "0 8px 24px rgba(46,26,15,0.35)" }}>
+              <Link
+                key={cat.title}
+                href={cat.href}
+                className="card-lift text-left p-5 rounded-[20px] relative overflow-hidden"
+                style={{
+                  background: "linear-gradient(165deg, #3D2415 0%, #2E1A0F 55%, #1A0F08 100%)",
+                  border: "1px solid rgba(210,166,121,0.25)",
+                  boxShadow: "0 8px 24px rgba(46,26,15,0.35)",
+                }}
+              >
                 <div className="relative z-10">
                   <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3" style={{ background: "rgba(139,94,60,0.4)" }}>
                     <Icon size={20} color="#F5E6D3" strokeWidth={1.8} />
@@ -66,15 +74,16 @@ export default function HomePage() {
         </div>
       </div>
 
+      {/* Bottom nav – bila Mnada */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 glass" style={{ borderTop: "1px solid rgba(210,166,121,0.4)" }}>
         <div className="max-w-md mx-auto flex items-center justify-around py-2">
           <Link href="/home" className="flex flex-col items-center gap-0.5 py-1 px-3">
             <Home size={22} color="#2E1A0F" strokeWidth={2.2} />
             <span className="text-[10px] font-semibold" style={{ color: "#2E1A0F" }}>Home</span>
           </Link>
-          <Link href="/mnada" className="flex flex-col items-center gap-0.5 py-1 px-3">
-            <Gavel size={22} color="#8B5E3C" strokeWidth={1.8} />
-            <span className="text-[10px]" style={{ color: "#8B5E3C" }}>Mnada</span>
+          <Link href="/maduka" className="flex flex-col items-center gap-0.5 py-1 px-3">
+            <Store size={22} color="#8B5E3C" strokeWidth={1.8} />
+            <span className="text-[10px]" style={{ color: "#8B5E3C" }}>Store</span>
           </Link>
           <Link href="/weka-tangazo" className="w-14 h-14 -mt-5 rounded-full flex items-center justify-center"
             style={{ background: "linear-gradient(165deg, #8B5E3C, #2E1A0F)", boxShadow: "0 6px 20px rgba(46,26,15,0.35)" }}>
