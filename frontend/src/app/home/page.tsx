@@ -1,14 +1,14 @@
 "use client";
 
-import { Home, Store, Building2, KeyRound, Search, Plus, User, Menu, MessageCircle } from "lucide-react";
+import { Home, Store, Building2, KeyRound, Search, Plus, User, Menu, MessageCircle, LayoutGrid } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
 const categories = [
-  { title: "Apartments", description: "Vyumba na nyumba za mwezi", icon: Building2, href: "/nyumba" },
-  { title: "Airbnb", description: "Makazi ya siku / wiki", icon: KeyRound, href: "/airbnb" },
-  { title: "Store & Maduka", description: "Duka na frame za biashara", icon: Store, href: "/maduka" },
-  { title: "Godown", description: "Maghala ya kuhifadhi", icon: Home, href: "/maduka" },
+  { title: "Apartments", description: "Mwezi · miezi 3 · 6 · mwaka", icon: Building2, href: "/nyumba" },
+  { title: "Airbnb", description: "Usiku · siku · wiki", icon: KeyRound, href: "/airbnb" },
+  { title: "Store & Godown", description: "Mwezi · miezi 3 · 6 · mwaka", icon: Store, href: "/maduka" },
+  { title: "Frame za Maduka", description: "Frame / stall za biashara", icon: LayoutGrid, href: "/maduka" },
 ];
 
 export default function HomePage() {
@@ -42,14 +42,9 @@ export default function HomePage() {
 
       <div className="max-w-md mx-auto px-4 pt-6">
         <h2 className="text-2xl font-bold mb-1" style={{ color: "#2E1A0F" }}>Chagua unachotafuta</h2>
-        <p className="text-sm mb-5" style={{ color: "#5C4033" }}>Apartments · Airbnb · Store · Godown</p>
+        <p className="text-sm mb-5" style={{ color: "#5C4033" }}>Apartments · Airbnb · Store · Frame</p>
 
-        {/* Search bar MOJA tu */}
-        <Link
-          href="/search"
-          className="flex items-center gap-3 px-4 py-3.5 mb-6 rounded-[18px]"
-          style={{ backgroundColor: "white", border: "1.5px solid rgba(210,166,121,0.6)" }}
-        >
+        <Link href="/search" className="flex items-center gap-3 px-4 py-3.5 mb-6 rounded-[18px]" style={{ backgroundColor: "white", border: "1.5px solid rgba(210,166,121,0.6)" }}>
           <Search size={18} color="#8B5E3C" />
           <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta apartment, airbnb, store...</span>
         </Link>
