@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Store, Building2, KeyRound, Search, Plus, User, Menu } from "lucide-react";
+import { Home, Store, Building2, KeyRound, Search, Plus, User, Menu, MessageCircle } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -25,13 +25,15 @@ export default function HomePage() {
             <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Jengo</h1>
             <p className="text-[10px] tracking-widest uppercase" style={{ color: "#8B5E3C" }}>Marketplace</p>
           </div>
-          <Link href="/search" className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "#D2A679" }}>
-            <Search size={17} color="#2E1A0F" strokeWidth={2.2} />
+          <Link href="/messages" className="w-10 h-10 rounded-full flex items-center justify-center relative" style={{ backgroundColor: "#D2A679" }}>
+            <MessageCircle size={17} color="#2E1A0F" strokeWidth={2.2} />
+            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center" style={{ backgroundColor: "#A6452E", color: "#FFF6ED" }}>2</span>
           </Link>
         </div>
         {menuOpen && (
           <div className="max-w-md mx-auto mt-3 rounded-2xl overflow-hidden" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
             <Link href="/profile" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium" style={{ color: "#2E1A0F", borderBottom: "1px solid rgba(61,36,21,0.1)" }}>Profile</Link>
+            <Link href="/messages" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium" style={{ color: "#2E1A0F", borderBottom: "1px solid rgba(61,36,21,0.1)" }}>Messages</Link>
             <Link href="/weka-tangazo" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium" style={{ color: "#2E1A0F", borderBottom: "1px solid rgba(61,36,21,0.1)" }}>Weka Tangazo</Link>
             <Link href="/login" onClick={() => setMenuOpen(false)} className="block px-4 py-3.5 text-sm font-medium" style={{ color: "#A6452E" }}>Tokaa</Link>
           </div>
@@ -40,9 +42,14 @@ export default function HomePage() {
 
       <div className="max-w-md mx-auto px-4 pt-6">
         <h2 className="text-2xl font-bold mb-1" style={{ color: "#2E1A0F" }}>Chagua unachotafuta</h2>
-        <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Apartments · Airbnb · Store · Godown</p>
+        <p className="text-sm mb-5" style={{ color: "#5C4033" }}>Apartments · Airbnb · Store · Godown</p>
 
-        <Link href="/search" className="flex items-center gap-3 px-4 py-3.5 mb-6 rounded-[18px]" style={{ backgroundColor: "white", border: "1.5px solid rgba(210,166,121,0.6)" }}>
+        {/* Search bar MOJA tu */}
+        <Link
+          href="/search"
+          className="flex items-center gap-3 px-4 py-3.5 mb-6 rounded-[18px]"
+          style={{ backgroundColor: "white", border: "1.5px solid rgba(210,166,121,0.6)" }}
+        >
           <Search size={18} color="#8B5E3C" />
           <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta apartment, airbnb, store...</span>
         </Link>
@@ -74,16 +81,15 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom nav – bila Mnada */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 glass" style={{ borderTop: "1px solid rgba(210,166,121,0.4)" }}>
         <div className="max-w-md mx-auto flex items-center justify-around py-2">
           <Link href="/home" className="flex flex-col items-center gap-0.5 py-1 px-3">
             <Home size={22} color="#2E1A0F" strokeWidth={2.2} />
             <span className="text-[10px] font-semibold" style={{ color: "#2E1A0F" }}>Home</span>
           </Link>
-          <Link href="/maduka" className="flex flex-col items-center gap-0.5 py-1 px-3">
-            <Store size={22} color="#8B5E3C" strokeWidth={1.8} />
-            <span className="text-[10px]" style={{ color: "#8B5E3C" }}>Store</span>
+          <Link href="/messages" className="flex flex-col items-center gap-0.5 py-1 px-3">
+            <MessageCircle size={22} color="#8B5E3C" strokeWidth={1.8} />
+            <span className="text-[10px]" style={{ color: "#8B5E3C" }}>Chat</span>
           </Link>
           <Link href="/weka-tangazo" className="w-14 h-14 -mt-5 rounded-full flex items-center justify-center"
             style={{ background: "linear-gradient(165deg, #8B5E3C, #2E1A0F)", boxShadow: "0 6px 20px rgba(46,26,15,0.35)" }}>
