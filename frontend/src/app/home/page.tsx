@@ -232,90 +232,57 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom nav – equal 25% slots, no overlap */}
+      {/* Bottom nav – 5 equal slots like reference (Home Discover + Chat Profile) */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-30"
         style={{
           backgroundColor: "rgba(255,246,237,0.97)",
           backdropFilter: "blur(12px)",
-          borderTop: "1px solid rgba(210,166,121,0.4)",
-          paddingBottom: "env(safe-area-inset-bottom)",
+          WebkitBackdropFilter: "blur(12px)",
+          borderTop: "1px solid rgba(210,166,121,0.45)",
+          paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
         <div
           style={{
             maxWidth: 448,
             margin: "0 auto",
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "stretch",
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
+            alignItems: "end",
             height: 64,
             width: "100%",
           }}
         >
-          {/* HOME – 25% */}
           <Link
             href="/home"
-            style={{
-              flex: "1 1 0",
-              width: "25%",
-              maxWidth: "25%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              textDecoration: "none",
-            }}
+            className="flex flex-col items-center justify-center gap-0.5 pb-2"
+            style={{ textDecoration: "none" }}
           >
             <Home size={22} color="#2E1A0F" strokeWidth={2.2} />
             <span style={{ fontSize: 10, fontWeight: 600, color: "#2E1A0F", lineHeight: 1 }}>Home</span>
           </Link>
 
-          {/* DISCOVER – 25% */}
           <Link
             href="/discover"
-            style={{
-              flex: "1 1 0",
-              width: "25%",
-              maxWidth: "25%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              textDecoration: "none",
-            }}
+            className="flex flex-col items-center justify-center gap-0.5 pb-2"
+            style={{ textDecoration: "none" }}
           >
             <Compass size={22} color="#8B5E3C" strokeWidth={1.8} />
             <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Discover</span>
           </Link>
 
-          {/* ADD – 25%, button only clickable */}
-          <div
-            style={{
-              flex: "1 1 0",
-              width: "25%",
-              maxWidth: "25%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              position: "relative",
-            }}
-          >
+          {/* Center + – exact middle column */}
+          <div className="flex items-center justify-center" style={{ height: "100%" }}>
             <Link
               href="/weka-tangazo"
+              className="flex items-center justify-center rounded-full"
               style={{
-                position: "absolute",
-                bottom: 20,
                 width: 56,
                 height: 56,
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "linear-gradient(165deg, #8B5E3C, #2E1A0F)",
-                boxShadow: "0 6px 20px rgba(46,26,15,0.4)",
+                marginBottom: 12,
+                background: "linear-gradient(165deg, #8B5E3C 0%, #2E1A0F 100%)",
+                boxShadow: "0 6px 18px rgba(46,26,15,0.35)",
                 textDecoration: "none",
               }}
             >
@@ -323,26 +290,26 @@ export default function HomePage() {
             </Link>
           </div>
 
-          {/* CHAT – 25% */}
           <Link
             href="/messages"
-            style={{
-              flex: "1 1 0",
-              width: "25%",
-              maxWidth: "25%",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 2,
-              textDecoration: "none",
-            }}
+            className="flex flex-col items-center justify-center gap-0.5 pb-2"
+            style={{ textDecoration: "none" }}
           >
             <MessageCircle size={22} color="#8B5E3C" strokeWidth={1.8} />
             <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Chat</span>
           </Link>
+
+          <Link
+            href="/profile"
+            className="flex flex-col items-center justify-center gap-0.5 pb-2"
+            style={{ textDecoration: "none" }}
+          >
+            <User size={22} color="#8B5E3C" strokeWidth={1.8} />
+            <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Profile</span>
+          </Link>
         </div>
       </nav>
+
 
 
     </main>
