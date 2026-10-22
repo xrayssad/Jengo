@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, User, Lock, Bell, Globe, Shield, Save } from "lucide-react";
 import Link from "next/link";
+import AppAlert, { AlertKind } from "@/components/AppAlert";
 
 export default function SettingsPage() {
   const [username, setUsername] = useState("jengo_user");
@@ -11,6 +12,13 @@ export default function SettingsPage() {
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
   const [saved, setSaved] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertKind, setAlertKind] = useState<AlertKind>("info");
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMsg, setAlertMsg] = useState("");
+  const showAlert = (kind: AlertKind, title: string, message?: string) => {
+    setAlertKind(kind); setAlertTitle(title); setAlertMsg(message || ""); setAlertOpen(true);
+  };
 
   const saveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,17 +29,17 @@ export default function SettingsPage() {
   const changePassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (newPass !== confirmPass) {
-      alert("Nenosiri mpya hazifanani");
+      showAlert("error", "Nenosiri hazifanani", "Hakikisha nenosiri jipya na uthibitisho ni sawa.");
       return;
     }
     if (!newPass || newPass.length < 4) {
-      alert("Nenosiri angalau herufi 4 (majaribio)");
+      showAlert("warning", "Nenosiri fupi", "Tumia angalau herufi 4.");
       return;
     }
     setOldPass("");
     setNewPass("");
     setConfirmPass("");
-    alert("Nenosiri limebadilishwa (majaribio — backend baadaye)");
+    showAlert("success", "Imefanikiwa", "Nenosiri limebadilishwa (majaribio — backend baadaye).");
   };
 
   return (
@@ -101,6 +109,7 @@ export default function SettingsPage() {
           })}
         </div>
       </div>
+      <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg} onClose={() => setAlertOpen(false)} />
     </main>
   );
 }

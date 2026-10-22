@@ -6,6 +6,7 @@ import {
   Camera, MapPin, Tag, FileText, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
+import AppAlert, { AlertKind } from "@/components/AppAlert";
 
 const categories = [
   {
@@ -69,6 +70,17 @@ export default function WekaTangazoPage() {
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertKind, setAlertKind] = useState<AlertKind>("warning");
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMsg, setAlertMsg] = useState("");
+
+  const showAlert = (kind: AlertKind, title: string, message?: string) => {
+    setAlertKind(kind);
+    setAlertTitle(title);
+    setAlertMsg(message || "");
+    setAlertOpen(true);
+  };
 
   const periods = periodsByCategory[category] || periodsByCategory.apartment;
   const isAirbnb = category === "airbnb";
@@ -85,11 +97,11 @@ export default function WekaTangazoPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !price || !location) {
-      alert("Jaza angalau: kichwa, bei na eneo");
+      showAlert("warning", "Taarifa hazijakamilika", "Jaza angalau: kichwa, bei na eneo.");
       return;
     }
     if (needsDuration && !duration) {
-      alert("Weka idadi ya siku au wiki");
+      showAlert("warning", "Idadi inahitajika", "Weka idadi ya siku au wiki.");
       return;
     }
     setSubmitted(true);
@@ -304,6 +316,7 @@ export default function WekaTangazoPage() {
           Chapisha Tangazo
         </button>
       </form>
+      <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg} onClose={() => setAlertOpen(false)} />
     </main>
   );
 }
