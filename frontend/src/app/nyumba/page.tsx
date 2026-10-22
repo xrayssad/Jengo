@@ -18,7 +18,7 @@ export default function NyumbaPage() {
             <ArrowLeft size={18} strokeWidth={2.2} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Nyumba & Vyumba</h1>
+            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Chumba & Nyumba</h1>
             <p className="text-xs" style={{ color: "#5C4033" }}>{listings.length} yanapatikana</p>
           </div>
         </div>

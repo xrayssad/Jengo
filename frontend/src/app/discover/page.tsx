@@ -12,19 +12,19 @@ const tabs = [
 
 const data: Record<string, { id: number; title: string; price: string; period: string; location: string; category: string; verified: boolean }[]> = {
   popular: [
-    { id: 1, title: "Apartment 2BR Masaki", price: "320,000", period: "/mwezi", location: "Masaki, Dar", category: "Apartment", verified: true },
-    { id: 3, title: "Studio Airbnb Mikocheni", price: "85,000", period: "/usiku", location: "Mikocheni, Dar", category: "Airbnb", verified: true },
-    { id: 5, title: "Godown kubwa Mikocheni", price: "450,000", period: "/mwezi", location: "Mikocheni, Dar", category: "Store", verified: true },
+    { id: 1, title: "Apartment 2BR Masaki", price: "320,000", period: "/mwezi", location: "Masaki, Dar", category: "Chumba & Nyumba", verified: true },
+    { id: 3, title: "Studio Airbnb Mikocheni", price: "85,000", period: "/usiku", location: "Mikocheni, Dar", category: "Apartment & Airbnb", verified: true },
+    { id: 5, title: "Godown kubwa Mikocheni", price: "450,000", period: "/mwezi", location: "Mikocheni, Dar", category: "Store & Godown", verified: true },
   ],
   trending: [
-    { id: 2, title: "Chumba Kinondoni", price: "180,000", period: "/mwezi", location: "Kinondoni, Dar", category: "Apartment", verified: true },
+    { id: 2, title: "Chumba Kinondoni", price: "180,000", period: "/mwezi", location: "Kinondoni, Dar", category: "Chumba & Nyumba", verified: true },
     { id: 6, title: "Frame ya duka Kariakoo", price: "250,000", period: "/mwezi", location: "Kariakoo, Dar", category: "Frame", verified: true },
-    { id: 4, title: "Villa Airbnb Mbezi", price: "250,000", period: "/usiku", location: "Mbezi Beach, Dar", category: "Airbnb", verified: true },
+    { id: 4, title: "Villa Airbnb Mbezi", price: "250,000", period: "/usiku", location: "Mbezi Beach, Dar", category: "Apartment & Airbnb", verified: true },
   ],
   latest: [
-    { id: 7, title: "Duka dogo Sinza", price: "150,000", period: "/mwezi", location: "Sinza, Dar", category: "Store", verified: false },
-    { id: 1, title: "Apartment 2BR Masaki", price: "320,000", period: "/mwezi", location: "Masaki, Dar", category: "Apartment", verified: true },
-    { id: 3, title: "Studio Airbnb Mikocheni", price: "85,000", period: "/usiku", location: "Mikocheni, Dar", category: "Airbnb", verified: true },
+    { id: 7, title: "Duka dogo Sinza", price: "150,000", period: "/mwezi", location: "Sinza, Dar", category: "Store & Godown", verified: false },
+    { id: 1, title: "Apartment 2BR Masaki", price: "320,000", period: "/mwezi", location: "Masaki, Dar", category: "Chumba & Nyumba", verified: true },
+    { id: 3, title: "Studio Airbnb Mikocheni", price: "85,000", period: "/usiku", location: "Mikocheni, Dar", category: "Apartment & Airbnb", verified: true },
   ],
 };
 

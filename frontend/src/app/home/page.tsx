@@ -11,18 +11,18 @@ import { useState, useEffect } from "react";
 
 const categories = [
   {
-    title: "Apartments",
+    title: "Chumba & Nyumba",
     description: "Mwezi · miezi 3 · 6 · mwaka",
-    icon: Building2,
+    icon: Home,
     href: "/nyumba",
-    images: ["/real/apartment.jpg", "/real/room.jpg"],
+    images: ["/real/room.jpg", "/real/apartment.jpg"],
   },
   {
-    title: "Airbnb",
-    description: "Usiku · siku · wiki",
-    icon: KeyRound,
+    title: "Apartment & Airbnb",
+    description: "Usiku · siku · wiki · mwezi",
+    icon: Building2,
     href: "/airbnb",
-    images: ["/real/room.jpg", "/real/apartment.jpg"],
+    images: ["/real/apartment.jpg", "/real/room.jpg"],
   },
   {
     title: "Store & Godown",
@@ -218,11 +218,11 @@ export default function HomePage() {
 
       <div className="max-w-md mx-auto px-4 pt-5">
         <h2 className="text-2xl font-bold mb-1" style={{ color: "#2E1A0F" }}>Chagua unachotafuta</h2>
-        <p className="text-sm mb-4" style={{ color: "#5C4033" }}>Apartments · Airbnb · Store · Frame</p>
+        <p className="text-sm mb-4" style={{ color: "#5C4033" }}>Chumba · Apartment · Store · Frame</p>
 
         <Link href="/search" className="flex items-center gap-3 px-4 py-3.5 mb-5 rounded-[18px]" style={{ backgroundColor: "white", border: "1.5px solid rgba(210,166,121,0.6)" }}>
           <Search size={18} color="#8B5E3C" />
-          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta apartment, airbnb, store...</span>
+          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta chumba, nyumba, apartment...</span>
         </Link>
 
         <div className="grid grid-cols-2 gap-3.5">

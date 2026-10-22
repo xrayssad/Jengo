@@ -5,16 +5,16 @@ import { ArrowLeft, Search, MapPin, BadgeCheck, X } from "lucide-react";
 import Link from "next/link";
 
 const allListings = [
-  { id: 1, title: "Chumba kizuri Kinondoni", price: "180,000", period: "/mwezi", location: "Kinondoni, Dar", verified: true, category: "Apartment" },
-  { id: 2, title: "Apartment 2BR Masaki", price: "320,000", period: "/mwezi", location: "Masaki, Dar", verified: true, category: "Apartment" },
-  { id: 3, title: "Studio Airbnb Mikocheni", price: "85,000", period: "/usiku", location: "Mikocheni, Dar", verified: true, category: "Airbnb" },
-  { id: 4, title: "Villa Airbnb Mbezi", price: "250,000", period: "/usiku", location: "Mbezi Beach, Dar", verified: true, category: "Airbnb" },
-  { id: 5, title: "Godown kubwa Mikocheni", price: "450,000", period: "/mwezi", location: "Mikocheni, Dar", verified: true, category: "Store" },
-  { id: 6, title: "Frame ya duka Kariakoo", price: "250,000", period: "/mwezi", location: "Kariakoo, Dar", verified: true, category: "Store" },
-  { id: 7, title: "Duka dogo Sinza", price: "150,000", period: "/mwezi", location: "Sinza, Dar", verified: false, category: "Store" },
+  { id: 1, title: "Chumba kizuri Kinondoni", price: "180,000", period: "/mwezi", location: "Kinondoni, Dar", verified: true, category: "Chumba & Nyumba" },
+  { id: 2, title: "Apartment 2BR Masaki", price: "320,000", period: "/mwezi", location: "Masaki, Dar", verified: true, category: "Chumba & Nyumba" },
+  { id: 3, title: "Studio Airbnb Mikocheni", price: "85,000", period: "/usiku", location: "Mikocheni, Dar", verified: true, category: "Apartment & Airbnb" },
+  { id: 4, title: "Villa Airbnb Mbezi", price: "250,000", period: "/usiku", location: "Mbezi Beach, Dar", verified: true, category: "Apartment & Airbnb" },
+  { id: 5, title: "Godown kubwa Mikocheni", price: "450,000", period: "/mwezi", location: "Mikocheni, Dar", verified: true, category: "Store & Godown" },
+  { id: 6, title: "Frame ya duka Kariakoo", price: "250,000", period: "/mwezi", location: "Kariakoo, Dar", verified: true, category: "Store & Godown" },
+  { id: 7, title: "Duka dogo Sinza", price: "150,000", period: "/mwezi", location: "Sinza, Dar", verified: false, category: "Store & Godown" },
 ];
 
-const filters = ["Zote", "Apartment", "Airbnb", "Store"];
+const filters = ["Zote", "Chumba & Nyumba", "Apartment & Airbnb", "Store & Godown", "Frame"];
 
 export default function SearchPage() {
   const [query, setQuery] = useState("");
@@ -46,7 +46,7 @@ export default function SearchPage() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tafuta apartment, airbnb, store..."
+                placeholder="Tafuta chumba, nyumba, apartment..."
                 autoFocus
                 className="input-chocolate w-full pl-10 pr-10 py-3 text-sm"
               />

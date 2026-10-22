@@ -19,8 +19,8 @@ export default function AirbnbPage() {
             <ArrowLeft size={18} strokeWidth={2.2} />
           </Link>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Airbnb</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>Makazi ya muda mfupi</p>
+            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Apartment & Airbnb</h1>
+            <p className="text-xs" style={{ color: "#5C4033" }}>Apartment na makazi ya muda mfupi</p>
           </div>
         </div>
       </header>

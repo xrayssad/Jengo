@@ -3,42 +3,42 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import {
+import { LayoutGrid,
   Home, Store, Building2, KeyRound, Shield,
   BadgeCheck, MapPin, Users, ChevronRight
 } from "lucide-react";
 
 const heroSlides = [
-  { img: "/real/room.jpg", label: "Apartments" },
-  { img: "/real/apartment.jpg", label: "Airbnb" },
-  { img: "/real/shop.jpg", label: "Store" },
-  { img: "/real/warehouse.jpg", label: "Godown" },
+  { img: "/real/room.jpg", label: "Chumba & Nyumba" },
+  { img: "/real/apartment.jpg", label: "Apartment & Airbnb" },
+  { img: "/real/shop.jpg", label: "Store & Godown" },
+  { img: "/real/warehouse.jpg", label: "Frame za Maduka" },
 ];
 
 const services = [
   {
-    icon: Building2,
-    title: "Apartments",
-    desc: "Vyumba na apartment za kupanga kwa mwezi — bei wazi, wenye nyumba waliothibitishwa.",
-    img: "/real/apartment.jpg",
-  },
-  {
-    icon: KeyRound,
-    title: "Airbnb",
-    desc: "Makazi ya muda mfupi: siku, wiki au likizo. Ideal kwa wageni na safari.",
+    icon: Home,
+    title: "Chumba & Nyumba",
+    desc: "Vyumba na nyumba za kupanga kwa mwezi, miezi 3, 6 au mwaka mzima.",
     img: "/real/room.jpg",
   },
   {
-    icon: Store,
-    title: "Store & Maduka",
-    desc: "Maduka, frame na nafasi za biashara — panga au uze duka lako.",
-    img: "/real/shop.jpg",
+    icon: Building2,
+    title: "Apartment & Airbnb",
+    desc: "Apartment za mwezi na makazi ya muda mfupi — usiku, siku au wiki.",
+    img: "/real/apartment.jpg",
   },
   {
-    icon: Home,
-    title: "Godown",
-    desc: "Maghala na godown za kuhifadhi bidhaa — karibu na barabara kuu.",
+    icon: Store,
+    title: "Store & Godown",
+    desc: "Maduka na maghala ya biashara — panga kwa mwezi au mwaka.",
     img: "/real/warehouse.jpg",
+  },
+  {
+    icon: LayoutGrid,
+    title: "Frame za Maduka",
+    desc: "Frame na stall za biashara — Kariakoo na maeneo mengine.",
+    img: "/real/shop.jpg",
   },
 ];
 
@@ -124,10 +124,10 @@ export default function LandingPage() {
             Marketplace ya Tanzania
           </p>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.15] mb-4 max-w-xl" style={{ color: "#FFF6ED" }}>
-            Apartments, Airbnb na Store — mahali pamoja
+            Chumba, nyumba, apartment na store — mahali pamoja
           </h1>
           <p className="text-sm sm:text-base leading-relaxed mb-6 max-w-md" style={{ color: "rgba(255,246,237,0.85)" }}>
-            Panga nyumba au apartment, book Airbnb kwa siku, au pata duka na godown. Bei wazi, wamiliki waliothibitishwa.
+            Panga chumba au nyumba, apartment na Airbnb, au pata store, godown na frame. Bei wazi, wamiliki waliothibitishwa.
           </p>
           <div className="flex gap-2">
             {heroSlides.map((_, i) => (
@@ -199,7 +199,7 @@ export default function LandingPage() {
           <div className="grid sm:grid-cols-3 gap-5">
             {[
               { n: "01", t: "Jisajili", d: "Fungua akaunti kwa namba ya simu." },
-              { n: "02", t: "Chagua kategoria", d: "Apartment, Airbnb, Store au Godown." },
+              { n: "02", t: "Chagua kategoria", d: "Chumba & Nyumba, Apartment & Airbnb, Store au Frame." },
               { n: "03", t: "Wasiliana", d: "Tuma ombi au ujumbe moja kwa moja." },
             ].map((step) => (
               <div key={step.n} className="rounded-[20px] p-5" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.1)" }}>
