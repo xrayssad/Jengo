@@ -232,26 +232,49 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom nav – 4 equal columns, + dead center */}
+      {/* Bottom nav – 4 columns EQUAL width, icons at column centers */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 glass"
-        style={{ borderTop: "1px solid rgba(210,166,121,0.4)", paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="fixed bottom-0 left-0 right-0 z-30"
+        style={{
+          backgroundColor: "rgba(255,246,237,0.95)",
+          backdropFilter: "blur(12px)",
+          borderTop: "1px solid rgba(210,166,121,0.4)",
+          paddingBottom: "env(safe-area-inset-bottom)",
+        }}
       >
-        <div className="max-w-md mx-auto grid grid-cols-4 items-end h-[64px] px-1">
-          <Link href="/home" className="flex flex-col items-center justify-center gap-0.5 h-full">
+        <div
+          className="max-w-md mx-auto grid grid-cols-4"
+          style={{ height: 64 }}
+        >
+          {/* 1 Home */}
+          <Link
+            href="/home"
+            className="flex flex-col items-center justify-center gap-0.5"
+            style={{ width: "100%" }}
+          >
             <Home size={22} color="#2E1A0F" strokeWidth={2.2} />
-            <span className="text-[10px] font-semibold" style={{ color: "#2E1A0F" }}>Home</span>
+            <span className="text-[10px] font-semibold leading-none" style={{ color: "#2E1A0F" }}>Home</span>
           </Link>
-          <Link href="/discover" className="flex flex-col items-center justify-center gap-0.5 h-full">
+
+          {/* 2 Discover */}
+          <Link
+            href="/discover"
+            className="flex flex-col items-center justify-center gap-0.5"
+            style={{ width: "100%" }}
+          >
             <Compass size={22} color="#8B5E3C" strokeWidth={1.8} />
-            <span className="text-[10px]" style={{ color: "#8B5E3C" }}>Discover</span>
+            <span className="text-[10px] leading-none" style={{ color: "#8B5E3C" }}>Discover</span>
           </Link>
-          {/* Center slot – + button centered in its column */}
-          <div className="relative flex items-center justify-center h-full">
+
+          {/* 3 Add – centered IN this 25% column */}
+          <div className="flex items-center justify-center" style={{ width: "100%" }}>
             <Link
               href="/weka-tangazo"
-              className="absolute left-1/2 -translate-x-1/2 bottom-3 w-14 h-14 rounded-full flex items-center justify-center"
+              className="flex items-center justify-center rounded-full"
               style={{
+                width: 56,
+                height: 56,
+                marginTop: -28,
                 background: "linear-gradient(165deg, #8B5E3C, #2E1A0F)",
                 boxShadow: "0 6px 20px rgba(46,26,15,0.4)",
               }}
@@ -259,9 +282,15 @@ export default function HomePage() {
               <Plus size={26} color="#FFF6ED" strokeWidth={2.5} />
             </Link>
           </div>
-          <Link href="/messages" className="flex flex-col items-center justify-center gap-0.5 h-full">
+
+          {/* 4 Chat */}
+          <Link
+            href="/messages"
+            className="flex flex-col items-center justify-center gap-0.5"
+            style={{ width: "100%" }}
+          >
             <MessageCircle size={22} color="#8B5E3C" strokeWidth={1.8} />
-            <span className="text-[10px]" style={{ color: "#8B5E3C" }}>Chat</span>
+            <span className="text-[10px] leading-none" style={{ color: "#8B5E3C" }}>Chat</span>
           </Link>
         </div>
       </nav>
