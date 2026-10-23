@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  Home, Store, Building2, KeyRound, Search, Plus, User, Menu,
+  Home, Store, Building2, Search, Plus, User, Menu,
   MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark,
-  Settings, X
+  Settings, X, Sparkles, ChevronRight, MapPin
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -13,6 +13,7 @@ const categories = [
   {
     title: "Chumba & Nyumba",
     description: "Mwezi · miezi 3 · 6 · mwaka",
+    badge: "Maarufu",
     icon: Home,
     href: "/nyumba",
     images: ["/real/room.jpg", "/real/apartment.jpg"],
@@ -20,6 +21,7 @@ const categories = [
   {
     title: "Apartment & Airbnb",
     description: "Usiku · siku · wiki · mwezi",
+    badge: "Trending",
     icon: Building2,
     href: "/airbnb",
     images: ["/real/apartment.jpg", "/real/room.jpg"],
@@ -27,6 +29,7 @@ const categories = [
   {
     title: "Store & Godown",
     description: "Mwezi · miezi 3 · 6 · mwaka",
+    badge: "Biashara",
     icon: Store,
     href: "/maduka",
     images: ["/real/warehouse.jpg", "/real/shop.jpg"],
@@ -34,6 +37,7 @@ const categories = [
   {
     title: "Frame za Maduka",
     description: "Frame / stall za biashara",
+    badge: "Soko",
     icon: LayoutGrid,
     href: "/maduka",
     images: ["/real/shop.jpg", "/real/warehouse.jpg"],
@@ -51,21 +55,16 @@ const sideLinks = [
   { label: "Mipangilio", href: "/settings", icon: Settings },
 ];
 
+const quickChips = ["Dar es Salaam", "Kinondoni", "Masaki", "Mikocheni", "Kariakoo"];
+
 function CategoryCard({
-  title,
-  description,
-  icon: Icon,
-  href,
-  images,
+  title, description, badge, icon: Icon, href, images, large,
 }: {
-  title: string;
-  description: string;
+  title: string; description: string; badge: string;
   icon: React.ComponentType<{ size?: number; color?: string; strokeWidth?: number }>;
-  href: string;
-  images: string[];
+  href: string; images: string[]; large?: boolean;
 }) {
   const [idx, setIdx] = useState(0);
-
   useEffect(() => {
     const t = setInterval(() => setIdx((i) => (i + 1) % images.length), 7000);
     return () => clearInterval(t);
@@ -74,11 +73,11 @@ function CategoryCard({
   return (
     <Link
       href={href}
-      className="group relative overflow-hidden rounded-[20px] text-left block"
+      className="group relative block overflow-hidden"
       style={{
-        height: 172,
-        border: "1px solid rgba(210,166,121,0.3)",
-        boxShadow: "0 8px 28px rgba(46,26,15,0.2)",
+        height: large ? 220 : 200,
+        borderRadius: large ? 28 : 24,
+        boxShadow: "0 12px 40px rgba(46,26,15,0.18), 0 0 0 1px rgba(210,166,121,0.2)",
       }}
     >
       {images.map((src, i) => (
@@ -87,7 +86,7 @@ function CategoryCard({
           className="absolute inset-0"
           style={{
             opacity: idx === i ? 1 : 0,
-            transition: "opacity 1.1s ease-in-out",
+            transition: "opacity 1.2s ease",
             zIndex: idx === i ? 1 : 0,
           }}
         >
@@ -97,36 +96,48 @@ function CategoryCard({
             fill
             className="object-cover"
             style={{
-              transform: idx === i ? "scale(1.08)" : "scale(1)",
-              transition: idx === i ? "transform 7s ease-out" : "none",
+              transform: idx === i ? "scale(1.12)" : "scale(1)",
+              transition: idx === i ? "transform 7.5s ease-out" : "none",
             }}
-            sizes="50vw"
+            sizes="(max-width:768px) 100vw, 50vw"
           />
         </div>
       ))}
-      {/* Soft pan overlay alternate feel */}
       <div
-        className="absolute inset-0 z-[2] pointer-events-none transition-opacity duration-700"
+        className="absolute inset-0 z-[2]"
         style={{
           background:
-            idx === 0
-              ? "linear-gradient(to top, rgba(26,15,8,0.92) 0%, rgba(26,15,8,0.4) 50%, rgba(26,15,8,0.1) 100%)"
-              : "linear-gradient(to top, rgba(26,15,8,0.88) 0%, rgba(46,26,15,0.35) 55%, transparent 100%)",
+            "linear-gradient(160deg, rgba(26,15,8,0.15) 0%, rgba(26,15,8,0.25) 40%, rgba(26,15,8,0.92) 100%)",
         }}
       />
-      <div className="absolute bottom-0 left-0 right-0 p-3.5 z-10">
-        <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center mb-2 transition-transform duration-300 group-hover:scale-110"
-          style={{ background: "rgba(210,166,121,0.28)", backdropFilter: "blur(8px)" }}
+      {/* top badge */}
+      <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
+        <span
+          className="text-[10px] font-bold px-2.5 py-1 rounded-full"
+          style={{
+            background: "rgba(210,166,121,0.95)",
+            color: "#2E1A0F",
+            backdropFilter: "blur(8px)",
+          }}
         >
-          <Icon size={17} color="#F5E6D3" strokeWidth={1.8} />
-        </div>
-        <h3 className="font-bold text-[13px] leading-tight" style={{ color: "#FFF6ED" }}>
+          {badge}
+        </span>
+      </div>
+      <div
+        className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-transform duration-300 group-hover:scale-110"
+        style={{ background: "rgba(255,246,237,0.2)", backdropFilter: "blur(10px)" }}
+      >
+        <Icon size={16} color="#FFF6ED" strokeWidth={2} />
+      </div>
+      <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+        <h3 className="font-bold text-[16px] leading-tight" style={{ color: "#FFF6ED" }}>
           {title}
         </h3>
-        <p className="text-[10px] mt-0.5" style={{ color: "#D2A679" }}>
-          {description}
-        </p>
+        <p className="text-[11px] mt-1" style={{ color: "#D2A679" }}>{description}</p>
+        <div className="flex items-center gap-1 mt-2.5 opacity-80 group-hover:opacity-100 transition-opacity">
+          <span className="text-[11px] font-semibold" style={{ color: "#F5E6D3" }}>Angalia</span>
+          <ChevronRight size={14} color="#F5E6D3" />
+        </div>
       </div>
     </Link>
   );
@@ -137,31 +148,54 @@ export default function HomePage() {
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      document.body.style.overflow = "";
-    };
+    return () => { document.body.style.overflow = ""; };
   }, [open]);
 
   return (
-    <main className="min-h-screen pb-24" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-30 px-4 py-3 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
+    <main className="min-h-screen pb-28" style={{ backgroundColor: "#FFF6ED" }}>
+      {/* Header */}
+      <header
+        className="sticky top-0 z-30 px-4 py-3"
+        style={{
+          backgroundColor: "rgba(255,246,237,0.88)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderBottom: "1px solid rgba(210,166,121,0.25)",
+        }}
+      >
         <div className="max-w-md mx-auto flex items-center justify-between">
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "#D2A679" }}
-            aria-label="Fungua menu"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center"
+            style={{
+              background: "linear-gradient(145deg, #3D2415, #2E1A0F)",
+              boxShadow: "0 4px 14px rgba(46,26,15,0.25)",
+            }}
           >
-            <Menu size={18} color="#2E1A0F" strokeWidth={2.2} />
+            <Menu size={18} color="#F5E6D3" strokeWidth={2.2} />
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-bold leading-tight" style={{ color: "#2E1A0F" }}>Jengo</h1>
-            <p className="text-[10px] tracking-widest uppercase" style={{ color: "#8B5E3C" }}>Marketplace</p>
+            <h1 className="text-lg font-bold tracking-tight" style={{ color: "#2E1A0F" }}>Jengo</h1>
+            <p className="text-[9px] tracking-[0.2em] uppercase font-semibold" style={{ color: "#8B5E3C" }}>
+              Marketplace
+            </p>
           </div>
-          <Link href="/messages" className="w-10 h-10 rounded-full flex items-center justify-center relative" style={{ backgroundColor: "#D2A679" }}>
-            <MessageCircle size={17} color="#2E1A0F" strokeWidth={2.2} />
-            <span className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-[9px] font-bold flex items-center justify-center" style={{ backgroundColor: "#A6452E", color: "#FFF6ED" }}>2</span>
+          <Link
+            href="/messages"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center relative"
+            style={{
+              background: "linear-gradient(145deg, #D2A679, #B8956A)",
+              boxShadow: "0 4px 14px rgba(210,166,121,0.35)",
+            }}
+          >
+            <MessageCircle size={18} color="#2E1A0F" strokeWidth={2.2} />
+            <span
+              className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center"
+              style={{ backgroundColor: "#A6452E", color: "#FFF6ED", border: "2px solid #FFF6ED" }}
+            >
+              2
+            </span>
           </Link>
         </div>
       </header>
@@ -186,60 +220,154 @@ export default function HomePage() {
           paddingBottom: "env(safe-area-inset-bottom)",
         }}
       >
-        <div className="flex items-center justify-between px-4 shrink-0" style={{ minHeight: 64, background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0" style={{ background: "rgba(210,166,121,0.35)", color: "#FFF6ED" }}>J</div>
-            <div className="min-w-0">
-              <p className="font-bold text-base truncate" style={{ color: "#FFF6ED" }}>Jengo App</p>
+        <div className="flex items-center justify-between px-4 shrink-0" style={{ minHeight: 68, background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-sm font-bold" style={{ background: "rgba(210,166,121,0.35)", color: "#FFF6ED" }}>J</div>
+            <div>
+              <p className="font-bold text-base" style={{ color: "#FFF6ED" }}>Jengo App</p>
               <p className="text-[10px]" style={{ color: "#D2A679" }}>Menu</p>
             </div>
           </div>
-          <button type="button" onClick={() => setOpen(false)} className="w-10 h-10 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "rgba(210,166,121,0.2)" }} aria-label="Funga menu">
+          <button type="button" onClick={() => setOpen(false)} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(210,166,121,0.2)" }}>
             <X size={20} color="#F5E6D3" strokeWidth={2.2} />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto overscroll-contain py-2" style={{ WebkitOverflowScrolling: "touch", minHeight: 0 }}>
+        <nav className="flex-1 overflow-y-auto py-2" style={{ WebkitOverflowScrolling: "touch", minHeight: 0 }}>
           {sideLinks.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.label} href={item.href} onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 my-1 px-3 py-3 rounded-[14px]">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}>
+              <Link key={item.label} href={item.href} onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 my-1 px-3 py-3.5 rounded-[16px]">
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.1)" }}>
                   <Icon size={18} color="#8B5E3C" strokeWidth={1.8} />
                 </div>
                 <span className="text-sm font-semibold" style={{ color: "#2E1A0F" }}>{item.label}</span>
               </Link>
             );
           })}
-          <Link href="/login" onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 mt-4 mb-6 px-3 py-3 rounded-[14px]" style={{ border: "1px solid rgba(166,69,46,0.35)" }}>
+          <Link href="/login" onClick={() => setOpen(false)} className="flex mx-3 mt-4 mb-6 px-3 py-3.5 rounded-[16px]" style={{ border: "1px solid rgba(166,69,46,0.35)" }}>
             <span className="text-sm font-semibold" style={{ color: "#A6452E" }}>Tokaa</span>
           </Link>
         </nav>
       </aside>
 
       <div className="max-w-md mx-auto px-4 pt-5">
-        <h2 className="text-2xl font-bold mb-1" style={{ color: "#2E1A0F" }}>Chagua unachotafuta</h2>
-        <p className="text-sm mb-4" style={{ color: "#5C4033" }}>Chumba · Apartment · Store · Frame</p>
+        {/* Hero promo card */}
+        <div
+          className="relative overflow-hidden mb-5"
+          style={{
+            borderRadius: 28,
+            minHeight: 160,
+            boxShadow: "0 16px 48px rgba(46,26,15,0.22)",
+          }}
+        >
+          <Image src="/real/apartment.jpg" alt="Jengo" fill className="object-cover" sizes="400px" priority />
+          <div
+            className="absolute inset-0"
+            style={{
+              background:
+                "linear-gradient(125deg, rgba(26,15,8,0.88) 0%, rgba(46,26,15,0.55) 50%, rgba(26,15,8,0.35) 100%)",
+            }}
+          />
+          <div className="relative z-10 p-5 flex flex-col justify-end min-h-[160px]">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Sparkles size={14} color="#D2A679" />
+              <span className="text-[10px] font-bold tracking-wider uppercase" style={{ color: "#D2A679" }}>
+                Karibu Jengo
+              </span>
+            </div>
+            <h2 className="text-xl font-bold leading-snug mb-1" style={{ color: "#FFF6ED" }}>
+              Pata makazi na nafasi za biashara
+            </h2>
+            <p className="text-xs leading-relaxed max-w-[90%]" style={{ color: "rgba(255,246,237,0.75)" }}>
+              Chumba, nyumba, apartment, store na frame — bei wazi, wamiliki waliothibitishwa.
+            </p>
+          </div>
+        </div>
 
-        <Link href="/search" className="flex items-center gap-3 px-4 py-3.5 mb-5 rounded-[18px]" style={{ backgroundColor: "white", border: "1.5px solid rgba(210,166,121,0.6)" }}>
-          <Search size={18} color="#8B5E3C" />
-          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta chumba, nyumba, apartment...</span>
+        {/* Search */}
+        <Link
+          href="/search"
+          className="flex items-center gap-3 px-4 py-4 mb-4"
+          style={{
+            backgroundColor: "white",
+            borderRadius: 20,
+            border: "1.5px solid rgba(210,166,121,0.55)",
+            boxShadow: "0 4px 20px rgba(46,26,15,0.06)",
+          }}
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#FFF6ED" }}>
+            <Search size={18} color="#8B5E3C" />
+          </div>
+          <span className="text-sm flex-1" style={{ color: "#8B5E3C" }}>Tafuta chumba, apartment, store...</span>
         </Link>
 
-        <div className="grid grid-cols-2 gap-3.5">
-          {categories.map((cat) => (
-            <CategoryCard key={cat.title} {...cat} />
+        {/* Location chips */}
+        <div className="flex gap-2 overflow-x-auto pb-3 mb-2 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
+          {quickChips.map((chip, i) => (
+            <button
+              key={chip}
+              type="button"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0"
+              style={{
+                backgroundColor: i === 0 ? "#2E1A0F" : "white",
+                color: i === 0 ? "#FFF6ED" : "#2E1A0F",
+                border: i === 0 ? "none" : "1.5px solid rgba(61,36,21,0.2)",
+              }}
+            >
+              {i === 0 && <MapPin size={12} color="#D2A679" />}
+              {chip}
+            </button>
           ))}
+        </div>
+
+        {/* Section title */}
+        <div className="flex items-end justify-between mb-3 mt-2">
+          <div>
+            <h2 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Kategoria</h2>
+            <p className="text-xs" style={{ color: "#5C4033" }}>Chagua unachotafuta</p>
+          </div>
+          <Link href="/discover" className="text-xs font-bold flex items-center gap-0.5" style={{ color: "#8B5E3C" }}>
+            Discover <ChevronRight size={14} />
+          </Link>
+        </div>
+
+        {/* Categories – first full width, rest 2-col */}
+        <div className="space-y-3.5">
+          <CategoryCard {...categories[0]} large />
+          <div className="grid grid-cols-2 gap-3.5">
+            <CategoryCard {...categories[1]} />
+            <CategoryCard {...categories[2]} />
+          </div>
+          <CategoryCard {...categories[3]} large />
+        </div>
+
+        {/* Trust strip */}
+        <div
+          className="mt-6 mb-4 p-4 flex items-center gap-3"
+          style={{
+            borderRadius: 22,
+            background: "linear-gradient(135deg, #3D2415, #2E1A0F)",
+            boxShadow: "0 10px 32px rgba(46,26,15,0.25)",
+          }}
+        >
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "rgba(210,166,121,0.25)" }}>
+            <Sparkles size={22} color="#D2A679" />
+          </div>
+          <div>
+            <p className="font-bold text-sm" style={{ color: "#FFF6ED" }}>Wamiliki waliothibitishwa</p>
+            <p className="text-[11px] mt-0.5" style={{ color: "#D2A679" }}>Bei wazi · Hakuna ada za siri</p>
+          </div>
         </div>
       </div>
 
-      {/* Bottom nav – 5 equal slots like reference (Home Discover + Chat Profile) */}
+      {/* Bottom nav – 5 equal */}
       <nav
         className="fixed bottom-0 left-0 right-0 z-30"
         style={{
           backgroundColor: "rgba(255,246,237,0.97)",
-          backdropFilter: "blur(12px)",
-          WebkitBackdropFilter: "blur(12px)",
-          borderTop: "1px solid rgba(210,166,121,0.45)",
+          backdropFilter: "blur(16px)",
+          WebkitBackdropFilter: "blur(16px)",
+          borderTop: "1px solid rgba(210,166,121,0.4)",
           paddingBottom: "env(safe-area-inset-bottom, 0px)",
         }}
       >
@@ -251,28 +379,16 @@ export default function HomePage() {
             gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
             alignItems: "end",
             height: 64,
-            width: "100%",
           }}
         >
-          <Link
-            href="/home"
-            className="flex flex-col items-center justify-center gap-0.5 pb-2"
-            style={{ textDecoration: "none" }}
-          >
+          <Link href="/home" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
             <Home size={22} color="#2E1A0F" strokeWidth={2.2} />
             <span style={{ fontSize: 10, fontWeight: 600, color: "#2E1A0F", lineHeight: 1 }}>Home</span>
           </Link>
-
-          <Link
-            href="/discover"
-            className="flex flex-col items-center justify-center gap-0.5 pb-2"
-            style={{ textDecoration: "none" }}
-          >
+          <Link href="/discover" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
             <Compass size={22} color="#8B5E3C" strokeWidth={1.8} />
             <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Discover</span>
           </Link>
-
-          {/* Center + – exact middle column */}
           <div className="flex items-center justify-center" style={{ height: "100%" }}>
             <Link
               href="/weka-tangazo"
@@ -281,37 +397,24 @@ export default function HomePage() {
                 width: 56,
                 height: 56,
                 marginBottom: 12,
-                background: "linear-gradient(165deg, #8B5E3C 0%, #2E1A0F 100%)",
-                boxShadow: "0 6px 18px rgba(46,26,15,0.35)",
+                background: "linear-gradient(165deg, #8B5E3C, #2E1A0F)",
+                boxShadow: "0 8px 24px rgba(46,26,15,0.4)",
                 textDecoration: "none",
               }}
             >
               <Plus size={26} color="#FFF6ED" strokeWidth={2.5} />
             </Link>
           </div>
-
-          <Link
-            href="/messages"
-            className="flex flex-col items-center justify-center gap-0.5 pb-2"
-            style={{ textDecoration: "none" }}
-          >
+          <Link href="/messages" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
             <MessageCircle size={22} color="#8B5E3C" strokeWidth={1.8} />
             <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Chat</span>
           </Link>
-
-          <Link
-            href="/profile"
-            className="flex flex-col items-center justify-center gap-0.5 pb-2"
-            style={{ textDecoration: "none" }}
-          >
+          <Link href="/profile" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
             <User size={22} color="#8B5E3C" strokeWidth={1.8} />
             <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Profile</span>
           </Link>
         </div>
       </nav>
-
-
-
     </main>
   );
 }
