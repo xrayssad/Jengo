@@ -6,6 +6,7 @@ import {
   Settings, X, Sparkles, ChevronRight, MapPin
 } from "lucide-react";
 import Link from "next/link";
+import { clearAuth } from "@/lib/api";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 

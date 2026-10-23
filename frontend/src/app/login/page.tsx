@@ -1,144 +1,159 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Phone, Lock, Eye, EyeOff } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { Eye, EyeOff, Phone, Lock } from "lucide-react";
+import { login as apiLogin } from "@/lib/api";
+import AppAlert, { AlertKind } from "@/components/AppAlert";
 
 const slides = [
-  { id: 1, image: "/poster_nyumba_salama.png", title: "Nyumba Salama", subtitle: "Pata chumba cha kuaminika" },
-  { id: 2, image: "/poster_maduka_godown.png", title: "Maduka & Godown", subtitle: "Frame na nafasi za biashara" },
-  { id: 3, image: "/poster_vifaa_ujenzi.png", title: "Vifaa vya Ujenzi", subtitle: "Bei wazi, ubora unaoonekana" },
-  { id: 4, image: "/poster_mnada_rahisi.png", title: "Mnada Rahisi", subtitle: "Bei bora inashinda" },
+  { image: "/poster_nyumba_salama.png", title: "Chumba & Nyumba", subtitle: "Panga salama, bei wazi" },
+  { image: "/poster_maduka_godown.png", title: "Store & Godown", subtitle: "Nafasi za biashara" },
+  { image: "/poster_vifaa_ujenzi.png", title: "Apartment & Airbnb", subtitle: "Muda mfupi au mwezi" },
+  { image: "/poster_mnada_rahisi.png", title: "Frame za Maduka", subtitle: "Anza biashara yako" },
 ];
-
-function Typewriter({ text }: { text: string }) {
-  const [displayed, setDisplayed] = useState("");
-  useEffect(() => {
-    setDisplayed("");
-    let i = 0;
-    const t = setInterval(() => {
-      i++;
-      setDisplayed(text.slice(0, i));
-      if (i >= text.length) clearInterval(t);
-    }, 45);
-    return () => clearInterval(t);
-  }, [text]);
-  return (
-    <span>
-      {displayed}
-      <span className="inline-block w-[2px] h-[1em] ml-0.5 align-middle animate-pulse" style={{ backgroundColor: "#D2A679" }} />
-    </span>
-  );
-}
 
 export default function LoginPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [current, setCurrent] = useState(0);
+  const [show, setShow] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [slide, setSlide] = useState(0);
+  const [alertOpen, setAlertOpen] = useState(false);
+  const [alertKind, setAlertKind] = useState<AlertKind>("error");
+  const [alertTitle, setAlertTitle] = useState("");
+  const [alertMsg, setAlertMsg] = useState("");
 
   useEffect(() => {
-    const t = setInterval(() => setCurrent((p) => (p + 1) % slides.length), 7000);
+    const t = setInterval(() => setSlide((s) => (s + 1) % slides.length), 7000);
     return () => clearInterval(t);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    window.location.href = "/home";
+  const showAlert = (kind: AlertKind, title: string, message?: string) => {
+    setAlertKind(kind);
+    setAlertTitle(title);
+    setAlertMsg(message || "");
+    setAlertOpen(true);
   };
 
-  const slide = slides[current];
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!phone || !password) {
+      showAlert("warning", "Jaza taarifa", "Weka namba ya simu na nenosiri.");
+      return;
+    }
+    setLoading(true);
+    try {
+      await apiLogin(phone.trim(), password);
+      window.location.href = "/home";
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Imeshindikana kuingia";
+      showAlert("error", "Imeshindikana", msg);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <main className="min-h-screen flex flex-col md:flex-row md:items-center md:justify-center md:p-4" style={{ backgroundColor: "#FFF6ED" }}>
-      <div
-        className="w-full md:max-w-4xl flex flex-col md:flex-row md:rounded-[24px] md:overflow-hidden md:min-h-[520px]"
-        style={{ boxShadow: "0 20px 50px rgba(46,26,15,0.12)" }}
-      >
-        {/* SLIDESHOW – juu kwenye simu */}
-        <div className="w-full md:w-1/2 relative h-[40vh] md:h-auto md:min-h-[520px] bg-[#1A0F08] shrink-0">
-          {slides.map((s, i) => (
-            <div key={s.id} className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: current === i ? 1 : 0 }}>
-              <Image
-                src={s.image}
-                alt={s.title}
-                fill
-                className="object-cover"
-                style={{
-                  transform: current === i ? "scale(1.06)" : "scale(1)",
-                  transition: current === i ? "transform 7s ease-out" : "none",
-                }}
-                priority={i === 0}
-              />
-              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.9) 0%, rgba(26,15,8,0.2) 55%, transparent 100%)" }} />
+    <main className="min-h-screen flex flex-col md:flex-row" style={{ backgroundColor: "#FFF6ED" }}>
+      {/* Slideshow – juu kwenye simu, kushoto desktop */}
+      <div className="relative w-full md:w-1/2 h-[42vh] md:h-screen order-1 md:order-1">
+        {slides.map((s, i) => (
+          <div
+            key={s.image}
+            className="absolute inset-0 transition-opacity duration-1000"
+            style={{ opacity: slide === i ? 1 : 0 }}
+          >
+            <Image
+              src={s.image}
+              alt={s.title}
+              fill
+              className="object-cover"
+              style={{
+                transform: slide === i ? "scale(1.08)" : "scale(1)",
+                transition: slide === i ? "transform 7s ease-out" : "none",
+              }}
+              priority={i === 0}
+            />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.85), transparent 55%)" }} />
+            <div className="absolute bottom-8 left-6 right-6">
+              <p className="text-xs font-semibold tracking-widest uppercase mb-1" style={{ color: "#D2A679" }}>Jengo</p>
+              <h2 className="text-2xl font-bold" style={{ color: "#FFF6ED" }}>{s.title}</h2>
+              <p className="text-sm mt-1" style={{ color: "rgba(255,246,237,0.8)" }}>{s.subtitle}</p>
             </div>
+          </div>
+        ))}
+        <div className="absolute bottom-4 left-6 flex gap-2 z-10">
+          {slides.map((_, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setSlide(i)}
+              className="h-1.5 rounded-full transition-all"
+              style={{ width: slide === i ? 20 : 8, backgroundColor: slide === i ? "#D2A679" : "rgba(255,246,237,0.4)" }}
+            />
           ))}
-          <div className="absolute bottom-10 left-0 right-0 px-5 z-20 text-center">
-            <h2 className="text-xl font-bold mb-1" style={{ color: "#FFF6ED" }}>
-              <Typewriter text={slide.title} key={"t-" + current} />
-            </h2>
-            <p className="text-sm" style={{ color: "#D2A679" }}>
-              <Typewriter text={slide.subtitle} key={"s-" + current} />
-            </p>
-          </div>
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-20">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setCurrent(i)}
-                className="h-1.5 rounded-full transition-all"
-                style={{
-                  backgroundColor: current === i ? "#D2A679" : "rgba(255,246,237,0.35)",
-                  width: current === i ? 16 : 6,
-                }}
-              />
-            ))}
-          </div>
         </div>
+      </div>
 
-        {/* FORM – chini kwenye simu */}
-        <div className="w-full md:w-1/2 bg-white px-5 py-6 md:p-10 flex flex-col justify-center flex-1 rounded-t-[24px] md:rounded-none -mt-5 md:mt-0 relative z-10">
-          <h1 className="text-2xl font-bold mb-1" style={{ color: "#2E1A0F" }}>Ingia</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Karibu tena kwenye Jengo</p>
+      {/* Form – chini simu, kulia desktop */}
+      <div className="flex-1 flex items-center justify-center px-5 py-8 order-2">
+        <div className="w-full max-w-sm">
+          <h1 className="text-2xl font-bold mb-1" style={{ color: "#2E1A0F" }}>Karibu tena</h1>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Ingia kwenye akaunti yako ya Jengo</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="relative">
-              <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10" color="#8B5E3C" />
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="Namba ya simu"
-                className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm"
-              />
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Namba ya simu</label>
+              <div className="relative">
+                <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
+                <input
+                  type="tel"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  placeholder="07XX XXX XXX"
+                  className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm"
+                  autoComplete="tel"
+                />
+              </div>
             </div>
-            <div className="relative">
-              <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10" color="#8B5E3C" />
-              <input
-                type={showPass ? "text" : "password"}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Nenosiri"
-                className="input-chocolate w-full pl-10 pr-12 py-3.5 text-sm"
-              />
-              <button type="button" onClick={() => setShowPass(!showPass)} className="absolute right-3.5 top-1/2 -translate-y-1/2">
-                {showPass ? <EyeOff size={16} color="#8B5E3C" /> : <Eye size={16} color="#8B5E3C" />}
-              </button>
+            <div>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Nenosiri</label>
+              <div className="relative">
+                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
+                <input
+                  type={show ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="input-chocolate w-full pl-10 pr-12 py-3.5 text-sm"
+                  autoComplete="current-password"
+                />
+                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1">
+                  {show ? <EyeOff size={16} color="#8B5E3C" /> : <Eye size={16} color="#8B5E3C" />}
+                </button>
+              </div>
             </div>
-            <button type="submit" className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-[15px]">
-              Ingia
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 rounded-[18px] font-semibold text-sm"
+              style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opacity: loading ? 0.7 : 1 }}
+            >
+              {loading ? "Inaingia..." : "Ingia"}
             </button>
           </form>
 
-          <p className="text-center text-sm mt-5" style={{ color: "#5C4033" }}>
+          <p className="text-center text-sm mt-6" style={{ color: "#5C4033" }}>
             Huna akaunti?{" "}
-            <Link href="/register" className="font-bold" style={{ color: "#8B5E3C" }}>
-              Jisajili
-            </Link>
+            <Link href="/register" className="font-bold" style={{ color: "#8B5E3C" }}>Jisajili</Link>
           </p>
+          <Link href="/" className="block text-center text-xs mt-3" style={{ color: "#8B5E3C" }}>← Rudi mwanzo</Link>
         </div>
       </div>
+
+      <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg} onClose={() => setAlertOpen(false)} />
     </main>
   );
 }
