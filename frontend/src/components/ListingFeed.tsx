@@ -5,6 +5,7 @@ import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { fetchListings, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
+import FavoriteButton from "@/components/FavoriteButton";
 
 export default function ListingFeed({
   title,
@@ -73,11 +74,17 @@ export default function ListingFeed({
           </div>
         )}
         {items.map((item) => (
-          <Link
+          <div
             key={item.id}
-            href={`/tangazo/${item.id}`}
-            className="block p-4 rounded-[18px]"
+            className="relative p-4 rounded-[18px]"
             style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}
+          >
+            <div className="absolute top-3 right-3 z-10">
+              <FavoriteButton id={item.id} size={18} />
+            </div>
+          <Link
+            href={`/tangazo/${item.id}`}
+            className="block"
           >
             {item.images?.[0] && (
               <img src={item.images[0]} alt="" className="w-full h-40 object-cover rounded-[14px] mb-3" />
@@ -95,6 +102,7 @@ export default function ListingFeed({
               <span className="text-xs font-normal" style={{ color: "#5C4033" }}> {periodLabel(item.period)}</span>
             </p>
           </Link>
+          </div>
         ))}
       </div>
           <BottomNav />

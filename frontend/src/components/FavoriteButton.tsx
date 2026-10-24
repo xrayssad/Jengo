@@ -1,12 +1,11 @@
 "use client";
 
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useState, type CSSProperties, type MouseEvent } from "react";
 import { Heart } from "lucide-react";
 
 const KEY = "jengo_favorites";
 
 function read(): string[] {
-  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(KEY);
     const arr = raw ? JSON.parse(raw) : [];
@@ -36,14 +35,16 @@ export default function FavoriteButton({
     setOn(read().includes(itemId));
   }, [itemId]);
 
-  const toggle = (e: React.MouseEvent) => {
+  const stop = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+  };
+
+  const toggle = (e: MouseEvent) => {
+    stop(e);
     if (!itemId) return;
     const cur = read();
-    const next = cur.includes(itemId)
-      ? cur.filter((x) => x !== itemId)
-      : [itemId, ...cur];
+    const next = cur.includes(itemId) ? cur.filter((x) => x !== itemId) : [itemId, ...cur];
     localStorage.setItem(KEY, JSON.stringify(next));
     setOn(next.includes(itemId));
   };
@@ -51,16 +52,13 @@ export default function FavoriteButton({
   return (
     <button
       type="button"
+      aria-label={on ? "Ondoa vipendwa" : "Weka vipendwa"}
+      onMouseDown={stop}
       onClick={toggle}
-      aria-label="Vipendwa"
       className={className || "w-10 h-10 rounded-full flex items-center justify-center"}
       style={style || { backgroundColor: "white", border: "1.5px solid #3D2415" }}
     >
-      <Heart
-        size={size}
-        color={on ? "#A6452E" : "#8B5E3C"}
-        fill={on ? "#A6452E" : "none"}
-      />
+      <Heart size={size} color={on ? "#A6452E" : "#8B5E3C"} fill={on ? "#A6452E" : "none"} />
     </button>
   );
 }

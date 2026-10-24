@@ -1,31 +1,36 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
-  ArrowLeft, User, Phone, FileText, Heart, Settings, LogOut,
+  ArrowLeft, Mail, FileText, Heart, Settings, LogOut,
   ChevronRight, BadgeCheck, Home, Plus
 } from "lucide-react";
 import Link from "next/link";
-import { clearAuth } from "@/lib/api";
+import DisplayName from "@/components/DisplayName";
+import { clearAuth, getAuthUser } from "@/lib/api";
 
 const menuItems = [
-  { icon: FileText, label: "Maombi yangu", desc: "Angalia maombi uliyotuma", href: "/profile" },
-  { icon: Home, label: "Matangazo yangu", desc: "Tangazo ulizoweka", href: "/weka-tangazo" },
-  { icon: Heart, label: "Vipendwa", desc: "Matangazo uliyohifadhi", href: "/search" },
-  { icon: Settings, label: "Mipangilio", desc: "Akaunti na faragha", href: "/profile" },
+  { icon: FileText, label: "Maombi yangu", desc: "Yataonekana baada ya auth", href: "/discover" },
+  { icon: Home, label: "Matangazo yangu", desc: "Angalia Discover", href: "/discover" },
+  { icon: Heart, label: "Vipendwa", desc: "Matangazo uliyohifadhi", href: "/favorites" },
+  { icon: Settings, label: "Mipangilio", desc: "Akaunti na faragha", href: "/settings" },
 ];
 
 export default function ProfilePage() {
-  // Demo user – baadaye kutoka auth
-  const user = {
-    name: "Juma Hassan",
-    phone: "0712 345 678",
-    verified: false,
-    listings: 2,
-    requests: 3,
-  };
+  const [name, setName] = useState("Mtumiaji Demo");
+  const [email, setEmail] = useState("");
+
+  useEffect(() => {
+    const user = getAuthUser();
+    if (user) {
+      setName(user.full_name || user.email || "Mtumiaji Demo");
+      setEmail(user.email || "");
+    }
+  }, []);
 
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
+      <DisplayName />
       <header className="sticky top-0 z-20 px-4 py-3.5 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.4)" }}>
         <div className="max-w-md mx-auto flex items-center gap-3">
           <Link href="/home" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center shadow-warm-sm">
@@ -36,7 +41,6 @@ export default function ProfilePage() {
       </header>
 
       <div className="max-w-md mx-auto px-4 py-5 space-y-5">
-        {/* User card */}
         <div
           className="rounded-[22px] p-5 relative overflow-hidden"
           style={{
@@ -57,34 +61,23 @@ export default function ProfilePage() {
                 boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
               }}
             >
-              {user.name.charAt(0)}
+              {name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold truncate" style={{ color: "#FFF6ED" }}>{user.name}</h2>
-                {user.verified && <BadgeCheck size={16} color="#C4A35A" />}
+                <h2 className="text-lg font-bold truncate" style={{ color: "#FFF6ED" }}>{name}</h2>
+                <BadgeCheck size={16} color="#C4A35A" className="opacity-40" />
               </div>
               <div className="flex items-center gap-1.5 mt-1">
-                <Phone size={12} color="#D2A679" />
-                <span className="text-sm" style={{ color: "#D2A679" }}>{user.phone}</span>
+                <Mail size={12} color="#D2A679" />
+                <span className="text-sm truncate" style={{ color: "#D2A679" }}>
+                  {email || "Akaunti ya majaribio"}
+                </span>
               </div>
-            </div>
-          </div>
-
-          {/* Stats */}
-          <div className="relative z-10 grid grid-cols-2 gap-3 mt-5">
-            <div className="rounded-[14px] p-3 text-center" style={{ background: "rgba(255,246,237,0.08)" }}>
-              <p className="text-xl font-bold" style={{ color: "#FFF6ED" }}>{user.listings}</p>
-              <p className="text-[11px]" style={{ color: "#D2A679" }}>Matangazo</p>
-            </div>
-            <div className="rounded-[14px] p-3 text-center" style={{ background: "rgba(255,246,237,0.08)" }}>
-              <p className="text-xl font-bold" style={{ color: "#FFF6ED" }}>{user.requests}</p>
-              <p className="text-[11px]" style={{ color: "#D2A679" }}>Maombi</p>
             </div>
           </div>
         </div>
 
-        {/* Quick action */}
         <Link
           href="/weka-tangazo"
           className="btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-[18px] font-semibold text-sm"
@@ -93,7 +86,6 @@ export default function ProfilePage() {
           Weka Tangazo Jipya
         </Link>
 
-        {/* Menu */}
         <div
           className="rounded-[22px] overflow-hidden"
           style={{
@@ -129,7 +121,6 @@ export default function ProfilePage() {
           })}
         </div>
 
-        {/* Logout */}
         <button
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[18px] font-semibold text-sm"
           style={{
