@@ -83,6 +83,9 @@ function TangazoInner() {
         {!loading && item && (
           <>
             {/* Image placeholder */}
+            {item.images?.[0] ? (
+              <img src={item.images[0]} alt="" className="w-full rounded-[24px] mb-4 object-cover" style={{ height: 220 }} />
+            ) : (
             <div
               className="relative w-full rounded-[24px] overflow-hidden mb-4 flex items-center justify-center"
               style={{

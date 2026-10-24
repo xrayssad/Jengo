@@ -79,6 +79,9 @@ export default function ListingFeed({
             className="block p-4 rounded-[18px]"
             style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}
           >
+            {item.images?.[0] && (
+              <img src={item.images[0]} alt="" className="w-full h-40 object-cover rounded-[14px] mb-3" />
+            )}
             <p className="text-[10px] font-bold uppercase" style={{ color: "#8B5E3C" }}>
               {catLabel[item.category || ""] || item.category}
             </p>

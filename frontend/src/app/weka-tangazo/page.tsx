@@ -51,7 +51,9 @@ export default function WekaTangazoPage() {
   const [period, setPeriod] = useState("mwezi");
   const [location, setLocation] = useState("");
   const [city, setCity] = useState("Dar es Salaam");
+  const [imageUrl, setImageUrl] = useState("");
   const [description, setDescription] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -94,6 +96,7 @@ export default function WekaTangazoPage() {
         price: priceNum,
         period,
         location: location.trim(),
+        images: imageUrl.trim() ? [imageUrl.trim()] : [],
         city: city.trim() || "Dar es Salaam",
       });
       if (created && typeof created === 'object' && 'id' in created) rememberListing(String((created as {id: string}).id));
@@ -235,6 +238,12 @@ export default function WekaTangazoPage() {
             placeholder="Dar es Salaam" className="input-chocolate w-full px-4 py-3.5 text-sm" />
         </div>
 
+        
+        <div>
+          <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Link ya picha</label>
+          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://...jpg" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        </div>
+
         <div>
           <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Maelezo</label>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)}
@@ -249,7 +258,8 @@ export default function WekaTangazoPage() {
 
         <button type="submit" disabled={loading}
           className="w-full py-4 rounded-[20px] font-semibold text-[15px]"
-          style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opacity: loading ? 0.7 : 1 }}>
+          style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opaimages: imageUrl.trim() ? [imageUrl.trim()] : [],
+        city: loading ? 0.7 : 1 }}>
           {loading ? "Inahifadhi..." : "Chapisha Tangazo"}
         </button>
       </form>
