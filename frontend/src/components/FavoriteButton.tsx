@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { Heart } from "lucide-react";
 
 const KEY = "jengo_favorites";
@@ -17,27 +17,35 @@ function read(): string[] {
 }
 
 export default function FavoriteButton({
+  id,
   listingId,
   size = 20,
+  className,
+  style,
 }: {
-  listingId: string;
+  id?: string;
+  listingId?: string;
   size?: number;
+  className?: string;
+  style?: CSSProperties;
 }) {
+  const itemId = id || listingId || "";
   const [on, setOn] = useState(false);
 
   useEffect(() => {
-    setOn(read().includes(listingId));
-  }, [listingId]);
+    setOn(read().includes(itemId));
+  }, [itemId]);
 
   const toggle = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (!itemId) return;
     const cur = read();
-    const next = cur.includes(listingId)
-      ? cur.filter((id) => id !== listingId)
-      : [listingId, ...cur];
+    const next = cur.includes(itemId)
+      ? cur.filter((x) => x !== itemId)
+      : [itemId, ...cur];
     localStorage.setItem(KEY, JSON.stringify(next));
-    setOn(next.includes(listingId));
+    setOn(next.includes(itemId));
   };
 
   return (
@@ -45,8 +53,8 @@ export default function FavoriteButton({
       type="button"
       onClick={toggle}
       aria-label="Vipendwa"
-      className="w-10 h-10 rounded-full flex items-center justify-center"
-      style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}
+      className={className || "w-10 h-10 rounded-full flex items-center justify-center"}
+      style={style || { backgroundColor: "white", border: "1.5px solid #3D2415" }}
     >
       <Heart
         size={size}
