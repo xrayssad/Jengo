@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import DetailsClient from "./DetailsClient";
 
 export const instant = false;
-export const dynamic = "force-dynamic";
 
 async function Body({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

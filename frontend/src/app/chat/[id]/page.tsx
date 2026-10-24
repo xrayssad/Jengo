@@ -2,7 +2,6 @@ import { Suspense } from "react";
 import ChatClient from "./ChatClient";
 
 export const instant = false;
-export const dynamic = "force-dynamic";
 
 async function Body({
   params,
