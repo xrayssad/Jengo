@@ -51,7 +51,6 @@ export default function WekaTangazoPage() {
   const [period, setPeriod] = useState("mwezi");
   const [location, setLocation] = useState("");
   const [city, setCity] = useState("Dar es Salaam");
-  const [imageUrl, setImageUrl] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [submitted, setSubmitted] = useState(false);
