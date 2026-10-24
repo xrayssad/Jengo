@@ -1,10 +1,10 @@
 "use client";
 
 import {
-  Home, Store, Building2, Search, Plus, User, Menu,
+  Home, Store, Building2, Plus, Search, Menu, User,
   MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark,
-  Settings, X, Sparkles, ChevronRight, MapPin
-} LayoutList } Inbox } from "lucide-react";
+  Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox
+} from "lucide-react";
 import Link from "next/link";
 import { clearAuth } from "@/lib/api";
 import Image from "next/image";
