@@ -257,7 +257,7 @@ export default function WekaTangazoPage() {
 
         <button type="submit" disabled={loading}
           className="w-full py-4 rounded-[20px] font-semibold text-[15px]"
-          style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opaimages: imageUrl.trim() ? [imageUrl.trim()] : [],
+          style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opacity: imageUrl.trim() ? [imageUrl.trim()] : [],
         city: loading ? 0.7 : 1 }}>
           {loading ? "Inahifadhi..." : "Chapisha Tangazo"}
         </button>

@@ -50,6 +50,16 @@ export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
 }
 
+export function getAuthUser(): AuthUser | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? (JSON.parse(raw) as AuthUser) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function register(email: string, _p: string, full_name: string) {
   return demoLogin(email, full_name);
 }
@@ -106,6 +116,7 @@ export async function createListing(body: {
   period: string;
   location: string;
   city?: string;
+  images?: string[];
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",
