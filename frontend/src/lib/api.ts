@@ -1,11 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
-
-export type AuthUser = {
-  access_token: string;
-  user_id: string;
-  full_name?: string | null;
-  email?: string | null;
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://jengo-qkq1.onrender.com";
 
 export type Listing = {
   id: string;
@@ -24,6 +17,13 @@ export type Listing = {
 
 const TOKEN_KEY = "jengo_token";
 const USER_KEY = "jengo_user";
+
+export type AuthUser = {
+  access_token: string;
+  user_id: string;
+  full_name?: string | null;
+  email?: string | null;
+};
 
 export function demoLogin(email: string, full_name?: string): AuthUser {
   const data: AuthUser = {
@@ -59,15 +59,10 @@ export async function login(email: string, _p: string) {
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const token = getToken();
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
-  if (token && token !== "demo-token") {
-    headers["Authorization"] = `Bearer ${token}`;
-  }
-
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   const text = await res.text();
   let data: unknown = null;
@@ -95,15 +90,16 @@ export async function fetchListings(params?: {
   if (params?.category) sp.set("category", params.category);
   if (params?.q) sp.set("q", params.q);
   sp.set("status", params?.status || "active");
-  const qs = sp.toString();
   try {
-    const data = await request<{ items?: Listing[]; error?: string }>(
-      `/listings?${qs}`
-    );
+    const data = await request<{ items?: Listing[] }>(`/listings?${sp}`);
     return { items: data.items || [] };
   } catch {
     return { items: [] };
   }
+}
+
+export async function fetchListing(id: string): Promise<Listing> {
+  return request<Listing>(`/listings/${id}`);
 }
 
 export async function createListing(body: {
@@ -118,6 +114,13 @@ export async function createListing(body: {
   return request<Listing>("/listings", {
     method: "POST",
     body: JSON.stringify(body),
+  });
+}
+
+export async function createBooking(listing_id: string, message: string) {
+  return request("/bookings", {
+    method: "POST",
+    body: JSON.stringify({ listing_id, message }),
   });
 }
 
@@ -139,3 +142,10 @@ export function periodLabel(period?: string) {
   };
   return period ? map[period] || `/${period}` : "";
 }
+
+export const catLabel: Record<string, string> = {
+  chumba_nyumba: "Chumba & Nyumba",
+  apartment_airbnb: "Apartment & Airbnb",
+  store_godown: "Store & Godown",
+  frame: "Frame za Maduka",
+};
