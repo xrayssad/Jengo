@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
@@ -11,14 +10,16 @@ from app import schemas
 
 limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
 
-app = FastAPI(title="Jengo API", version="1.0.1")
+app = FastAPI(title="Jengo API", version="1.0.2")
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-origins = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+# Origins kutoka env + vercel.app (preview + production)
+_raw = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins if origins else ["*"],
+    allow_origins=_raw or ["*"],
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -29,13 +30,12 @@ async def security_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     return response
 
 @app.get("/")
 @limiter.limit("60/minute")
 def root(request: Request):
-    return {"app": "Jengo API", "version": "1.0.1", "phase": 1}
+    return {"app": "Jengo API", "version": "1.0.2", "phase": 1}
 
 @app.get("/health")
 @limiter.limit("60/minute")
@@ -86,7 +86,6 @@ def get_listing(request: Request, listing_id: str):
 @app.post("/listings")
 @limiter.limit("20/minute")
 def create_listing(request: Request, body: schemas.ListingIn):
-    """20 POST/min kwa IP — kupunguza spam kabla ya auth."""
     allowed = {"chumba_nyumba", "apartment_airbnb", "store_godown", "frame"}
     if body.category not in allowed:
         raise HTTPException(400, "Kategoria si sahihi")
@@ -121,17 +120,9 @@ def create_listing(request: Request, body: schemas.ListingIn):
 @app.post("/bookings")
 @limiter.limit("30/minute")
 def create_booking(request: Request, body: schemas.BookingIn):
-    """Awamu 2 — tuma ombi."""
     sb = get_supabase()
     try:
-        # Hakikisha listing ipo
-        listing = (
-            sb.table("listings")
-            .select("id")
-            .eq("id", body.listing_id)
-            .single()
-            .execute()
-        )
+        listing = sb.table("listings").select("id").eq("id", body.listing_id).single().execute()
         if not listing.data:
             raise HTTPException(404, "Tangazo halipatikani")
         r = sb.table("bookings").insert({
