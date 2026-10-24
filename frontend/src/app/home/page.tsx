@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  Home, Store, Building2, Plus, Search, Menu, User,
-  MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark,
-  Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox
-} from "lucide-react";
+import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox } from "lucide-react";
 import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import { clearAuth } from "@/lib/api";
