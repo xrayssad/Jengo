@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { fetchListing, formatPrice, periodLabel, type Listing } from "@/lib/api";
@@ -57,6 +58,7 @@ export default function Page() {
           </Link>
         ))}
       </div>
+          <BottomNav />
     </main>
   );
 }

@@ -4,7 +4,7 @@ import {
   Home, Store, Building2, Search, Plus, User, Menu,
   MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark,
   Settings, X, Sparkles, ChevronRight, MapPin
-} from "lucide-react";
+} LayoutList } Inbox } from "lucide-react";
 import Link from "next/link";
 import { clearAuth } from "@/lib/api";
 import Image from "next/image";
@@ -52,9 +52,8 @@ const sideLinks = [
   { label: "Vipendwa", href: "/favorites", icon: Heart },
   { label: "Picha zilizohifadhiwa", href: "/saved", icon: Bookmark },
   { label: "Malipo", href: "/payments", icon: CreditCard },
-  { label: "Matangazo yangu", href: "/matangazo-yangu", icon: Plus },
-  { label: "Maombi yangu", href: "/maombi-yangu", icon: Plus },
-  { label: "Weka Tangazo", href: "/weka-tangazo", icon: Plus },
+  { label: "Matangazo yangu", href: "/matangazo-yangu", icon: LayoutList },
+  { label: "Maombi yangu", href: "/maombi-yangu", icon: Inbox },
   { label: "Mipangilio", href: "/settings", icon: Settings },
 ];
 

@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { readBookings, type SavedBooking } from "@/lib/mine";
@@ -30,6 +31,7 @@ export default function Page() {
           </Link>
         ))}
       </div>
+          <BottomNav />
     </main>
   );
 }
