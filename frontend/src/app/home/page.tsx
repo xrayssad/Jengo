@@ -22,7 +22,7 @@ const categories = [
   {
     title: "Apartment & Airbnb",
     description: "Usiku · siku · wiki · mwezi",
-    badge: "Trending",
+    badge: "Zinazovuma",
     icon: Building2,
     href: "/airbnb",
     images: ["/real/apartment.jpg", "/real/room.jpg"],
@@ -52,6 +52,8 @@ const sideLinks = [
   { label: "Vipendwa", href: "/favorites", icon: Heart },
   { label: "Picha zilizohifadhiwa", href: "/saved", icon: Bookmark },
   { label: "Malipo", href: "/payments", icon: CreditCard },
+  { label: "Matangazo yangu", href: "/matangazo-yangu", icon: Plus },
+  { label: "Maombi yangu", href: "/maombi-yangu", icon: Plus },
   { label: "Weka Tangazo", href: "/weka-tangazo", icon: Plus },
   { label: "Mipangilio", href: "/settings", icon: Settings },
 ];
@@ -153,7 +155,7 @@ export default function HomePage() {
   }, [open]);
 
   return (
-    <main className="min-h-screen pb-28" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
       {/* Header */}
       <header
         className="sticky top-0 z-30 px-4 py-3"
@@ -191,12 +193,6 @@ export default function HomePage() {
             }}
           >
             <MessageCircle size={18} color="#2E1A0F" strokeWidth={2.2} />
-            <span
-              className="absolute -top-1 -right-1 w-5 h-5 rounded-full text-[10px] font-bold flex items-center justify-center"
-              style={{ backgroundColor: "#A6452E", color: "#FFF6ED", border: "2px solid #FFF6ED" }}
-            >
-              2
-            </span>
           </Link>
         </div>
       </header>
@@ -369,61 +365,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Bottom nav – 5 equal */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-30"
-        style={{
-          backgroundColor: "rgba(255,246,237,0.97)",
-          backdropFilter: "blur(16px)",
-          WebkitBackdropFilter: "blur(16px)",
-          borderTop: "1px solid rgba(210,166,121,0.4)",
-          paddingBottom: "env(safe-area-inset-bottom, 0px)",
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 448,
-            margin: "0 auto",
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr 1fr 1fr",
-            alignItems: "end",
-            height: 64,
-          }}
-        >
-          <Link href="/home" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
-            <Home size={22} color="#2E1A0F" strokeWidth={2.2} />
-            <span style={{ fontSize: 10, fontWeight: 600, color: "#2E1A0F", lineHeight: 1 }}>Home</span>
-          </Link>
-          <Link href="/discover" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
-            <Compass size={22} color="#8B5E3C" strokeWidth={1.8} />
-            <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Discover</span>
-          </Link>
-          <div className="flex items-center justify-center" style={{ height: "100%" }}>
-            <Link
-              href="/weka-tangazo"
-              className="flex items-center justify-center rounded-full"
-              style={{
-                width: 56,
-                height: 56,
-                marginBottom: 12,
-                background: "linear-gradient(165deg, #8B5E3C, #2E1A0F)",
-                boxShadow: "0 8px 24px rgba(46,26,15,0.4)",
-                textDecoration: "none",
-              }}
-            >
-              <Plus size={26} color="#FFF6ED" strokeWidth={2.5} />
-            </Link>
-          </div>
-          <Link href="/messages" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
-            <MessageCircle size={22} color="#8B5E3C" strokeWidth={1.8} />
-            <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Chat</span>
-          </Link>
-          <Link href="/profile" className="flex flex-col items-center justify-center gap-0.5 pb-2" style={{ textDecoration: "none" }}>
-            <User size={22} color="#8B5E3C" strokeWidth={1.8} />
-            <span style={{ fontSize: 10, color: "#8B5E3C", lineHeight: 1 }}>Profile</span>
-          </Link>
-        </div>
-      </nav>
     </main>
   );
 }

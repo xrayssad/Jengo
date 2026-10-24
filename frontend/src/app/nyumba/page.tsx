@@ -1,14 +1,5 @@
 "use client";
-
-import { Home } from "lucide-react";
-import CategoryListings from "@/components/CategoryListings";
-
-export default function NyumbaPage() {
-  return (
-    <CategoryListings
-      title="Chumba & Nyumba"
-      category="chumba_nyumba"
-      icon={Home}
-    />
-  );
+import ListingFeed from "@/components/ListingFeed";
+export default function Page() {
+  return <ListingFeed title="Chumba & Nyumba" subtitle="Mwezi, miezi 3, 6 au mwaka" category="chumba_nyumba" />;
 }

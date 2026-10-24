@@ -6,7 +6,8 @@ import {
   Camera, MapPin, Tag, FileText, CheckCircle2
 } from "lucide-react";
 import Link from "next/link";
-import { createListing } from "@/lib/api";
+import { createListing } from "@/lib/api"
+import { rememberListing } from "@/lib/mine";
 import AppAlert, { AlertKind } from "@/components/AppAlert";
 
 const categories = [
@@ -49,6 +50,7 @@ export default function WekaTangazoPage() {
   const [price, setPrice] = useState("");
   const [period, setPeriod] = useState("mwezi");
   const [location, setLocation] = useState("");
+  const [city, setCity] = useState("Dar es Salaam");
   const [description, setDescription] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -85,15 +87,16 @@ export default function WekaTangazoPage() {
 
     setLoading(true);
     try {
-      await createListing({
+      const created = await createListing({
         category,
         title: title.trim(),
         description: description.trim(),
         price: priceNum,
         period,
         location: location.trim(),
-        city: "Dar es Salaam",
+        city: city.trim() || "Dar es Salaam",
       });
+      if (created && typeof created === 'object' && 'id' in created) rememberListing(String((created as {id: string}).id));
       setSubmitted(true);
     } catch (err) {
       showAlert(
@@ -227,6 +230,9 @@ export default function WekaTangazoPage() {
             <input value={location} onChange={(e) => setLocation(e.target.value)}
               placeholder="Kinondoni, Dar" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
           </div>
+          <label className="block text-sm font-semibold mb-2 mt-4" style={{ color: "#2E1A0F" }}>Mji</label>
+          <input value={city} onChange={(e) => setCity(e.target.value)}
+            placeholder="Dar es Salaam" className="input-chocolate w-full px-4 py-3.5 text-sm" />
         </div>
 
         <div>

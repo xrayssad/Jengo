@@ -1,17 +1,18 @@
 "use client";
 
 import { useState, Suspense } from "react";
-import { useSearchParams, useRouter } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Send, CheckCircle2, Loader2 } from "lucide-react";
-import { createBooking } from "@/lib/api";
+import { createBooking } from "@/lib/api"
+import { rememberBooking } from "@/lib/mine";
 import AppAlert, { AlertKind } from "@/components/AppAlert";
 
 function TumaOmbiForm() {
   const search = useSearchParams();
-  const router = useRouter();
   const listingId = search.get("listing") || "";
   const title = search.get("title") || "Tangazo";
+  const backHref = listingId ? `/tangazo/${listingId}` : "/home";
 
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,6 +38,7 @@ function TumaOmbiForm() {
     setLoading(true);
     try {
       await createBooking(listingId, message.trim() || "Nina nia ya tangazo hili.");
+      rememberBooking({ listing_id: listingId, title, message: message.trim(), created_at: new Date().toISOString() });
       setDone(true);
     } catch (err) {
       showAlert(
@@ -63,13 +65,22 @@ function TumaOmbiForm() {
           <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
             Ombi lako kuhusu «{title}» limepokelewa.
           </p>
-          <Link
-            href="/discover"
-            className="block w-full py-3.5 rounded-[16px] font-semibold text-sm"
-            style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}
-          >
-            Rudi Discover
-          </Link>
+          <div className="space-y-3">
+            <Link
+              href={backHref}
+              className="block w-full py-3.5 rounded-[16px] font-semibold text-sm"
+              style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}
+            >
+              Rudi tangazo
+            </Link>
+            <Link
+              href="/home"
+              className="block w-full py-3 rounded-[16px] font-semibold text-sm"
+              style={{ color: "#8B5E3C" }}
+            >
+              Rudi Home
+            </Link>
+          </div>
         </div>
       </main>
     );
@@ -85,14 +96,13 @@ function TumaOmbiForm() {
           borderBottom: "1px solid rgba(210,166,121,0.35)",
         }}
       >
-        <button
-          type="button"
-          onClick={() => router.back()}
+        <Link
+          href={backHref}
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}
         >
           <ArrowLeft size={18} color="#2E1A0F" />
-        </button>
+        </Link>
         <div>
           <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Tuma Ombi</h1>
           <p className="text-xs truncate max-w-[220px]" style={{ color: "#8B5E3C" }}>{title}</p>
