@@ -1,270 +1,167 @@
 "use client";
 
 import { useState } from "react";
-import {
-  ArrowLeft, Home, Building2, Store, LayoutGrid,
-  Camera, MapPin, Tag, FileText, CheckCircle2
-} from "lucide-react";
-import Link from "next/link";
-import { createListing } from "@/lib/api"
+import { useRouter } from "next/navigation";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { createListing } from "@/lib/api";
 import { rememberListing } from "@/lib/mine";
-import AppAlert, { AlertKind } from "@/components/AppAlert";
+import AppAlert, { type AlertKind } from "@/components/AppAlert";
 
 const categories = [
-  { id: "chumba_nyumba", title: "Chumba & Nyumba", desc: "Kwa mwezi au zaidi", icon: Home },
-  { id: "apartment_airbnb", title: "Apartment & Airbnb", desc: "Usiku · siku · wiki · mwezi", icon: Building2 },
-  { id: "store_godown", title: "Store & Godown", desc: "Maduka na maghala", icon: Store },
-  { id: "frame", title: "Frame za Maduka", desc: "Frame / stall", icon: LayoutGrid },
+  { id: "chumba_nyumba", label: "Chumba & Nyumba" },
+  { id: "apartment_airbnb", label: "Apartment & Airbnb" },
+  { id: "store_godown", label: "Store & Godown" },
+  { id: "frame", label: "Frame za Maduka" },
 ];
 
-const periodsByCategory: Record<string, { value: string; label: string }[]> = {
+const periods: Record<string, { id: string; label: string }[]> = {
   chumba_nyumba: [
-    { value: "mwezi", label: "Kwa mwezi" },
-    { value: "miezi_3", label: "Miezi 3" },
-    { value: "miezi_6", label: "Miezi 6" },
-    { value: "mwaka", label: "Mwaka mzima" },
+    { id: "mwezi", label: "Mwezi" },
+    { id: "miezi_3", label: "Miezi 3" },
+    { id: "miezi_6", label: "Miezi 6" },
+    { id: "mwaka", label: "Mwaka" },
   ],
   apartment_airbnb: [
-    { value: "usiku", label: "Usiku mmoja" },
-    { value: "siku", label: "Kwa siku" },
-    { value: "wiki", label: "Kwa wiki" },
-    { value: "mwezi", label: "Kwa mwezi" },
+    { id: "usiku", label: "Usiku" },
+    { id: "siku", label: "Siku" },
+    { id: "wiki", label: "Wiki" },
+    { id: "mwezi", label: "Mwezi" },
   ],
   store_godown: [
-    { value: "mwezi", label: "Kwa mwezi" },
-    { value: "miezi_3", label: "Miezi 3" },
-    { value: "miezi_6", label: "Miezi 6" },
-    { value: "mwaka", label: "Mwaka mzima" },
+    { id: "mwezi", label: "Mwezi" },
+    { id: "miezi_3", label: "Miezi 3" },
+    { id: "miezi_6", label: "Miezi 6" },
+    { id: "mwaka", label: "Mwaka" },
   ],
   frame: [
-    { value: "mwezi", label: "Kwa mwezi" },
-    { value: "miezi_3", label: "Miezi 3" },
-    { value: "miezi_6", label: "Miezi 6" },
-    { value: "mwaka", label: "Mwaka mzima" },
+    { id: "mwezi", label: "Mwezi" },
+    { id: "miezi_3", label: "Miezi 3" },
+    { id: "miezi_6", label: "Miezi 6" },
+    { id: "mwaka", label: "Mwaka" },
   ],
 };
 
 export default function WekaTangazoPage() {
+  const router = useRouter();
   const [category, setCategory] = useState("chumba_nyumba");
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [period, setPeriod] = useState("mwezi");
   const [location, setLocation] = useState("");
-  const [city, setCity] = useState("Dar es Salaam");
-  const [description, setDescription] = useState("");
+  const [city, setCity] = useState("");
   const [imageUrl, setImageUrl] = useState("");
-  const [submitted, setSubmitted] = useState(false);
+  const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
+  const [done, setDone] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
-  const [alertKind, setAlertKind] = useState<AlertKind>("warning");
+  const [alertKind, setAlertKind] = useState<AlertKind>("error");
   const [alertTitle, setAlertTitle] = useState("");
   const [alertMsg, setAlertMsg] = useState("");
 
-  const showAlert = (kind: AlertKind, t: string, m?: string) => {
+  const show = (kind: AlertKind, titleText: string, msg?: string) => {
     setAlertKind(kind);
-    setAlertTitle(t);
-    setAlertMsg(m || "");
+    setAlertTitle(titleText);
+    setAlertMsg(msg || "");
     setAlertOpen(true);
   };
 
-  const periods = periodsByCategory[category] || periodsByCategory.chumba_nyumba;
-
-  const selectCategory = (id: string) => {
-    setCategory(id);
-    setPeriod(periodsByCategory[id]?.[0]?.value || "mwezi");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim() || !price || !location.trim()) {
-      showAlert("warning", "Taarifa hazijakamilika", "Jaza kichwa, bei na eneo.");
+    if (title.trim().length < 3 || !price || !location.trim()) {
+      show("error", "Jaza sehemu", "Kichwa, bei na eneo vinahitajika.");
       return;
     }
-    const priceNum = parseFloat(price.replace(/,/g, ""));
-    if (Number.isNaN(priceNum) || priceNum <= 0) {
-      showAlert("warning", "Bei si sahihi", "Weka namba halali ya bei.");
-      return;
-    }
-
     setLoading(true);
     try {
       const created = await createListing({
         category,
         title: title.trim(),
         description: description.trim(),
-        price: priceNum,
+        price: Number(price),
         period,
         location: location.trim(),
-        images: imageUrl.trim() ? [imageUrl.trim()] : [],
         city: city.trim() || "Dar es Salaam",
+        images: imageUrl.trim() ? [imageUrl.trim()] : [],
       });
-      if (created && typeof created === 'object' && 'id' in created) rememberListing(String((created as {id: string}).id));
-      setSubmitted(true);
+      if (created?.id) rememberListing(String(created.id));
+      setDone(true);
     } catch (err) {
-      showAlert(
-        "error",
-        "Imeshindikana",
-        err instanceof Error
-          ? err.message
-          : "Hakikisha backend inaendesha na jedwali listings lipo."
-      );
+      show("error", "Imeshindikana", err instanceof Error ? err.message : "Jaribu tena.");
     } finally {
       setLoading(false);
     }
   };
 
-  if (submitted) {
+  if (done) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
-        <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"
-            style={{ background: "linear-gradient(145deg, #5E7F4F, #3D5C34)" }}>
-            <CheckCircle2 size={40} color="#FFF6ED" />
-          </div>
-          <h1 className="text-2xl font-bold mb-2" style={{ color: "#2E1A0F" }}>Tangazo limehifadhiwa!</h1>
-          <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
-            Linaonekana kwenye Discover na ukurasa wa kategoria yake.
-          </p>
-          <div className="space-y-3">
-            <Link href="/discover" className="block w-full py-4 rounded-[20px] font-semibold text-center"
-              style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
-              Angalia Discover
-            </Link>
-            <Link
-              href={
-                category === "apartment_airbnb"
-                  ? "/airbnb"
-                  : category === "store_godown"
-                    ? "/maduka?aina=store"
-                    : category === "frame"
-                      ? "/maduka?aina=frame"
-                      : "/nyumba"
-              }
-              className="block w-full py-3 rounded-[20px] font-semibold text-center"
-              style={{ border: "1.5px solid #3D2415", color: "#2E1A0F" }}
-            >
-              Angalia kategoria
-            </Link>
-            <Link href="/home" className="block w-full py-3 rounded-[20px] font-semibold text-center"
-              style={{ color: "#8B5E3C" }}>
-              Rudi Home
-            </Link>
-          </div>
+        <div className="max-w-sm w-full text-center">
+          <h1 className="text-xl font-bold mb-2" style={{ color: "#2E1A0F" }}>Tangazo limewekwa</h1>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Linaonekana Discover na ukurasa wa kategoria.</p>
+          <button type="button" onClick={() => router.push("/discover")} className="w-full py-3.5 rounded-[16px] font-semibold text-sm" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
+            Nenda Discover
+          </button>
         </div>
       </main>
     );
   }
 
+  const box = { border: "1.5px solid #3D2415", backgroundColor: "white", color: "#2E1A0F" };
+
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.4)" }}>
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
-            <ArrowLeft size={18} color="#2E1A0F" />
-          </Link>
-          <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>Inahifadhiwa kwenye database</p>
-          </div>
-        </div>
+      <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
+        <button type="button" onClick={() => router.push("/home")} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
+          <ArrowLeft size={18} color="#2E1A0F" />
+        </button>
+        <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
       </header>
 
-      <form onSubmit={handleSubmit} className="max-w-md mx-auto px-4 pt-5 space-y-5">
-        <div>
-          <label className="block text-sm font-semibold mb-3" style={{ color: "#2E1A0F" }}>Aina</label>
-          <div className="grid grid-cols-2 gap-2.5">
-            {categories.map((cat) => {
-              const Icon = cat.icon;
-              const active = category === cat.id;
-              return (
-                <button key={cat.id} type="button" onClick={() => selectCategory(cat.id)}
-                  className="text-left p-3.5 rounded-[16px]"
-                  style={{
-                    background: active ? "linear-gradient(165deg, #3D2415, #2E1A0F)" : "white",
-                    border: active ? "1.5px solid #8B5E3C" : "1.5px solid #3D2415",
-                  }}>
-                  <Icon size={20} color={active ? "#F5E6D3" : "#8B5E3C"} />
-                  <p className="font-bold text-xs mt-2" style={{ color: active ? "#FFF6ED" : "#2E1A0F" }}>{cat.title}</p>
-                  <p className="text-[10px] mt-0.5" style={{ color: active ? "#D2A679" : "#5C4033" }}>{cat.desc}</p>
-                </button>
-              );
-            })}
-          </div>
+      <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5 space-y-4">
+        <div className="grid grid-cols-2 gap-2">
+          {categories.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => {
+                setCategory(c.id);
+                setPeriod(periods[c.id][0].id);
+              }}
+              className="p-3 rounded-[16px] text-sm font-semibold"
+              style={{
+                backgroundColor: category === c.id ? "#2E1A0F" : "white",
+                color: category === c.id ? "#FFF6ED" : "#2E1A0F",
+                border: "1.5px solid #3D2415",
+              }}
+            >
+              {c.label}
+            </button>
+          ))}
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Kichwa</label>
-          <div className="relative">
-            <FileText size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
-            <input value={title} onChange={(e) => setTitle(e.target.value)}
-              placeholder="Mfano: Chumba Kinondoni" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
-          </div>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kichwa" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+        <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Bei" inputMode="numeric" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+
+        <div className="flex flex-wrap gap-2">
+          {periods[category].map((p) => (
+            <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className="px-3 py-2 rounded-full text-xs font-semibold" style={{ backgroundColor: period === p.id ? "#8B5E3C" : "white", color: period === p.id ? "#FFF6ED" : "#2E1A0F", border: "1px solid #D2A679" }}>
+              {p.label}
+            </button>
+          ))}
         </div>
 
-        <div>
-          <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Bei (TZS)</label>
-          <div className="relative mb-3">
-            <Tag size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
-            <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="180000"
-              className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
-          </div>
-          <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Muda</label>
-          <div className="grid grid-cols-2 gap-2">
-            {periods.map((p) => (
-              <button key={p.value} type="button" onClick={() => setPeriod(p.value)}
-                className="py-2.5 px-3 rounded-[12px] text-xs font-semibold"
-                style={{
-                  backgroundColor: period === p.value ? "#2E1A0F" : "white",
-                  color: period === p.value ? "#FFF6ED" : "#2E1A0F",
-                  border: period === p.value ? "none" : "1.5px solid #3D2415",
-                }}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-        </div>
+        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Eneo, mfano Kinondoni" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+        <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mji" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Link ya picha https://...jpg" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo" className="w-full px-4 py-3.5 text-sm rounded-[16px] resize-none" style={box} />
 
-        <div>
-          <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Eneo</label>
-          <div className="relative">
-            <MapPin size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
-            <input value={location} onChange={(e) => setLocation(e.target.value)}
-              placeholder="Kinondoni, Dar" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
-          </div>
-          <label className="block text-sm font-semibold mb-2 mt-4" style={{ color: "#2E1A0F" }}>Mji</label>
-          <input value={city} onChange={(e) => setCity(e.target.value)}
-            placeholder="Dar es Salaam" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-        </div>
-
-        
-        <div>
-          <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Link ya picha</label>
-          <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://...jpg" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-        </div>
-
-        <div>
-          <label className="block text-sm font-semibold mb-2" style={{ color: "#2E1A0F" }}>Maelezo</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)}
-            rows={3} className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" placeholder="Sifa za ziada..." />
-        </div>
-
-        <div className="rounded-[16px] py-8 flex flex-col items-center gap-2"
-          style={{ border: "1.5px dashed #3D2415" }}>
-          <Camera size={28} color="#8B5E3C" />
-          <span className="text-xs" style={{ color: "#8B5E3C" }}>Picha — baadaye (storage)</span>
-        </div>
-
-        <button type="submit" disabled={loading}
-          className="w-full py-4 rounded-[20px] font-semibold text-[15px]"
-          style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opacity: 1,
-        city: loading ? 0.7 : 1 }}>
-          {loading ? "Inahifadhi..." : "Chapisha Tangazo"}
+        <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-4 rounded-[18px] font-semibold text-sm" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opacity: loading ? 0.7 : 1 }}>
+          {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+          {loading ? "Inachapisha..." : "Chapisha Tangazo"}
         </button>
       </form>
 
-      <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg}
-        onClose={() => setAlertOpen(false)} />
+      <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg} onClose={() => setAlertOpen(false)} />
     </main>
   );
 }
