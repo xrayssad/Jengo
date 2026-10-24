@@ -10,6 +10,7 @@ import {
 import {
   fetchListing, formatPrice, periodLabel, catLabel, type Listing
 } from "@/lib/api";
+import FavoriteButton from "@/components/FavoriteButton";
 
 function TangazoInner() {
   const params = useParams();
@@ -101,6 +102,12 @@ function TangazoInner() {
                   <BadgeCheck size={12} /> Amethibitishwa
                 </span>
               )}
+              <FavoriteButton
+                id={item.id}
+                size={18}
+                className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "white", boxShadow: "0 4px 14px rgba(46,26,15,0.18)" }}
+              />
             </div>
 
             <h2 className="text-xl font-bold mb-1" style={{ color: "#2E1A0F" }}>
@@ -169,6 +176,13 @@ function TangazoInner() {
             >
               <MessageSquare size={18} />
               Tuma Ombi
+            </Link>
+            <Link
+              href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
+              className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-[16px] font-semibold text-sm"
+              style={{ border: "1.5px solid #3D2415", color: "#2E1A0F", backgroundColor: "white" }}
+            >
+              Ujumbe
             </Link>
           </div>
         </div>
