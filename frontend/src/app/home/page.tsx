@@ -6,6 +6,7 @@ import {
   Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox
 } from "lucide-react";
 import Link from "next/link";
+import BottomNav from "@/components/BottomNav";
 import { clearAuth } from "@/lib/api";
 import Image from "next/image";
 import { useState, useEffect } from "react";
@@ -364,6 +365,7 @@ export default function HomePage() {
         </div>
       </div>
 
-    </main>
+          <BottomNav />
+</main>
   );
 }
