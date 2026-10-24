@@ -6,16 +6,16 @@ import Link from "next/link";
 import { fetchListings, formatPrice, periodLabel, type Listing } from "@/lib/api";
 
 const tabs = [
-  { id: "latest", label: "Latest", icon: Clock },
-  { id: "popular", label: "Popular", icon: Sparkles },
-  { id: "trending", label: "Trending", icon: TrendingUp },
+  { id: "latest", label: "Mpya", icon: Clock },
+  { id: "popular", label: "Maarufu", icon: Sparkles },
+  { id: "trending", label: "Zinazovuma", icon: TrendingUp },
 ];
 
 const catLabel: Record<string, string> = {
   chumba_nyumba: "Chumba & Nyumba",
   apartment_airbnb: "Apartment & Airbnb",
   store_godown: "Store & Godown",
-  frame: "Frame",
+  frame: "Frame za Maduka",
 };
 
 export default function DiscoverPage() {

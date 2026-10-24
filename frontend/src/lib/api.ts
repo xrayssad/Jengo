@@ -90,12 +90,8 @@ export async function fetchListings(params?: {
   if (params?.category) sp.set("category", params.category);
   if (params?.q) sp.set("q", params.q);
   sp.set("status", params?.status || "active");
-  try {
-    const data = await request<{ items?: Listing[] }>(`/listings?${sp}`);
-    return { items: data.items || [] };
-  } catch {
-    return { items: [] };
-  }
+  const data = await request<{ items?: Listing[] }>(`/listings?${sp}`);
+  return { items: data.items || [] };
 }
 
 export async function fetchListing(id: string): Promise<Listing> {

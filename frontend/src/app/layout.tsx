@@ -9,8 +9,8 @@ const playfair = Playfair_Display({
 });
 
 export const metadata: Metadata = {
-  title: "Nyumba Marketplace",
-  description: "Nyumba, Maduka na Vifaa vya Ujenzi",
+  title: "Jengo",
+  description: "Chumba, nyumba, apartment, store na frame",
 };
 
 export default function RootLayout({

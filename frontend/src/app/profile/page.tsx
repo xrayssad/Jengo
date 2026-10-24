@@ -5,6 +5,7 @@ import {
   ChevronRight, BadgeCheck, Home, Plus
 } from "lucide-react";
 import Link from "next/link";
+import { clearAuth } from "@/lib/api";
 
 const menuItems = [
   { icon: FileText, label: "Maombi yangu", desc: "Angalia maombi uliyotuma", href: "/profile" },
@@ -137,9 +138,8 @@ export default function ProfilePage() {
             border: "1.5px solid rgba(166,69,46,0.4)",
           }}
           onClick={() => {
-            if (confirm("Una uhakika unataka kutoka?")) {
-              window.location.href = "/login";
-            }
+            clearAuth();
+            window.location.href = "/login";
           }}
         >
           <LogOut size={16} strokeWidth={2} />

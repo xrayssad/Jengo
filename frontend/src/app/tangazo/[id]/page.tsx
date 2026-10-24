@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState, Suspense } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, MapPin, BadgeCheck, Tag, FileText,
-  Loader2, MessageSquare, Share2
+  Loader2, MessageSquare
 } from "lucide-react";
 import {
   fetchListing, formatPrice, periodLabel, catLabel, type Listing
 } from "@/lib/api";
 
-export default function TangazoDetailsPage() {
+function TangazoInner() {
   const params = useParams();
-  const router = useRouter();
   const id = (params?.id as string) || "";
   const [item, setItem] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,14 +46,13 @@ export default function TangazoDetailsPage() {
           borderBottom: "1px solid rgba(210,166,121,0.35)",
         }}
       >
-        <button
-          type="button"
-          onClick={() => router.back()}
+        <Link
+          href="/home"
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}
         >
           <ArrowLeft size={18} color="#2E1A0F" />
-        </button>
+        </Link>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold truncate" style={{ color: "#2E1A0F" }}>
             {item?.title || "Tangazo"}
@@ -176,5 +174,19 @@ export default function TangazoDetailsPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function TangazoDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FFF6ED" }}>
+          <Loader2 size={28} color="#8B5E3C" className="animate-spin" />
+        </div>
+      }
+    >
+      <TangazoInner />
+    </Suspense>
   );
 }

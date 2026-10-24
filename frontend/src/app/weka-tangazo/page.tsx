@@ -117,14 +117,31 @@ export default function WekaTangazoPage() {
             <CheckCircle2 size={40} color="#FFF6ED" />
           </div>
           <h1 className="text-2xl font-bold mb-2" style={{ color: "#2E1A0F" }}>Tangazo limehifadhiwa!</h1>
-          <p className="text-sm mb-8" style={{ color: "#5C4033" }}>Linaonekana kwenye Discover (status: active).</p>
+          <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
+            Linaonekana kwenye Discover na ukurasa wa kategoria yake.
+          </p>
           <div className="space-y-3">
             <Link href="/discover" className="block w-full py-4 rounded-[20px] font-semibold text-center"
               style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
               Angalia Discover
             </Link>
+            <Link
+              href={
+                category === "apartment_airbnb"
+                  ? "/airbnb"
+                  : category === "store_godown"
+                    ? "/maduka?aina=store"
+                    : category === "frame"
+                      ? "/maduka?aina=frame"
+                      : "/nyumba"
+              }
+              className="block w-full py-3 rounded-[20px] font-semibold text-center"
+              style={{ border: "1.5px solid #3D2415", color: "#2E1A0F" }}
+            >
+              Angalia kategoria
+            </Link>
             <Link href="/home" className="block w-full py-3 rounded-[20px] font-semibold text-center"
-              style={{ border: "1.5px solid #3D2415", color: "#2E1A0F" }}>
+              style={{ color: "#8B5E3C" }}>
               Rudi Home
             </Link>
           </div>

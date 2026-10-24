@@ -32,7 +32,7 @@ const categories = [
     description: "Mwezi · miezi 3 · 6 · mwaka",
     badge: "Biashara",
     icon: Store,
-    href: "/maduka",
+    href: "/maduka?aina=store",
     images: ["/real/warehouse.jpg", "/real/shop.jpg"],
   },
   {
@@ -40,7 +40,7 @@ const categories = [
     description: "Frame / stall za biashara",
     badge: "Soko",
     icon: LayoutGrid,
-    href: "/maduka",
+    href: "/maduka?aina=frame",
     images: ["/real/shop.jpg", "/real/warehouse.jpg"],
   },
 ];
@@ -245,7 +245,15 @@ export default function HomePage() {
               </Link>
             );
           })}
-          <Link href="/login" onClick={() => setOpen(false)} className="flex mx-3 mt-4 mb-6 px-3 py-3.5 rounded-[16px]" style={{ border: "1px solid rgba(166,69,46,0.35)" }}>
+          <Link
+            href="/login"
+            onClick={() => {
+              clearAuth();
+              setOpen(false);
+            }}
+            className="flex mx-3 mt-4 mb-6 px-3 py-3.5 rounded-[16px]"
+            style={{ border: "1px solid rgba(166,69,46,0.35)" }}
+          >
             <span className="text-sm font-semibold" style={{ color: "#A6452E" }}>Tokaa</span>
           </Link>
         </nav>
@@ -305,9 +313,9 @@ export default function HomePage() {
         {/* Location chips */}
         <div className="flex gap-2 overflow-x-auto pb-3 mb-2 -mx-1 px-1" style={{ scrollbarWidth: "none" }}>
           {quickChips.map((chip, i) => (
-            <button
+            <Link
               key={chip}
-              type="button"
+              href={`/search?q=${encodeURIComponent(chip)}`}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold whitespace-nowrap shrink-0"
               style={{
                 backgroundColor: i === 0 ? "#2E1A0F" : "white",
@@ -317,7 +325,7 @@ export default function HomePage() {
             >
               {i === 0 && <MapPin size={12} color="#D2A679" />}
               {chip}
-            </button>
+            </Link>
           ))}
         </div>
 
