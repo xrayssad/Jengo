@@ -1,19 +1,15 @@
 "use client";
 
-import { useEffect, useState, Suspense } from "react";
-import { useParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  ArrowLeft, MapPin, BadgeCheck, Tag, FileText,
-  Loader2, MessageSquare
-} from "lucide-react";
-import {
-  fetchListing, formatPrice, periodLabel, catLabel, type Listing
-} from "@/lib/api";
+import { ArrowLeft, MapPin, Tag, FileText, Loader2, MessageSquare } from "lucide-react";
+import { fetchListing, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
 import FavoriteButton from "@/components/FavoriteButton";
 
-function TangazoInner() {
+export default function TangazoDetailsPage() {
   const params = useParams();
+  const router = useRouter();
   const id = (params?.id as string) || "";
   const [item, setItem] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,20 +17,22 @@ function TangazoInner() {
 
   useEffect(() => {
     if (!id) return;
-    let cancelled = false;
+    let stop = false;
     (async () => {
       setLoading(true);
       setError("");
       try {
         const data = await fetchListing(id);
-        if (!cancelled) setItem(data);
+        if (!stop) setItem(data);
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Haipatikani");
+        if (!stop) setError(e instanceof Error ? e.message : "Haipatikani");
       } finally {
-        if (!cancelled) setLoading(false);
+        if (!stop) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      stop = true;
+    };
   }, [id]);
 
   return (
@@ -47,13 +45,14 @@ function TangazoInner() {
           borderBottom: "1px solid rgba(210,166,121,0.35)",
         }}
       >
-        <Link
-          href="/home"
+        <button
+          type="button"
+          onClick={() => router.back()}
           className="w-10 h-10 rounded-full flex items-center justify-center"
           style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}
         >
           <ArrowLeft size={18} color="#2E1A0F" />
-        </Link>
+        </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-base font-bold truncate" style={{ color: "#2E1A0F" }}>
             {item?.title || "Tangazo"}
@@ -62,6 +61,7 @@ function TangazoInner() {
             {item ? catLabel[item.category || ""] || item.category : "…"}
           </p>
         </div>
+        {item && <FavoriteButton id={item.id} size={18} />}
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-4">
@@ -82,36 +82,23 @@ function TangazoInner() {
 
         {!loading && item && (
           <>
-            {/* Image placeholder */}
             {item.images?.[0] ? (
-              <img src={item.images[0]} alt="" className="w-full rounded-[24px] mb-4 object-cover" style={{ height: 220 }} />
-            ) : (
-            <div
-              className="relative w-full rounded-[24px] overflow-hidden mb-4 flex items-center justify-center"
-              style={{
-                height: 220,
-                background: "linear-gradient(165deg, #3D2415, #2E1A0F)",
-                boxShadow: "0 12px 36px rgba(46,26,15,0.2)",
-              }}
-            >
-              <span className="text-sm font-bold px-4 text-center" style={{ color: "#D2A679" }}>
-                {catLabel[item.category || ""] || "Jengo"}
-              </span>
-              {item.verified && (
-                <span
-                  className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-bold px-2.5 py-1 rounded-full"
-                  style={{ backgroundColor: "rgba(210,166,121,0.95)", color: "#2E1A0F" }}
-                >
-                  <BadgeCheck size={12} /> Amethibitishwa
-                </span>
-              )}
-              <FavoriteButton
-                id={item.id}
-                size={18}
-                className="absolute top-3 right-3 w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: "white", boxShadow: "0 4px 14px rgba(46,26,15,0.18)" }}
+              <img
+                src={item.images[0]}
+                alt=""
+                className="w-full rounded-[24px] mb-4 object-cover"
+                style={{ height: 220 }}
               />
-            </div>
+            ) : (
+              <div
+                className="w-full rounded-[24px] mb-4 flex items-center justify-center"
+                style={{ height: 220, background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}
+              >
+                <span className="text-sm font-bold" style={{ color: "#D2A679" }}>
+                  {catLabel[item.category || ""] || "Jengo"}
+                </span>
+              </div>
+            )}
 
             <h2 className="text-xl font-bold mb-1" style={{ color: "#2E1A0F" }}>
               {item.title}
@@ -152,21 +139,15 @@ function TangazoInner() {
                 {item.description?.trim() || "Hakuna maelezo ya ziada."}
               </p>
             </div>
-
-            <p className="text-[11px] mb-4" style={{ color: "#8B5E3C" }}>
-              Imewekwa: {item.created_at ? new Date(item.created_at).toLocaleDateString("sw-TZ") : "—"}
-            </p>
           </>
         )}
       </div>
 
-      {/* Bottom CTA */}
       {!loading && item && (
         <div
           className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3"
           style={{
             backgroundColor: "rgba(255,246,237,0.97)",
-            backdropFilter: "blur(12px)",
             borderTop: "1px solid rgba(210,166,121,0.4)",
             paddingBottom: "max(12px, env(safe-area-inset-bottom))",
           }}
@@ -182,7 +163,7 @@ function TangazoInner() {
             </Link>
             <Link
               href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
-              className="flex items-center justify-center gap-2 py-3.5 px-4 rounded-[16px] font-semibold text-sm"
+              className="flex items-center justify-center px-4 rounded-[16px] font-semibold text-sm"
               style={{ border: "1.5px solid #3D2415", color: "#2E1A0F", backgroundColor: "white" }}
             >
               Ujumbe
@@ -191,19 +172,5 @@ function TangazoInner() {
         </div>
       )}
     </main>
-  );
-}
-
-export default function TangazoDetailsPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FFF6ED" }}>
-          <Loader2 size={28} color="#8B5E3C" className="animate-spin" />
-        </div>
-      }
-    >
-      <TangazoInner />
-    </Suspense>
   );
 }
