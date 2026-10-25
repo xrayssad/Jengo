@@ -23,7 +23,8 @@ export default function MalipoPage() {
         let period: string | undefined;
         try {
           const item = await fetchListing(b.listing_id);
-          price = item.price;
+          const n = Number(item.price);
+          price = Number.isFinite(n) ? n : undefined;
           period = item.period;
         } catch {}
         out.push({ ...b, price, period });
