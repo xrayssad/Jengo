@@ -61,11 +61,9 @@ export default function RegisterPage() {
   const google = async () => {
     setGoogleMsg("");
     try {
-      const redirect = `${window.location.origin}/auth/callback`;
-      const res = await startGoogle(redirect);
-      window.location.href = res.url;
+      await startGoogle(`${window.location.origin}/auth/callback`);
     } catch (err) {
-      setGoogleMsg(err instanceof Error ? err.message : "Google haijaunganishwa kwenye Supabase.");
+      setGoogleMsg(err instanceof Error ? err.message : "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe.");
     }
   };
 

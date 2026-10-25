@@ -137,8 +137,28 @@ export async function login(email: string, password: string) {
   return data;
 }
 
+const GOOGLE_OFF = "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe.";
+
+function googleError(raw: string) {
+  const text = raw.toLowerCase();
+  if (text.includes("provider") || text.includes("not enabled") || text.includes("validation")) {
+    return GOOGLE_OFF;
+  }
+  return raw || GOOGLE_OFF;
+}
+
 export async function startGoogle(redirectTo: string) {
-  return request<{ url: string }>(`/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`);
+  try {
+    await request<{ url: string }>(`/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`);
+  } catch (err) {
+    throw new Error(googleError(err instanceof Error ? err.message : GOOGLE_OFF));
+  }
+  const { getSupabase } = await import("./supabase");
+  const { error } = await getSupabase().auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo },
+  });
+  if (error) throw new Error(googleError(error.message));
 }
 
 export async function adoptSession(accessToken: string) {

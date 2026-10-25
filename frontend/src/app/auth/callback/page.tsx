@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { adoptSession, confirmEmailLink } from "@/lib/api";
+import { getSupabase } from "@/lib/supabase";
 
 function readParams() {
   const hash = typeof window !== "undefined" ? window.location.hash.replace(/^#/, "") : "";
@@ -21,6 +22,11 @@ function googleOffMessage(raw: string) {
   return raw;
 }
 
+async function goHome(accessToken: string) {
+  await adoptSession(accessToken);
+  window.location.href = "/home";
+}
+
 export default function AuthCallbackPage() {
   const [error, setError] = useState("");
 
@@ -31,17 +37,28 @@ export default function AuthCallbackPage() {
       setError(googleOffMessage(err));
       return;
     }
+    const code = get("code");
     const token = get("access_token");
     const tokenHash = get("token_hash");
     const type = get("type") || "signup";
-    if (token) {
-      adoptSession(token)
-        .then(() => {
-          window.location.href = "/home";
+    if (code) {
+      getSupabase()
+        .auth.exchangeCodeForSession(code)
+        .then(({ data, error: exchangeError }) => {
+          if (exchangeError || !data.session?.access_token) {
+            throw new Error(exchangeError?.message || "Kipindi hakikubaliki");
+          }
+          return goHome(data.session.access_token);
         })
         .catch((caught) => {
-          setError(caught instanceof Error ? caught.message : "Kipindi hakikubaliki");
+          setError(googleOffMessage(caught instanceof Error ? caught.message : "Kipindi hakikubaliki"));
         });
+      return;
+    }
+    if (token) {
+      goHome(token).catch((caught) => {
+        setError(caught instanceof Error ? caught.message : "Kipindi hakikubaliki");
+      });
       return;
     }
     if (tokenHash) {
