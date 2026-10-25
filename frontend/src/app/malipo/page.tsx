@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CreditCard, Loader2 } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 import { fetchListing, formatPrice } from "@/lib/api";
 import { readBookings, type SavedBooking } from "@/lib/mine";
 
@@ -83,7 +82,6 @@ export default function MalipoPage() {
           </Link>
         ))}
       </div>
-      <BottomNav />
     </main>
   );
 }

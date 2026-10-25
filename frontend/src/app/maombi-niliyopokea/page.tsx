@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, X } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 import AuthGate from "@/components/AuthGate";
 import { fetchBookings, fetchListing, setBookingStatus, type Booking } from "@/lib/api";
 
@@ -71,10 +70,14 @@ export default function IncomingPage() {
                 </button>
               </div>
             )}
+            {r.status === "accepted" && (
+              <Link href={`/bookings/${r.id}/chat`} className="btn-primary mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold">
+                Andika ujumbe
+              </Link>
+            )}
           </div>
         ))}
       </div>
-      <BottomNav />
     </main>
     </AuthGate>
   );

@@ -138,7 +138,8 @@ export default function WekaTangazoPage() {
         <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
       </header>
 
-      <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5 space-y-4">
+      <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5">
+      <div className="soft-card p-5 space-y-4">
         <div className="grid grid-cols-2 gap-2">
           {categories.map((c) => (
             <button
@@ -189,10 +190,11 @@ export default function WekaTangazoPage() {
         <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Link ya picha https://...jpg" className="input-chocolate w-full px-4 py-3.5 text-sm" />
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
 
-        <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-[18px] font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
+        <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
           {loading ? <Loader2 size={18} className="animate-spin" /> : null}
           {loading ? "Inachapisha..." : "Chapisha Tangazo"}
         </button>
+      </div>
       </form>
 
       <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg} onClose={() => setAlertOpen(false)} />

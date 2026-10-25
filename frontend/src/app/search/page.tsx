@@ -2,9 +2,10 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Search, MapPin, BadgeCheck, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, X, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { fetchListings, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
+import { fetchListings, type Listing } from "@/lib/api";
+import ListingCard from "@/components/ListingCard";
 
 const filters = [
   { id: "", label: "Zote" },
@@ -143,38 +144,9 @@ function SearchInner() {
         )}
 
         {!loading && !error && (
-          <div className="space-y-3">
+          <div className="space-y-5">
             {items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/tangazo/${item.id}`}
-                className="card-lift block rounded-[18px] p-4"
-                style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.2)" }}
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: "#FFF6ED", color: "#8B5E3C" }}>
-                      {catLabel[item.category || ""] || item.category || "Jengo"}
-                    </span>
-                    {item.verified && (
-                      <span className="ml-2 text-[10px] font-medium" style={{ color: "#8B5E3C" }}>
-                        <BadgeCheck size={11} className="inline" /> Amethibitishwa
-                      </span>
-                    )}
-                    <h3 className="font-bold text-[15px] mt-1 truncate" style={{ color: "#2E1A0F" }}>{item.title}</h3>
-                    <div className="flex items-center gap-1 mt-1">
-                      <MapPin size={12} color="#8B5E3C" />
-                      <span className="text-xs" style={{ color: "#5C4033" }}>
-                        {item.location || item.city || "—"}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-bold text-[15px]" style={{ color: "#2E1A0F" }}>TZS {formatPrice(item.price)}</p>
-                    <p className="text-xs" style={{ color: "#5C4033" }}>{periodLabel(item.period)}</p>
-                  </div>
-                </div>
-              </Link>
+              <ListingCard key={item.id} item={item} />
             ))}
           </div>
         )}

@@ -40,7 +40,7 @@ export default function UsernamePage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "#FFF6ED" }}>
-      <div className="w-full max-w-sm">
+      <div className="soft-card w-full max-w-sm p-6 fade-up">
         <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Chagua username</h1>
         <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
           Akaunti ya Google iko tayari. Weka username mara moja, kisha utaenda nyumbani.
@@ -54,7 +54,7 @@ export default function UsernamePage() {
             className="input-chocolate w-full px-4 py-3.5 text-sm"
           />
           {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
-          <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-[18px] text-sm font-semibold">
+          <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
             {busy ? "Inahifadhi..." : "Endelea"}
           </button>
         </form>

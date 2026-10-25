@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 import { createReview, fetchBookings, fetchListing, formatPrice, periodLabel, setBookingStatus } from "@/lib/api";
 
 type Row = {
@@ -114,15 +113,20 @@ export default function RisitiPage() {
             </p>
             <p className="text-xs mt-2" style={{ color: "#8B5E3C" }}>Nambari: {r.id.slice(0, 8)}</p>
             {r.status === "accepted" && (
-              <button
-                type="button"
-                disabled={busyId === r.id}
-                onClick={() => confirmMoveIn(r.id)}
-                className="btn-primary w-full mt-4 py-2.5 rounded-[14px] text-sm font-semibold"
-                style={{ opacity: busyId === r.id ? 0.7 : 1 }}
-              >
-                Nimehamia
-              </button>
+              <>
+                <Link href={`/bookings/${r.id}/chat`} className="btn-primary w-full mt-4 inline-flex items-center justify-center py-2.5 rounded-full text-sm font-semibold">
+                  Andika ujumbe
+                </Link>
+                <button
+                  type="button"
+                  disabled={busyId === r.id}
+                  onClick={() => confirmMoveIn(r.id)}
+                  className="btn-secondary w-full mt-2 py-2.5 rounded-full text-sm font-semibold"
+                  style={{ opacity: busyId === r.id ? 0.7 : 1 }}
+                >
+                  Nimehamia
+                </button>
+              </>
             )}
             {r.status === "moved_in" && (
               <div className="mt-3 space-y-2">
@@ -171,7 +175,6 @@ export default function RisitiPage() {
           </div>
         ))}
       </div>
-      <BottomNav />
     </main>
   );
 }

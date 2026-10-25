@@ -7,6 +7,7 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from app import social
 from app.security import (
     LOGIN_ERROR,
     USERNAME_RE,
@@ -123,6 +124,16 @@ class ReviewIn(BaseModel):
     booking_id: str
     rating: int
     comment: str = ""
+
+
+class MessageIn(BaseModel):
+    body: str
+    peer_id: str = ""
+
+
+class CommentIn(BaseModel):
+    body: str
+    parent_id: str = ""
 
 
 def _save_row(table: str, row: dict, fallback: dict):
@@ -781,7 +792,9 @@ def list_listings(
         query = query.ilike("title", "%" + q + "%")
     column = "likes_count" if sort == "likes" else "created_at"
     res = query.order(column, desc=True).limit(100).execute()
-    return {"items": [decorate_listing(x) for x in (res.data or [])]}
+    items = [decorate_listing(x) for x in (res.data or [])]
+    social.attach_comment_counts(items)
+    return {"items": items}
 
 
 @app.get("/listings/{listing_id}")
@@ -796,7 +809,9 @@ def get_listing(request: Request, listing_id: str):
             user = None
     if not _can_see_listing(item, user):
         raise HTTPException(status_code=404, detail="Tangazo halipo")
-    return decorate_listing(item)
+    out = decorate_listing(item)
+    social.attach_comment_counts([out])
+    return out
 
 
 @app.post("/listings")
@@ -1053,3 +1068,81 @@ def list_reviews(listing_id: str | None = None, booking_id: str | None = None):
             if rev:
                 items.append({**rev, "listing_id": row.get("listing_id"), "user_id": row.get("user_id")})
         return {"items": items}
+
+
+@app.get("/inbox")
+def inbox(user=Depends(current_user)):
+    return {"items": social.inbox_for(user.id)}
+
+
+@app.get("/bookings/{booking_id}/messages")
+def booking_messages(booking_id: str, user=Depends(current_user)):
+    booking = social.booking_row(booking_id)
+    if not social.can_see_booking_thread(user, booking):
+        raise HTTPException(status_code=403, detail="Si mazungumzo yako")
+    return {"items": social.list_thread(f"booking:{booking_id}", user.id)}
+
+
+@app.post("/bookings/{booking_id}/messages")
+def send_booking_message(booking_id: str, body: MessageIn, user=Depends(current_user)):
+    booking = social.booking_row(booking_id)
+    if not social.can_see_booking_thread(user, booking):
+        raise HTTPException(status_code=403, detail="Si mazungumzo yako")
+    return social.add_message(
+        f"booking:{booking_id}",
+        "booking",
+        user.id,
+        body.body,
+        booking_id=booking_id,
+        listing_id=booking.get("listing_id"),
+    )
+
+
+@app.get("/listings/{listing_id}/dm")
+def listing_dm(listing_id: str, request: Request, user=Depends(current_user)):
+    listing = social.listing_row(listing_id)
+    owner = str(listing.get("owner_id") or "")
+    peer = (request.query_params.get("peer") or "").strip()
+    other = peer if user.id == owner and peer else user.id
+    key = social.listing_dm_key(listing_id, other, owner)
+    if not social.can_see_listing_dm(user, listing, key):
+        raise HTTPException(status_code=403, detail="Si ujumbe wako")
+    return {"items": social.list_thread(key, user.id), "title": listing.get("title"), "owner_id": owner}
+
+
+@app.post("/listings/{listing_id}/dm")
+def send_listing_dm(listing_id: str, body: MessageIn, user=Depends(current_user)):
+    listing = social.listing_row(listing_id)
+    owner = str(listing.get("owner_id") or "")
+    other = body.peer_id.strip() if user.id == owner else user.id
+    if user.id == owner and not other:
+        raise HTTPException(status_code=400, detail="Chagua mpokeaji")
+    if other == owner and user.id == owner:
+        raise HTTPException(status_code=400, detail="Huu ni ujumbe wa moja kwa moja kwa mwenye tangazo")
+    key = social.listing_dm_key(listing_id, other, owner)
+    if not social.can_see_listing_dm(user, listing, key):
+        raise HTTPException(status_code=403, detail="Si ujumbe wako")
+    return social.add_message(key, "listing_dm", user.id, body.body, listing_id=listing_id)
+
+
+@app.get("/listings/{listing_id}/comments")
+def listing_comments(request: Request, listing_id: str):
+    social.listing_row(listing_id)
+    me = None
+    header = request.headers.get("authorization")
+    if header:
+        try:
+            me = current_user(header)
+        except HTTPException:
+            me = None
+    return {"items": social.list_comments(listing_id, me.id if me else None)}
+
+
+@app.post("/listings/{listing_id}/comments")
+def create_comment(listing_id: str, body: CommentIn, user=Depends(current_user)):
+    return social.add_comment(listing_id, user.id, body.body, body.parent_id or None)
+
+
+@app.post("/comments/{comment_id}/like")
+def like_comment(comment_id: str, user=Depends(current_user)):
+    return social.toggle_comment_like(comment_id, user.id)

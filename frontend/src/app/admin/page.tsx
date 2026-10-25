@@ -136,18 +136,18 @@ function AdminDesk() {
     );
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "#1A0F08", color: "#F5E6D3" }}>
-      <header className="sticky top-0 z-20" style={{ backgroundColor: "#1A0F08", borderBottom: "1px solid rgba(196,163,90,0.35)" }}>
+    <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FFF6ED", color: "#2E1A0F" }}>
+      <header className="sticky top-0 z-20 glass" style={{ borderBottom: "1px solid rgba(46,26,15,0.1)" }}>
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-end justify-between gap-4">
           <div>
-            <p className="font-heading text-2xl leading-none" style={{ color: "#FFF6ED" }}>Dawati</p>
-            <p className="text-sm mt-1" style={{ color: "#D2A679" }}>Jengo — watumiaji, matangazo, maombi</p>
+            <p className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Dawati</p>
+            <p className="text-sm mt-1" style={{ color: "#5C4033" }}>Watumiaji, matangazo, maombi</p>
           </div>
-          <Link href="/home" className="text-sm font-semibold pb-0.5" style={{ color: "#C4A35A" }}>
+          <Link href="/home" className="text-sm font-semibold pb-0.5" style={{ color: "#8B5E3C" }}>
             Rudi soko
           </Link>
         </div>
-        <div className="max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto">
+        <div className="max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto no-scrollbar">
           {TABS.map((item) => {
             const on = tab === item.id;
             return (
@@ -157,9 +157,8 @@ function AdminDesk() {
                 onClick={() => setTab(item.id)}
                 className="px-3 py-2.5 text-sm font-semibold"
                 style={{
-                  color: on ? "#1A0F08" : "#F5E6D3",
-                  backgroundColor: on ? "#C4A35A" : "transparent",
-                  borderBottom: on ? "none" : "2px solid transparent",
+                  color: on ? "#2E1A0F" : "#5C4033",
+                  borderBottom: on ? "2px solid #2E1A0F" : "2px solid transparent",
                 }}
               >
                 {item.label}
@@ -170,10 +169,7 @@ function AdminDesk() {
       </header>
 
       <section className="max-w-5xl mx-auto px-4 py-6">
-        <div
-          className="min-h-[70vh] px-4 py-5 sm:px-6"
-          style={{ backgroundColor: "#F5E6D3", color: "#2E1A0F", boxShadow: "0 24px 50px rgba(0,0,0,0.35)" }}
-        >
+        <div className="min-h-[70vh] px-1 py-2 sm:px-0">
           {loading && <p style={{ color: "#5C4033" }}>Inapakia dawati...</p>}
           {error && <p className="text-sm font-semibold mb-4" style={{ color: "#A6452E" }}>{error}</p>}
           {notice && <p className="text-sm font-semibold mb-4" style={{ color: "#5E7F4F" }}>{notice}</p>}

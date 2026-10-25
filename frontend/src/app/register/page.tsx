@@ -8,10 +8,10 @@ import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { register as apiRegister, startGoogle } from "@/lib/api";
 
 const slides = [
-  { image: "/poster_nyumba_salama.png", title: "Chumba & Nyumba" },
-  { image: "/poster_maduka_godown.png", title: "Store & Godown" },
-  { image: "/poster_vifaa_ujenzi.png", title: "Apartment & Airbnb" },
-  { image: "/poster_mnada_rahisi.png", title: "Frame za Maduka" },
+  { image: "/real/room.jpg", title: "Chumba & Nyumba" },
+  { image: "/real/warehouse.jpg", title: "Store & Godown" },
+  { image: "/real/apartment.jpg", title: "Apartment & Airbnb" },
+  { image: "/real/shop.jpg", title: "Frame za Maduka" },
 ];
 
 export default function RegisterPage() {
@@ -27,7 +27,7 @@ export default function RegisterPage() {
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % slides.length), 7000);
+    const t = setInterval(() => setSlide((s) => (s + 1) % slides.length), 8000);
     return () => clearInterval(t);
   }, []);
 
@@ -68,22 +68,19 @@ export default function RegisterPage() {
   };
 
   return (
-    <main className="min-h-screen flex flex-col md:flex-row overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
-      <div className="relative w-full md:w-1/2 h-[32vh] md:h-screen">
+    <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
+      <div className="relative h-[24vh] min-h-[160px]">
         {slides.map((s, i) => (
           <div key={s.image} className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: slide === i ? 1 : 0 }}>
-            <Image src={s.image} alt={s.title} fill className="object-cover" priority={i === 0} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.85), transparent 55%)" }} />
-            <div className="absolute bottom-8 left-6">
-              <h2 className="font-heading text-2xl" style={{ color: "#FFF6ED" }}>{s.title}</h2>
-            </div>
+            <Image src={s.image} alt="" fill className="object-cover" priority={i === 0} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.55), transparent 70%)" }} />
           </div>
         ))}
       </div>
-      <div className="flex-1 flex items-center justify-center px-5 py-10">
-        <div className="w-full max-w-sm">
-          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Fungua akaunti</h1>
-          <p className="text-sm mb-7" style={{ color: "#5C4033" }}>Baada ya kujisajili, weka namba kutoka barua pepe ili akaunti ianze kufanya kazi.</p>
+      <div className="px-5 -mt-10 relative z-10 pb-12">
+        <div className="soft-card max-w-sm mx-auto p-6 fade-up">
+          <h1 className="font-heading text-3xl mb-1" style={{ color: "#2E1A0F" }}>Fungua akaunti</h1>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Baada ya kujisajili, weka namba kutoka barua pepe ili akaunti ianze kufanya kazi.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Jina kamili</label>
@@ -114,15 +111,15 @@ export default function RegisterPage() {
               </div>
             </div>
             {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
-            <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-[18px] text-sm font-semibold">
+            <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
               {busy ? "Inasajili..." : "Endelea"}
             </button>
           </form>
-          <button type="button" onClick={google} className="btn-secondary w-full mt-3 py-3.5 rounded-[18px] text-sm font-semibold">
+          <button type="button" onClick={google} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
             Ingia na Google
           </button>
           {googleMsg && <p className="text-sm mt-3 font-semibold" style={{ color: "#A6452E" }}>{googleMsg}</p>}
-          <p className="text-center text-sm mt-8">
+          <p className="text-center text-sm mt-6">
             <Link href="/login" className="font-bold" style={{ color: "#8B5E3C" }}>Ingia</Link>
           </p>
         </div>

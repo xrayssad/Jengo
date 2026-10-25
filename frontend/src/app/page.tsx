@@ -1,234 +1,50 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { LayoutGrid,
-  Home, Store, Building2, KeyRound, Shield,
-  BadgeCheck, MapPin, Users, ChevronRight
-} from "lucide-react";
+import NextImage from "next/image";
 
-const heroSlides = [
-  { img: "/real/room.jpg", label: "Chumba & Nyumba" },
-  { img: "/real/apartment.jpg", label: "Apartment & Airbnb" },
-  { img: "/real/shop.jpg", label: "Store & Godown" },
-  { img: "/real/warehouse.jpg", label: "Frame za Maduka" },
-];
-
-const services = [
-  {
-    icon: Home,
-    title: "Chumba & Nyumba",
-    desc: "Vyumba na nyumba za kupanga kwa mwezi, miezi 3, 6 au mwaka mzima.",
-    img: "/real/room.jpg",
-  },
-  {
-    icon: Building2,
-    title: "Apartment & Airbnb",
-    desc: "Apartment za mwezi na makazi ya muda mfupi — usiku, siku au wiki.",
-    img: "/real/apartment.jpg",
-  },
-  {
-    icon: Store,
-    title: "Store & Godown",
-    desc: "Maduka na maghala ya biashara — panga kwa mwezi au mwaka.",
-    img: "/real/warehouse.jpg",
-  },
-  {
-    icon: LayoutGrid,
-    title: "Frame za Maduka",
-    desc: "Frame na stall za biashara — Kariakoo na maeneo mengine.",
-    img: "/real/shop.jpg",
-  },
-];
-
-const stats = [
-  { icon: Building2, value: "500+", label: "Matangazo" },
-  { icon: Users, value: "1,200+", label: "Watumiaji" },
-  { icon: MapPin, value: "Dar & Zaidi", label: "Maeneo" },
-  { icon: BadgeCheck, value: "100%", label: "Uhakiki" },
+const categories = [
+  { href: "/nyumba", title: "Nyumba", img: "/real/room.jpg" },
+  { href: "/airbnb", title: "Airbnb", img: "/real/apartment.jpg" },
+  { href: "/maduka", title: "Maduka", img: "/real/shop.jpg" },
+  { href: "/vifaa", title: "Vifaa", img: "/real/materials.jpg" },
 ];
 
 export default function LandingPage() {
-  const [slide, setSlide] = useState(0);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const t = setInterval(() => setSlide((s) => (s + 1) % heroSlides.length), 5000);
-    return () => clearInterval(t);
-  }, []);
-
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
-      <header
-        className="fixed top-0 left-0 right-0 z-50 px-4 py-3"
-        style={{
-          backgroundColor: "rgba(255,246,237,0.9)",
-          backdropFilter: "blur(16px)",
-          borderBottom: "1px solid rgba(210,166,121,0.25)",
-        }}
-      >
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(145deg, #8B5E3C, #2E1A0F)" }}>
-              <Home size={18} color="#FFF6ED" strokeWidth={2} />
-            </div>
-            <div>
-              <span className="font-bold text-lg block leading-none" style={{ color: "#2E1A0F" }}>Jengo</span>
-              <span className="text-[10px] tracking-[0.15em] uppercase font-medium" style={{ color: "#8B5E3C" }}>App</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link href="/login" className="text-sm font-semibold px-3 py-2" style={{ color: "#2E1A0F" }}>
-              Ingia
-            </Link>
-            <Link
-              href="/register"
-              className="text-sm font-semibold px-5 py-2.5 rounded-full"
-              style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", boxShadow: "0 4px 14px rgba(46,26,15,0.25)" }}
-            >
-              Jisajili
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <section className="relative pt-16 min-h-[85vh] flex flex-col justify-end overflow-hidden">
-        <div className="absolute inset-0">
-          {heroSlides.map((s, i) => (
-            <div key={s.img + i} className="absolute inset-0 transition-opacity duration-[1200ms]" style={{ opacity: slide === i ? 1 : 0 }}>
-              <Image
-                src={s.img}
-                alt={s.label}
-                fill
-                className="object-cover"
-                style={{
-                  transform: slide === i ? "scale(1.06)" : "scale(1)",
-                  transition: slide === i ? "transform 5s ease-out" : "none",
-                }}
-                priority={i === 0}
-              />
-            </div>
-          ))}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "linear-gradient(to top, #1A0F08 0%, rgba(26,15,8,0.72) 40%, rgba(26,15,8,0.25) 70%, transparent 100%)",
-            }}
-          />
-        </div>
-
-        <div className={`relative z-10 max-w-5xl mx-auto px-4 pb-12 w-full transition-all duration-700 ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"}`}>
-          <p className="text-xs font-semibold tracking-[0.25em] uppercase mb-3" style={{ color: "#D2A679" }}>
-            Marketplace ya Tanzania
-          </p>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.15] mb-4 max-w-xl" style={{ color: "#FFF6ED" }}>
-            Chumba, nyumba, apartment na store — mahali pamoja
+      <section className="relative min-h-screen flex flex-col justify-end">
+        <NextImage src="/real/apartment.jpg" alt="Makazi" fill className="object-cover" priority />
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.88) 0%, rgba(46,26,15,0.45) 50%, rgba(26,15,8,0.2) 100%)" }} />
+        <div className="relative z-10 px-6 pb-16 max-w-md fade-up">
+          <h1 className="font-heading text-4xl leading-tight" style={{ color: "#FFF6ED" }}>
+            Makazi na vifaa, mahali pamoja
           </h1>
-          <p className="text-sm sm:text-base leading-relaxed mb-6 max-w-md" style={{ color: "rgba(255,246,237,0.85)" }}>
-            Panga chumba au nyumba, apartment na Airbnb, au pata store, godown na frame. Bei wazi, wamiliki waliothibitishwa.
+          <p className="mt-3 text-sm leading-relaxed" style={{ color: "rgba(255,246,237,0.82)" }}>
+            Chumba, Airbnb, maduka na vifaa vya ujenzi — bei wazi.
           </p>
-          <div className="flex gap-2">
-            {heroSlides.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setSlide(i)}
-                className="h-1.5 rounded-full transition-all duration-300"
-                style={{
-                  width: slide === i ? 24 : 8,
-                  backgroundColor: slide === i ? "#D2A679" : "rgba(255,246,237,0.35)",
-                }}
-              />
-            ))}
+          <div className="flex gap-3 mt-7">
+            <Link href="/login" className="btn-primary flex-1 text-center py-3.5 rounded-full text-sm font-semibold">Ingia</Link>
+            <Link href="/register" className="flex-1 text-center py-3.5 rounded-full text-sm font-semibold" style={{ backgroundColor: "rgba(255,246,237,0.14)", color: "#FFF6ED", border: "1px solid rgba(255,246,237,0.4)" }}>Jisajili</Link>
           </div>
         </div>
       </section>
 
-      <section className="relative z-10 -mt-6 px-4">
-        <div
-          className="max-w-5xl mx-auto grid grid-cols-2 sm:grid-cols-4 gap-3 rounded-[22px] p-4"
-          style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.1)", boxShadow: "0 16px 40px rgba(46,26,15,0.1)" }}
-        >
-          {stats.map((s) => (
-            <div key={s.label} className="text-center py-2">
-              <s.icon size={20} color="#8B5E3C" className="mx-auto mb-1.5" />
-              <p className="text-lg font-bold" style={{ color: "#2E1A0F" }}>{s.value}</p>
-              <p className="text-[11px]" style={{ color: "#5C4033" }}>{s.label}</p>
-            </div>
+      <section className="px-5 py-10 max-w-md mx-auto">
+        <div className="grid grid-cols-2 gap-3">
+          {categories.map((c) => (
+            <Link key={c.href} href={c.href} className="relative overflow-hidden card-lift" style={{ height: 150, borderRadius: 22 }}>
+              <NextImage src={c.img} alt={c.title} fill className="object-cover" />
+              <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.75), transparent 55%)" }} />
+              <span className="absolute bottom-3 left-3 font-heading" style={{ color: "#FFF6ED" }}>{c.title}</span>
+            </Link>
           ))}
         </div>
-      </section>
-
-      <section className="px-4 py-14 max-w-5xl mx-auto">
-        <div className="text-center mb-8">
-          <p className="text-xs font-semibold tracking-[0.2em] uppercase mb-2" style={{ color: "#8B5E3C" }}>Huduma zetu</p>
-          <h2 className="text-2xl sm:text-3xl font-bold" style={{ color: "#2E1A0F" }}>Unachoweza kupata</h2>
+        <div className="flex justify-between mt-8 text-sm" style={{ color: "#5C4033" }}>
+          <span>Imethibitishwa</span>
+          <span>Bei wazi</span>
+          <span>Ombi salama</span>
         </div>
-        <div className="grid sm:grid-cols-2 gap-4">
-          {services.map((svc) => {
-            const Icon = svc.icon;
-            return (
-              <div
-                key={svc.title}
-                className="group relative rounded-[22px] overflow-hidden"
-                style={{ boxShadow: "0 8px 28px rgba(46,26,15,0.1)", border: "1px solid rgba(61,36,21,0.12)" }}
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <Image src={svc.img} alt={svc.title} fill className="object-cover transition-transform duration-500 group-hover:scale-110" />
-                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.8) 0%, transparent 60%)" }} />
-                  <div className="absolute bottom-3 left-4 flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(210,166,121,0.3)", backdropFilter: "blur(8px)" }}>
-                      <Icon size={18} color="#F5E6D3" />
-                    </div>
-                    <h3 className="font-bold text-[15px]" style={{ color: "#FFF6ED" }}>{svc.title}</h3>
-                  </div>
-                </div>
-                <div className="p-4" style={{ backgroundColor: "white" }}>
-                  <p className="text-xs leading-relaxed" style={{ color: "#5C4033" }}>{svc.desc}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="px-4 py-12" style={{ backgroundColor: "rgba(210,166,121,0.12)" }}>
-        <div className="max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8" style={{ color: "#2E1A0F" }}>Hatua 3 tu</h2>
-          <div className="grid sm:grid-cols-3 gap-5">
-            {[
-              { n: "01", t: "Jisajili", d: "Fungua akaunti kwa namba ya simu." },
-              { n: "02", t: "Chagua kategoria", d: "Chumba & Nyumba, Apartment & Airbnb, Store au Frame." },
-              { n: "03", t: "Wasiliana", d: "Tuma ombi au ujumbe moja kwa moja." },
-            ].map((step) => (
-              <div key={step.n} className="rounded-[20px] p-5" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.1)" }}>
-                <span className="text-3xl font-bold block mb-3" style={{ color: "#D2A679" }}>{step.n}</span>
-                <h3 className="font-bold text-base mb-1" style={{ color: "#2E1A0F" }}>{step.t}</h3>
-                <p className="text-xs" style={{ color: "#5C4033" }}>{step.d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <section className="px-4 py-12 max-w-5xl mx-auto">
-        <div
-          className="rounded-[24px] p-6 sm:p-8"
-          style={{ background: "linear-gradient(145deg, #3D2415, #2E1A0F)", boxShadow: "0 16px 40px rgba(46,26,15,0.3)" }}
-        >
-          <div className="flex items-center gap-2 mb-3">
-            <Shield size={22} color="#D2A679" />
-            <span className="text-xs font-semibold tracking-wider uppercase" style={{ color: "#D2A679" }}>Uaminifu kwanza</span>
-          </div>
-          <h2 className="text-xl sm:text-2xl font-bold mb-2" style={{ color: "#FFF6ED" }}>
-            Wamiliki waliothibitishwa, bei wazi
-          </h2>
-          <p className="text-sm" style={{ color: "rgba(255,246,237,0.7)" }}>
-            Hakuna ada za siri. Unajua unacholipa kabla ya kuendelea. Tumia <strong style={{ color: "#D2A679" }}>Ingia</strong> au <strong style={{ color: "#D2A679" }}>Jisajili</strong> juu kuendelea.
-          </p>
-        </div>
-        <p className="text-center text-xs mt-8" style={{ color: "#8B5E3C" }}>© 2026 Jengo App · Tanzania</p>
       </section>
     </main>
   );

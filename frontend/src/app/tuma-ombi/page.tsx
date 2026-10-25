@@ -139,7 +139,8 @@ function TumaOmbiForm() {
         </div>
       </header>
 
-      <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-6 space-y-5">
+      <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-6">
+      <div className="soft-card p-5 space-y-5">
         <p className="text-sm" style={{ color: "#5C4033" }}>
           Andika ujumbe mfupi kwa mwenye tangazo.
         </p>
@@ -169,12 +170,13 @@ function TumaOmbiForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-[18px] font-semibold text-sm"
-          style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opacity: loading ? 0.7 : 1 }}
+          className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm"
+          style={{ opacity: loading ? 0.7 : 1 }}
         >
           {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
           {loading ? "Inatuma..." : "Tuma Ombi"}
         </button>
+      </div>
       </form>
 
       <AppAlert

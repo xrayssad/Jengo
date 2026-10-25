@@ -17,6 +17,7 @@ export type Listing = {
   unit?: string | null;
   stock?: number | null;
   owner_id?: string;
+  comments_count?: number;
 };
 
 const TOKEN_KEY = "jengo_token";
@@ -409,4 +410,75 @@ export async function fetchReviews(params?: { listing_id?: string; booking_id?: 
   if (params?.booking_id) sp.set("booking_id", params.booking_id);
   const q = sp.toString();
   return request<{ items: Review[] }>(`/reviews${q ? `?${q}` : ""}`);
+}
+
+export type ChatMessage = {
+  id: string;
+  thread_key?: string;
+  kind?: string;
+  booking_id?: string | null;
+  listing_id?: string | null;
+  sender_id?: string;
+  body: string;
+  created_at?: string;
+  mine?: boolean;
+  sender_name?: string;
+  title?: string;
+  href?: string;
+};
+
+export type ListingComment = {
+  id: string;
+  listing_id: string;
+  user_id: string;
+  parent_id?: string | null;
+  body: string;
+  likes_count: number;
+  created_at?: string;
+  author?: string;
+  liked?: boolean;
+};
+
+export async function fetchInbox() {
+  return request<{ items: ChatMessage[] }>("/inbox");
+}
+
+export async function fetchBookingMessages(bookingId: string) {
+  return request<{ items: ChatMessage[] }>(`/bookings/${bookingId}/messages`);
+}
+
+export async function sendBookingMessage(bookingId: string, body: string) {
+  return request<ChatMessage>(`/bookings/${bookingId}/messages`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export async function fetchListingDm(listingId: string, peer?: string) {
+  const q = peer ? `?peer=${encodeURIComponent(peer)}` : "";
+  return request<{ items: ChatMessage[]; title?: string; owner_id?: string }>(`/listings/${listingId}/dm${q}`);
+}
+
+export async function sendListingDm(listingId: string, body: string, peer?: string) {
+  return request<ChatMessage>(`/listings/${listingId}/dm`, {
+    method: "POST",
+    body: JSON.stringify({ body, peer_id: peer || "" }),
+  });
+}
+
+export async function fetchComments(listingId: string) {
+  return request<{ items: ListingComment[] }>(`/listings/${listingId}/comments`);
+}
+
+export async function postComment(listingId: string, body: string, parentId?: string) {
+  return request<ListingComment>(`/listings/${listingId}/comments`, {
+    method: "POST",
+    body: JSON.stringify({ body, parent_id: parentId || "" }),
+  });
+}
+
+export async function likeComment(commentId: string) {
+  return request<{ id: string; likes_count: number; liked: boolean }>(`/comments/${commentId}/like`, {
+    method: "POST",
+  });
 }

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Download } from "lucide-react";
-import BottomNav from "@/components/BottomNav";
 import { readSavedImages, type SavedImage } from "@/lib/savedImages";
 
 export default function SavedImagesPage() {
@@ -37,7 +36,6 @@ export default function SavedImagesPage() {
           </Link>
         ))}
       </div>
-      <BottomNav />
     </main>
   );
 }
