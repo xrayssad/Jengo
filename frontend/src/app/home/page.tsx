@@ -48,7 +48,7 @@ const sideLinks = [
   { label: "Discover", href: "/discover", icon: Compass },
   { label: "Vipendwa", href: "/favorites", icon: Bookmark },
   { label: "Picha zilizohifadhiwa", href: "/picha", icon: Download },
-  { label: "Malipo", href: "/payments", icon: CreditCard },
+  { label: "Malipo", href: "/malipo", icon: CreditCard },
   { label: "Matangazo yangu", href: "/matangazo-yangu", icon: LayoutList },
   { label: "Maombi yangu", href: "/maombi-yangu", icon: Inbox },
   { label: "Mipangilio", href: "/settings", icon: Settings },
