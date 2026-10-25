@@ -43,6 +43,7 @@ const categories = [
 ];
 
 const sideLinks = [
+  { label: "Maombi niliyopokea", href: "/maombi-niliyopokea", icon: Inbox },
   { label: "Profile", href: "/profile", icon: User },
   { label: "Messages", href: "/messages", icon: MessageCircle },
   { label: "Discover", href: "/discover", icon: Compass },

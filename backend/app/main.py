@@ -122,3 +122,26 @@ def create_booking(body: BookingIn):
     if not res.data:
         raise HTTPException(status_code=400, detail="Ombi halijahifadhiwa")
     return res.data[0]
+
+
+@app.get("/bookings")
+def list_bookings(listing_id: str | None = None):
+    query = db().table("bookings").select("*")
+    if listing_id:
+        query = query.eq("listing_id", listing_id)
+    res = query.order("created_at", desc=True).limit(100).execute()
+    return {"items": res.data or []}
+
+
+class BookingStatusIn(BaseModel):
+    status: str
+
+@app.patch("/bookings/{booking_id}")
+def set_booking_status(booking_id: str, body: BookingStatusIn):
+    if body.status not in {"pending", "accepted", "rejected"}:
+        raise HTTPException(status_code=400, detail="Hali si sahihi")
+    res = db().table("bookings").update({"status": body.status}).eq("id", booking_id).execute()
+    rows = res.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Ombi halipo")
+    return rows[0]
