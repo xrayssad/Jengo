@@ -157,11 +157,35 @@ def _signup_options(redirect_to: str | None) -> dict:
     return {"email_redirect_to": _safe_redirect(redirect_to)}
 
 
+OTP_RE = re.compile(r"^\d{6,8}$")
+
+
+def _user_meta(user) -> dict:
+    meta = getattr(user, "user_metadata", None) or {}
+    return meta if isinstance(meta, dict) else {}
+
+
+def _get_auth_user(user_id: str):
+    try:
+        res = db().auth.admin.get_user_by_id(user_id)
+    except Exception:
+        return None
+    return getattr(res, "user", None) or res
+
+
+def _drop_profile(user_id: str):
+    try:
+        db().table("profiles").delete().eq("id", user_id).execute()
+    except Exception:
+        pass
+
+
 def _session_from_verify(res):
     session = getattr(res, "session", None)
     user = getattr(res, "user", None)
     if not session or not user:
         raise HTTPException(status_code=400, detail="Thibitisho si sahihi")
+    _finish_signup_profile(user)
     return public_profile(user, session.access_token)
 
 
@@ -183,9 +207,136 @@ def _upsert_profile(user_id: str, email: str | None, username: str, full_name: s
 
 
 def _username_taken(username: str, ignore_id: str | None = None) -> bool:
-    res = db().table("profiles").select("id").ilike("username", username).limit(2).execute()
-    rows = res.data or []
-    return any(r.get("id") != ignore_id for r in rows)
+    res = db().table("profiles").select("id").ilike("username", username).limit(5).execute()
+    for row in res.data or []:
+        uid = row.get("id")
+        if uid == ignore_id:
+            continue
+        auth_user = _get_auth_user(uid) if uid else None
+        if auth_user and not _email_confirmed(auth_user):
+            continue
+        if not auth_user:
+            continue
+        return True
+    return False
+
+
+def _release_unverified_username(username: str, keep_id: str | None = None):
+    res = db().table("profiles").select("id").ilike("username", username).execute()
+    for row in res.data or []:
+        uid = row.get("id")
+        if not uid or uid == keep_id:
+            continue
+        auth_user = _get_auth_user(uid)
+        if auth_user and _email_confirmed(auth_user):
+            continue
+        _drop_profile(uid)
+
+
+def _finish_signup_profile(user):
+    existing = profile_of(user.id)
+    if existing and not needs_username(existing):
+        return
+    meta = _user_meta(user)
+    email = getattr(user, "email", None)
+    username = str(meta.get("username") or (existing or {}).get("username") or "").strip()
+    full_name = str(
+        meta.get("full_name") or meta.get("name") or (existing or {}).get("full_name") or ""
+    ).strip()[:120]
+    if username and USERNAME_RE.match(username):
+        _release_unverified_username(username, user.id)
+        if _username_taken(username, user.id):
+            username = ""
+    if username and USERNAME_RE.match(username):
+        _upsert_profile(user.id, email, username, full_name or username)
+        return
+    if existing:
+        return
+    row = {
+        "id": user.id,
+        "email": (email or "")[:200],
+        "full_name": full_name,
+        "role": "user",
+    }
+    try:
+        db().table("profiles").insert(row).execute()
+    except Exception:
+        pass
+
+
+def _continue_unconfirmed_signup(user, email: str, password: str, username: str, full_name: str):
+    try:
+        db().auth.admin.update_user_by_id(
+            user.id,
+            {
+                "password": password,
+                "user_metadata": {"username": username, "full_name": full_name},
+            },
+        )
+    except Exception:
+        raise HTTPException(status_code=400, detail="Imeshindikana kujisajili")
+    _drop_profile(user.id)
+    try:
+        anon().auth.resend({"type": "signup", "email": email})
+    except Exception:
+        pass
+    limiter.touch(f"resend-otp:{email}")
+
+
+def _auth_user_by_email(email: str):
+    target = (email or "").strip().lower()
+    if not target:
+        return None
+
+    def _match(listed):
+        users = listed.users if hasattr(listed, "users") else listed
+        for user in users or []:
+            if str(getattr(user, "email", "") or "").strip().lower() == target:
+                return user
+        return None
+
+    try:
+        found = _match(db().auth.admin.list_users())
+        if found:
+            return found
+    except Exception:
+        pass
+    try:
+        page = 1
+        while page < 10:
+            listed = db().auth.admin.list_users(page=page, per_page=200)
+            found = _match(listed)
+            if found:
+                return found
+            users = listed.users if hasattr(listed, "users") else listed
+            if len(list(users or [])) < 200:
+                break
+            page += 1
+    except Exception:
+        return None
+    return None
+
+
+def _auth_providers(user) -> list[str]:
+    meta = getattr(user, "app_metadata", None) or {}
+    if not isinstance(meta, dict):
+        return []
+    raw = meta.get("providers") or meta.get("provider") or []
+    if isinstance(raw, str):
+        return [raw.lower()]
+    return [str(p).lower() for p in raw]
+
+
+def _email_confirmed(user) -> bool:
+    return bool(getattr(user, "email_confirmed_at", None) or getattr(user, "confirmed_at", None))
+
+
+def _existing_account_detail(user) -> str:
+    if "google" in _auth_providers(user):
+        return "Akaunti hii ipo kwa Google. Ingia na Google. Haitaji OTP."
+    if _email_confirmed(user):
+        return "Akaunti ipo. Ingia kwa barua pepe na nenosiri."
+    return "Akaunti ipo. Thibitisha namba kwenye barua pepe, au ingia."
 
 
 def _listing(listing_id: str) -> dict:
@@ -232,6 +383,12 @@ def register(request: Request, body: RegisterIn):
         raise HTTPException(status_code=400, detail="Jina linahitajika")
     if _username_taken(username):
         raise HTTPException(status_code=400, detail="Username imeshatumika")
+    existing = _auth_user_by_email(email)
+    if existing:
+        if _email_confirmed(existing) or "google" in _auth_providers(existing):
+            raise HTTPException(status_code=400, detail=_existing_account_detail(existing))
+        _continue_unconfirmed_signup(existing, email, body.password, username, full_name)
+        return {"ok": True, "email": email, "needs_verify": True}
     try:
         res = anon().auth.sign_up(
             {
@@ -245,12 +402,15 @@ def register(request: Request, body: RegisterIn):
     except Exception as exc:
         msg = str(exc).lower()
         if "already" in msg or "registered" in msg:
+            again = _auth_user_by_email(email)
+            if again and not _email_confirmed(again) and "google" not in _auth_providers(again):
+                _continue_unconfirmed_signup(again, email, body.password, username, full_name)
+                return {"ok": True, "email": email, "needs_verify": True}
             raise HTTPException(status_code=400, detail="Akaunti ipo. Ingia au thibitisha barua pepe.")
         raise HTTPException(status_code=400, detail="Imeshindikana kujisajili")
     user = getattr(res, "user", None)
     if not user:
         raise HTTPException(status_code=400, detail="Imeshindikana kujisajili")
-    _upsert_profile(user.id, email, username, full_name)
     limiter.touch(f"resend-otp:{email}")
     return {"ok": True, "email": email, "needs_verify": True}
 
@@ -260,8 +420,8 @@ def verify(request: Request, body: VerifyIn):
     limiter.check(f"verify:{_client_key(request)}", 8)
     email = body.email.strip().lower()
     code = body.code.strip()
-    if not email or not re.fullmatch(r"\d{6}", code):
-        raise HTTPException(status_code=400, detail="Weka namba ya tarakimu 6")
+    if not email or not OTP_RE.fullmatch(code):
+        raise HTTPException(status_code=400, detail="Weka namba tuliyotuma kwenye barua pepe")
     try:
         res = anon().auth.verify_otp({"email": email, "token": code, "type": "signup"})
     except Exception:
@@ -298,6 +458,9 @@ def resend(request: Request, body: ResendIn):
     email = body.email.strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="Barua pepe inahitajika")
+    existing = _auth_user_by_email(email)
+    if existing and _email_confirmed(existing):
+        raise HTTPException(status_code=400, detail=_existing_account_detail(existing))
     limiter.check(
         f"resend-otp:{email}",
         1,
@@ -329,6 +492,7 @@ def login(request: Request, body: LoginIn):
     confirmed = getattr(user, "email_confirmed_at", None)
     if confirmed is None and not getattr(user, "confirmed_at", None):
         raise HTTPException(status_code=403, detail="Barua pepe haijathibitishwa")
+    _finish_signup_profile(user)
     return public_profile(user, session.access_token)
 
 
@@ -372,21 +536,7 @@ def auth_session(body: SessionIn):
     user = getattr(res, "user", None)
     if not user:
         raise HTTPException(status_code=401, detail="Kipindi si sahihi")
-    p = profile_of(user.id)
-    if not p:
-        email = getattr(user, "email", "") or ""
-        meta = getattr(user, "user_metadata", None) or {}
-        full = str(meta.get("full_name") or meta.get("name") or "").strip()[:120]
-        row = {
-            "id": user.id,
-            "email": email[:200],
-            "full_name": full,
-            "role": "user",
-        }
-        try:
-            db().table("profiles").insert(row).execute()
-        except Exception:
-            pass
+    _finish_signup_profile(user)
     return public_profile(user, body.access_token)
 
 

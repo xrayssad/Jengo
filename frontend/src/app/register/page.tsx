@@ -83,7 +83,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-5 py-10">
         <div className="w-full max-w-sm">
           <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Fungua akaunti</h1>
-          <p className="text-sm mb-7" style={{ color: "#5C4033" }}>Baada ya kujisajili, weka namba ya tarakimu 6 kutoka barua pepe.</p>
+          <p className="text-sm mb-7" style={{ color: "#5C4033" }}>Baada ya kujisajili, weka namba kutoka barua pepe ili akaunti ianze kufanya kazi.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Jina kamili</label>

@@ -24,8 +24,8 @@ function VerifyForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    if (!/^\d{6}$/.test(code.trim())) {
-      setError("Weka namba ya tarakimu 6");
+    if (!/^\d{6,8}$/.test(code.trim())) {
+      setError("Weka namba tuliyotuma kwenye barua pepe");
       return;
     }
     setBusy(true);
@@ -57,7 +57,7 @@ function VerifyForm() {
       <div className="w-full max-w-sm">
         <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Thibitisha barua pepe</h1>
         <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
-          Weka namba ya tarakimu 6 tuliyotuma kwenye barua pepe. Bila namba hiyo akaunti haitumiki.
+          Weka namba tuliyotuma kwenye barua pepe. Bila namba hiyo akaunti haitumiki.
         </p>
         <form onSubmit={submit} className="space-y-4">
           <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-chocolate w-full px-4 py-3.5 text-sm" placeholder="Barua pepe" />
@@ -65,11 +65,11 @@ function VerifyForm() {
             required
             inputMode="numeric"
             autoComplete="one-time-code"
-            maxLength={6}
+            maxLength={8}
             value={code}
-            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 8))}
             className="input-chocolate w-full px-4 py-3.5 text-sm tracking-[0.3em]"
-            placeholder="000000"
+            placeholder="00000000"
           />
           {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
           {info && <p className="text-sm font-semibold" style={{ color: "#5E7F4F" }}>{info}</p>}
