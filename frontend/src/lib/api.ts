@@ -12,6 +12,7 @@ export type Listing = {
   status?: string;
   verified?: boolean;
   images?: string[];
+  likes_count?: number;
   created_at?: string;
 };
 
@@ -117,6 +118,7 @@ export async function createListing(body: {
   location: string;
   city?: string;
   images?: string[];
+  likes_count?: number;
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",
@@ -156,3 +158,12 @@ export const catLabel: Record<string, string> = {
   store_godown: "Store & Godown",
   frame: "Frame za Maduka",
 };
+
+
+export async function likeListing(id: string, on: boolean): Promise<number> {
+  const data = await request<{ likes_count: number }>(`/listings/${id}/like`, {
+    method: "POST",
+    body: JSON.stringify({ on }),
+  });
+  return data.likes_count;
+}

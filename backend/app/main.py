@@ -1,3 +1,4 @@
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -136,3 +137,19 @@ def create_booking(request: Request, body: schemas.BookingIn):
         raise
     except Exception as e:
         raise HTTPException(400, str(e))
+
+
+class LikeIn(BaseModel):
+    on: bool = True
+
+@app.post("/listings/{listing_id}/like")
+@limiter.limit("30/minute")
+def like_listing(request: Request, listing_id: str, body: LikeIn):
+    sb = get_sb()
+    cur = sb.table("listings").select("likes_count").eq("id", listing_id).single().execute()
+    if not cur.data:
+        raise HTTPException(404, "Tangazo halipo")
+    n = int(cur.data.get("likes_count") or 0) + (1 if body.on else -1)
+    n = max(0, n)
+    sb.table("listings").update({"likes_count": n}).eq("id", listing_id).execute()
+    return {"id": listing_id, "likes_count": n}

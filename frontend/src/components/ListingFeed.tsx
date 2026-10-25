@@ -5,7 +5,9 @@ import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { fetchListings, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
-import FavoriteButton from "@/components/FavoriteButton";
+import LikeButton from "@/components/LikeButton";
+import SaveButton from "@/components/SaveButton";
+import { MessageCircle } from "lucide-react";
 
 export default function ListingFeed({
   title,
@@ -79,9 +81,6 @@ export default function ListingFeed({
             className="relative p-4 rounded-[18px]"
             style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}
           >
-            <div className="absolute top-3 right-3 z-10">
-              <FavoriteButton id={item.id} size={18} />
-            </div>
           <Link
             href={`/tangazo/${item.id}`}
             className="block"
@@ -102,6 +101,13 @@ export default function ListingFeed({
               <span className="text-xs font-normal" style={{ color: "#5C4033" }}> {periodLabel(item.period)}</span>
             </p>
           </Link>
+            <div className="flex items-center gap-5 mt-3">
+              <LikeButton id={item.id} count={item.likes_count} />
+              <SaveButton item={item} />
+              <Link href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`} className="flex items-center" aria-label="Ujumbe">
+                <MessageCircle size={22} color="#2E1A0F" />
+              </Link>
+            </div>
           </div>
         ))}
       </div>

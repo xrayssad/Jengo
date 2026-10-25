@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Tag, FileText, Loader2, MessageSquare } from "lucide-react";
 import { fetchListing, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
-import FavoriteButton from "@/components/FavoriteButton";
+import LikeButton from "@/components/LikeButton";
+import SaveButton from "@/components/SaveButton";
 
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function DetailsClient({ id }: { id: string }) {
           <h1 className="text-base font-bold truncate" style={{ color: "#2E1A0F" }}>{item?.title || "Tangazo"}</h1>
           <p className="text-[11px]" style={{ color: "#8B5E3C" }}>{item ? catLabel[item.category || ""] || item.category : "…"}</p>
         </div>
-        {item && <FavoriteButton id={item.id} size={18} />}
+        
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-4">
@@ -74,6 +75,10 @@ export default function DetailsClient({ id }: { id: string }) {
                   <span className="text-sm font-normal" style={{ color: "#5C4033" }}> {periodLabel(item.period)}</span>
                 </p>
               </div>
+            </div>
+            <div className="flex items-center gap-5 mb-5">
+              <LikeButton id={item.id} count={item.likes_count} />
+              <SaveButton item={item} />
             </div>
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">
