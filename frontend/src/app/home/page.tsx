@@ -1,9 +1,10 @@
 "use client";
 
-import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download, Receipt, ShieldCheck, BrickWall } from "lucide-react";
+import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download, Receipt, BrickWall } from "lucide-react";
 import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
-import { clearAuth, getAuthUser } from "@/lib/api";
+import AdminLink from "@/components/AdminLink";
+import { clearAuth } from "@/lib/api";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
@@ -59,7 +60,6 @@ const sideLinks = [
   { label: "Vipendwa", href: "/favorites", icon: Bookmark },
   { label: "Picha zilizohifadhiwa", href: "/picha", icon: Download },
   { label: "Malipo", href: "/malipo", icon: CreditCard },
-  { label: "Hakiki matangazo", href: "/admin", icon: ShieldCheck },
   { label: "Matangazo yangu", href: "/matangazo-yangu", icon: LayoutList },
   { label: "Maombi yangu", href: "/maombi-yangu", icon: Inbox },
   { label: "Mipangilio", href: "/settings", icon: Settings },
@@ -155,11 +155,6 @@ function CategoryCard({
 
 export default function HomePage() {
   const [open, setOpen] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    setIsAdmin(Boolean(getAuthUser()?.is_admin));
-  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -195,6 +190,7 @@ export default function HomePage() {
             <p className="text-[9px] tracking-[0.2em] uppercase font-semibold" style={{ color: "#8B5E3C" }}>
               Marketplace
             </p>
+            <AdminLink />
           </div>
           <Link
             href="/messages"
@@ -242,7 +238,7 @@ export default function HomePage() {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-2" style={{ WebkitOverflowScrolling: "touch", minHeight: 0 }}>
-          {sideLinks.filter((item) => item.href !== "/admin" || isAdmin).map((item) => {
+          {sideLinks.map((item) => {
             const Icon = item.icon;
             return (
               <Link key={item.label} href={item.href} onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 my-1 px-3 py-3.5 rounded-[16px]">

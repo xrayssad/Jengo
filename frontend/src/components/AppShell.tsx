@@ -18,7 +18,7 @@ function skipUsernameGate(path: string) {
 
 function hideNav(path: string) {
   if (skipUsernameGate(path)) return true;
-  if (path.startsWith("/tangazo") || path.startsWith("/tuma-ombi")) return true;
+  if (path.startsWith("/admin") || path.startsWith("/tangazo") || path.startsWith("/tuma-ombi")) return true;
   if (path.startsWith("/messages/") && path !== "/messages") return true;
   return false;
 }

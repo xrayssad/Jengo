@@ -8,6 +8,7 @@ import {
 import Link from "next/link";
 import { clearAuth, getAuthUser } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
+import AdminLink from "@/components/AdminLink";
 
 const menuItems = [
   { icon: FileText, label: "Maombi yangu", desc: "Maombi uliyotuma", href: "/maombi-yangu" },
@@ -85,6 +86,9 @@ export default function ProfilePage() {
           <Plus size={18} strokeWidth={2.5} />
           Weka Tangazo Jipya
         </Link>
+        <div className="text-center">
+          <AdminLink />
+        </div>
 
         <div
           className="rounded-[22px] overflow-hidden"

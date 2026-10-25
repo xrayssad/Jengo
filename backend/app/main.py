@@ -195,7 +195,7 @@ def _upsert_profile(user_id: str, email: str | None, username: str, full_name: s
         "email": (email or "")[:200],
         "username": username,
         "full_name": full_name[:120],
-        "role": role,
+        "role": "user",
     }
     existing = profile_of(user_id)
     if existing:
@@ -563,6 +563,41 @@ def set_username(request: Request, body: UsernameIn, user=Depends(current_user))
     return public_profile(user, token)
 
 
+def _table_count(table: str) -> int:
+    try:
+        res = db().table(table).select("id", count="exact").limit(1).execute()
+        if getattr(res, "count", None) is not None:
+            return int(res.count)
+    except Exception:
+        pass
+    res = db().table(table).select("id").limit(1000).execute()
+    return len(res.data or [])
+
+
+@app.get("/admin/stats")
+def admin_stats(user=Depends(current_user)):
+    require_admin(user)
+    recent = (
+        db()
+        .table("listings")
+        .select("*")
+        .order("created_at", desc=True)
+        .limit(20)
+        .execute()
+    )
+    return {
+        "users": _table_count("profiles"),
+        "listings": _table_count("listings"),
+        "recent": [decorate_listing(x) for x in (recent.data or [])],
+    }
+
+
+@app.api_route("/admin/{rest:path}", methods=["POST", "PUT", "PATCH", "DELETE"])
+def admin_writes(rest: str, user=Depends(current_user)):
+    require_admin(user)
+    raise HTTPException(status_code=404, detail="Haipo")
+
+
 @app.get("/listings")
 def list_listings(
     request: Request,
@@ -641,7 +676,7 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         "location": body.location.strip()[:200],
         "city": (body.city or "Dar es Salaam").strip()[:80],
         "images": body.images[:6],
-        "status": "pending",
+        "status": "active",
         "verified": False,
         "likes_count": 0,
         "owner_id": user.id,

@@ -181,12 +181,22 @@ def main():
         return 1
 
     try:
+        if vifaa.get("status") != "active" or chumba.get("status") != "active":
+            raise RuntimeError(f"expected active, got {vifaa.get('status')} {chumba.get('status')}")
+        buyer_probe = login(BUYER)
+        try:
+            api("GET", "/admin/stats", buyer_probe)
+            raise RuntimeError("non-admin reached /admin/stats")
+        except RuntimeError as exc:
+            if "403" not in str(exc):
+                raise
         admin = login(ADMIN)
-        api("PATCH", f"/listings/{vifaa['id']}", admin, {"status": "active"})
-        api("PATCH", f"/listings/{chumba['id']}", admin, {"status": "active"})
-        rec("2. Admin publishes both", True)
+        stats = api("GET", "/admin/stats", admin)
+        if "users" not in stats or "listings" not in stats:
+            raise RuntimeError(f"bad admin stats {stats}")
+        rec("2. Listings go live; admin stats gated", True)
     except Exception as exc:
-        rec("2. Admin publishes both", False, str(exc))
+        rec("2. Listings go live; admin stats gated", False, str(exc))
         write_report(results)
         return 1
 

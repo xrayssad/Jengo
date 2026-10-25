@@ -115,8 +115,11 @@ export default function WekaTangazoPage() {
       <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
         <div className="max-w-sm w-full text-center">
           <h1 className="font-heading text-xl mb-2" style={{ color: "#2E1A0F" }}>Tangazo limewekwa</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Linasubiri ukaguzi wa admin kabla ya kuonekana.</p>
-          <button type="button" onClick={() => router.push("/home")} className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-sm">
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Linaonekana kwenye Discover sasa.</p>
+          <button type="button" onClick={() => router.push("/discover")} className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-sm">
+            Angalia Discover
+          </button>
+          <button type="button" onClick={() => router.push("/home")} className="btn-secondary w-full mt-3 py-3.5 rounded-[16px] font-semibold text-sm">
             Rudi Home
           </button>
         </div>

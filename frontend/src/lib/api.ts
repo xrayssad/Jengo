@@ -28,6 +28,7 @@ export type AuthUser = {
   full_name?: string | null;
   username?: string | null;
   email?: string | null;
+  role?: "user" | "admin" | string;
   is_admin?: boolean;
   needs_username?: boolean;
 };
@@ -186,6 +187,32 @@ export async function setUsername(username: string, fullName?: string) {
 
 export async function fetchMe() {
   return request<AuthUser>("/auth/me");
+}
+
+export async function refreshAuth(): Promise<AuthUser | null> {
+  const current = getAuthUser();
+  if (!current?.access_token) return null;
+  const data = await fetchMe();
+  const admin = data.role === "admin" || Boolean(data.is_admin);
+  const next: AuthUser = {
+    ...current,
+    ...data,
+    access_token: current.access_token,
+    role: admin ? "admin" : "user",
+    is_admin: admin,
+  };
+  saveAuth(next);
+  return next;
+}
+
+export type AdminStats = {
+  users: number;
+  listings: number;
+  recent: Listing[];
+};
+
+export async function fetchAdminStats() {
+  return request<AdminStats>("/admin/stats");
 }
 
 export async function fetchListings(params?: {

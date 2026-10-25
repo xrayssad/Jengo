@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthUser } from "@/lib/api";
+import { refreshAuth } from "@/lib/api";
 
 export default function AuthGate({
   children,
@@ -15,20 +15,33 @@ export default function AuthGate({
   const [ok, setOk] = useState(false);
 
   useEffect(() => {
-    const user = getAuthUser();
-    if (!user?.access_token) {
-      router.replace("/login");
-      return;
-    }
-    if (user.needs_username) {
-      router.replace("/username");
-      return;
-    }
-    if (admin && !user.is_admin) {
-      router.replace("/home");
-      return;
-    }
-    setOk(true);
+    let stop = false;
+    (async () => {
+      try {
+        const me = await refreshAuth();
+        if (stop) return;
+        if (!me?.access_token) {
+          router.replace("/login");
+          return;
+        }
+        if (me.needs_username) {
+          router.replace("/username");
+          return;
+        }
+        if (admin && !me.is_admin) {
+          router.replace("/home");
+          return;
+        }
+        setOk(true);
+      } catch (err) {
+        if (stop) return;
+        const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
+        router.replace(admin && status !== 401 ? "/home" : "/login");
+      }
+    })();
+    return () => {
+      stop = true;
+    };
   }, [admin, router]);
 
   if (!ok) {

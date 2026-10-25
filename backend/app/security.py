@@ -55,13 +55,19 @@ def profile_of(user_id: str) -> dict | None:
     return rows[0] if rows else None
 
 
+def profile_role(profile: dict | None) -> str:
+    raw = str((profile or {}).get("role") or "").strip().lower()
+    if raw == "admin" or (profile or {}).get("is_admin") is True:
+        return "admin"
+    return "user"
+
+
+def is_admin_profile(profile: dict | None) -> bool:
+    return profile_role(profile) == "admin"
+
+
 def is_admin(user_id: str) -> bool:
-    p = profile_of(user_id)
-    if not p:
-        return False
-    if p.get("is_admin") is True:
-        return True
-    return str(p.get("role") or "").lower() == "admin"
+    return is_admin_profile(profile_of(user_id))
 
 
 def require_admin(user):
@@ -77,12 +83,14 @@ def needs_username(profile: dict | None) -> bool:
 
 def public_profile(user, token: str | None = None) -> dict:
     p = profile_of(user.id) or {}
+    role = profile_role(p)
     out = {
         "user_id": user.id,
         "email": getattr(user, "email", None) or p.get("email"),
         "username": p.get("username"),
         "full_name": p.get("full_name"),
-        "is_admin": is_admin(user.id),
+        "role": role,
+        "is_admin": role == "admin",
         "needs_username": needs_username(p),
     }
     if token:
