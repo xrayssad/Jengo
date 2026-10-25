@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin, Tag, FileText, Loader2, MessageSquare } from "lucide
 import { fetchListing, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
 import LikeButton from "@/components/LikeButton";
 import SaveButton from "@/components/SaveButton";
+import SaveImageButton from "@/components/SaveImageButton";
 
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
@@ -79,6 +80,7 @@ export default function DetailsClient({ id }: { id: string }) {
             <div className="flex items-center gap-5 mb-5">
               <LikeButton id={item.id} count={item.likes_count} />
               <SaveButton item={item} />
+              <SaveImageButton id={item.id} title={item.title} url={item.images?.[0]} />
             </div>
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-2">

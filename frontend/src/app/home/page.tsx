@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox } from "lucide-react";
+import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download } from "lucide-react";
 import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import { clearAuth } from "@/lib/api";
@@ -46,8 +46,8 @@ const sideLinks = [
   { label: "Profile", href: "/profile", icon: User },
   { label: "Messages", href: "/messages", icon: MessageCircle },
   { label: "Discover", href: "/discover", icon: Compass },
-  { label: "Vipendwa", href: "/favorites", icon: Heart },
-  { label: "Picha zilizohifadhiwa", href: "/saved", icon: Bookmark },
+  { label: "Vipendwa", href: "/favorites", icon: Bookmark },
+  { label: "Picha zilizohifadhiwa", href: "/picha", icon: Download },
   { label: "Malipo", href: "/payments", icon: CreditCard },
   { label: "Matangazo yangu", href: "/matangazo-yangu", icon: LayoutList },
   { label: "Maombi yangu", href: "/maombi-yangu", icon: Inbox },

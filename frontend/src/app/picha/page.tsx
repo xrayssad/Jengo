@@ -1,0 +1,43 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ArrowLeft, Download } from "lucide-react";
+import BottomNav from "@/components/BottomNav";
+import { readSavedImages, type SavedImage } from "@/lib/savedImages";
+
+export default function SavedImagesPage() {
+  const [items, setItems] = useState<SavedImage[]>([]);
+  useEffect(() => setItems(readSavedImages()), []);
+
+  return (
+    <main className="min-h-screen pb-24" style={{ backgroundColor: "#FFF6ED" }}>
+      <header className="sticky top-0 z-20 px-4 py-3.5" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
+        <div className="max-w-md mx-auto flex items-center gap-3">
+          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
+            <ArrowLeft size={18} color="#2E1A0F" />
+          </Link>
+          <div>
+            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Picha zilizohifadhiwa</h1>
+            <p className="text-xs" style={{ color: "#5C4033" }}>Picha ulizopakua kutoka kwenye post</p>
+          </div>
+        </div>
+      </header>
+      <div className="max-w-md mx-auto px-4 pt-4 grid grid-cols-2 gap-3">
+        {items.length === 0 && (
+          <div className="col-span-2 text-center py-16">
+            <Download size={32} color="#D2A679" className="mx-auto mb-3" />
+            <p className="font-bold" style={{ color: "#2E1A0F" }}>Hakuna picha bado</p>
+          </div>
+        )}
+        {items.map((img) => (
+          <Link key={img.id} href={`/tangazo/${img.listing_id}`} className="block rounded-[16px] overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}>
+            <img src={img.url} alt="" className="w-full h-36 object-cover" />
+            <p className="text-xs font-semibold p-2 truncate" style={{ color: "#2E1A0F" }}>{img.title}</p>
+          </Link>
+        ))}
+      </div>
+      <BottomNav />
+    </main>
+  );
+}

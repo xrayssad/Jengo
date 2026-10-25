@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { fetchListings, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
 import LikeButton from "@/components/LikeButton";
 import SaveButton from "@/components/SaveButton";
+import SaveImageButton from "@/components/SaveImageButton";
 import { MessageCircle } from "lucide-react";
 
 export default function ListingFeed({
@@ -104,6 +105,7 @@ export default function ListingFeed({
             <div className="flex items-center gap-5 mt-3">
               <LikeButton id={item.id} count={item.likes_count} />
               <SaveButton item={item} />
+              <SaveImageButton id={item.id} title={item.title} url={item.images?.[0]} />
               <Link href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`} className="flex items-center" aria-label="Ujumbe">
                 <MessageCircle size={22} color="#2E1A0F" />
               </Link>
