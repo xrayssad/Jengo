@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { createListing } from "@/lib/api";
 import { rememberListing } from "@/lib/mine";
 import AppAlert, { type AlertKind } from "@/components/AppAlert";
+import AuthGate from "@/components/AuthGate";
 
 const categories = [
   { id: "chumba_nyumba", label: "Chumba & Nyumba" },
@@ -110,27 +111,28 @@ export default function WekaTangazoPage() {
 
   if (done) {
     return (
+      <AuthGate>
       <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
         <div className="max-w-sm w-full text-center">
-          <h1 className="text-xl font-bold mb-2" style={{ color: "#2E1A0F" }}>Tangazo limewekwa</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Linaonekana Discover na ukurasa wa kategoria.</p>
-          <button type="button" onClick={() => router.push("/discover")} className="w-full py-3.5 rounded-[16px] font-semibold text-sm" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
-            Nenda Discover
+          <h1 className="font-heading text-xl mb-2" style={{ color: "#2E1A0F" }}>Tangazo limewekwa</h1>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Linasubiri ukaguzi wa admin kabla ya kuonekana.</p>
+          <button type="button" onClick={() => router.push("/home")} className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-sm">
+            Rudi Home
           </button>
         </div>
       </main>
+      </AuthGate>
     );
   }
 
-  const box = { border: "1.5px solid #3D2415", backgroundColor: "white", color: "#2E1A0F" };
-
   return (
-    <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
+    <AuthGate>
+    <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
         <button type="button" onClick={() => router.push("/home")} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
           <ArrowLeft size={18} color="#2E1A0F" />
         </button>
-        <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
+        <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
       </header>
 
       <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5 space-y-4">
@@ -155,8 +157,8 @@ export default function WekaTangazoPage() {
           ))}
         </div>
 
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kichwa" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
-        <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Bei" inputMode="numeric" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kichwa" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Bei" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
 
         {category === "vifaa" ? (
           <>
@@ -167,7 +169,7 @@ export default function WekaTangazoPage() {
                 </button>
               ))}
             </div>
-            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Stock / idadi" inputMode="numeric" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Stock / idadi" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
           </>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -179,12 +181,12 @@ export default function WekaTangazoPage() {
           </div>
         )}
 
-        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Eneo, mfano Kinondoni" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
-        <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mji" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
-        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Link ya picha https://...jpg" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo" className="w-full px-4 py-3.5 text-sm rounded-[16px] resize-none" style={box} />
+        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Eneo, mfano Kinondoni" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mji" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Link ya picha https://...jpg" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
 
-        <button type="submit" disabled={loading} className="w-full flex items-center justify-center gap-2 py-4 rounded-[18px] font-semibold text-sm" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED", opacity: loading ? 0.7 : 1 }}>
+        <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-[18px] font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
           {loading ? <Loader2 size={18} className="animate-spin" /> : null}
           {loading ? "Inachapisha..." : "Chapisha Tangazo"}
         </button>
@@ -192,5 +194,6 @@ export default function WekaTangazoPage() {
 
       <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg} onClose={() => setAlertOpen(false)} />
     </main>
+    </AuthGate>
   );
 }

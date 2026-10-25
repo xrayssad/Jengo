@@ -7,6 +7,7 @@ import { ArrowLeft, Send, CheckCircle2, Loader2 } from "lucide-react";
 import { createBooking, fetchListing, listingUnit, unitLabel, type Listing } from "@/lib/api";
 import { rememberBooking } from "@/lib/mine";
 import AppAlert, { AlertKind } from "@/components/AppAlert";
+import AuthGate from "@/components/AuthGate";
 
 function TumaOmbiForm() {
   const search = useSearchParams();
@@ -140,7 +141,7 @@ function TumaOmbiForm() {
 
       <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-6 space-y-5">
         <p className="text-sm" style={{ color: "#5C4033" }}>
-          Andika ujumbe mfupi kwa mwenye tangazo. (Auth kamili itakuja baadaye.)
+          Andika ujumbe mfupi kwa mwenye tangazo.
         </p>
         {isVifaa && (
           <label className="block">
@@ -194,7 +195,9 @@ export default function TumaOmbiPage() {
         <Loader2 size={28} color="#8B5E3C" className="animate-spin" />
       </div>
     }>
-      <TumaOmbiForm />
+      <AuthGate>
+        <TumaOmbiForm />
+      </AuthGate>
     </Suspense>
   );
 }

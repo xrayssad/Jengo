@@ -1,5 +1,4 @@
 "use client";
-import ProfileName from "@/components/ProfileName";
 
 import { useEffect, useState } from "react";
 import {
@@ -8,34 +7,36 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { clearAuth, getAuthUser } from "@/lib/api";
+import AuthGate from "@/components/AuthGate";
 
 const menuItems = [
-  { icon: FileText, label: "Maombi yangu", desc: "Yataonekana baada ya auth", href: "/discover" },
-  { icon: Home, label: "Matangazo yangu", desc: "Angalia Discover", href: "/discover" },
+  { icon: FileText, label: "Maombi yangu", desc: "Maombi uliyotuma", href: "/maombi-yangu" },
+  { icon: Home, label: "Matangazo yangu", desc: "Uliyoweka", href: "/matangazo-yangu" },
   { icon: Heart, label: "Vipendwa", desc: "Matangazo uliyohifadhi", href: "/favorites" },
   { icon: Settings, label: "Mipangilio", desc: "Akaunti na faragha", href: "/settings" },
 ];
 
 export default function ProfilePage() {
-  const [name, setName] = useState("<ProfileName />");
+  const [name, setName] = useState("Mtumiaji");
   const [email, setEmail] = useState("");
 
   useEffect(() => {
     const user = getAuthUser();
     if (user) {
-      setName(user.full_name || user.email || "Mtumiaji Demo");
+      setName(user.username || user.full_name || user.email || "Mtumiaji");
       setEmail(user.email || "");
     }
   }, []);
 
   return (
-    <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
+    <AuthGate>
+    <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.4)" }}>
         <div className="max-w-md mx-auto flex items-center gap-3">
           <Link href="/home" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center shadow-warm-sm">
             <ArrowLeft size={18} strokeWidth={2.2} />
           </Link>
-          <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Profile</h1>
+          <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Profile</h1>
         </div>
       </header>
 
@@ -137,5 +138,6 @@ export default function ProfilePage() {
         </button>
       </div>
     </main>
+    </AuthGate>
   );
 }

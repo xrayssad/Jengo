@@ -12,6 +12,7 @@ import {
   setListingStatus,
   type Listing,
 } from "@/lib/api";
+import AuthGate from "@/components/AuthGate";
 
 export default function AdminReviewPage() {
   const [items, setItems] = useState<Listing[]>([]);
@@ -49,7 +50,8 @@ export default function AdminReviewPage() {
   };
 
   return (
-    <main className="min-h-screen pb-24" style={{ backgroundColor: "#FFF6ED" }}>
+    <AuthGate admin>
+    <main className="min-h-screen pb-24 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
       <header
         className="sticky top-0 z-20 px-4 py-3.5"
         style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}
@@ -63,7 +65,7 @@ export default function AdminReviewPage() {
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Hakiki matangazo</h1>
+            <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Hakiki matangazo</h1>
             <p className="text-xs" style={{ color: "#5C4033" }}>Chapisha au kataa kabla ya kuonekana</p>
           </div>
         </div>
@@ -124,5 +126,6 @@ export default function AdminReviewPage() {
       </div>
       <BottomNav />
     </main>
+    </AuthGate>
   );
 }

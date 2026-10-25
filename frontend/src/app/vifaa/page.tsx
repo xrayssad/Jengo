@@ -47,13 +47,13 @@ export default function VifaaPage() {
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Vifaa vya Ujenzi</h1>
+            <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Vifaa vya Ujenzi</h1>
             <p className="text-xs" style={{ color: "#5C4033" }}>Simenti, chuma, tofali, mchanga, bati, rangi</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 pt-4 space-y-3">
+      <div className="max-w-md mx-auto px-5 pt-6 space-y-5">
         {loading && (
           <div className="flex justify-center py-16">
             <Loader2 size={28} color="#8B5E3C" className="animate-spin" />
@@ -62,7 +62,7 @@ export default function VifaaPage() {
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
             <p className="font-bold" style={{ color: "#2E1A0F" }}>Hakuna vifaa bado</p>
-            <Link href="/weka-tangazo" className="inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
+            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">
               Weka Tangazo
             </Link>
           </div>
@@ -72,14 +72,13 @@ export default function VifaaPage() {
           return (
             <div
               key={item.id}
-              className="relative p-4 rounded-[18px]"
-              style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}
+              className="market-card relative p-5"
             >
               <Link href={`/tangazo/${item.id}`} className="block">
                 {item.images?.[0] && (
                   <img src={item.images[0]} alt="" className="w-full h-40 object-cover rounded-[14px] mb-3" />
                 )}
-                <h2 className="font-bold" style={{ color: "#2E1A0F" }}>{item.title}</h2>
+                <h2 className="font-heading" style={{ color: "#2E1A0F" }}>{item.title}</h2>
                 <div className="flex items-center gap-1 mt-1">
                   <MapPin size={12} color="#8B5E3C" />
                   <span className="text-xs" style={{ color: "#5C4033" }}>{item.location}{item.city ? `, ${item.city}` : ""}</span>

@@ -3,7 +3,7 @@
 import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download, Receipt, ShieldCheck, BrickWall } from "lucide-react";
 import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
-import { clearAuth } from "@/lib/api";
+import { clearAuth, getAuthUser } from "@/lib/api";
 import Image from "next/image";
 import { useState, useEffect } from "react";
 
@@ -140,7 +140,7 @@ function CategoryCard({
         <Icon size={16} color="#FFF6ED" strokeWidth={2} />
       </div>
       <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-        <h3 className="font-bold text-[16px] leading-tight" style={{ color: "#FFF6ED" }}>
+        <h3 className="font-heading text-[16px] leading-tight" style={{ color: "#FFF6ED" }}>
           {title}
         </h3>
         <p className="text-[11px] mt-1" style={{ color: "#D2A679" }}>{description}</p>
@@ -155,6 +155,11 @@ function CategoryCard({
 
 export default function HomePage() {
   const [open, setOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    setIsAdmin(Boolean(getAuthUser()?.is_admin));
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -186,7 +191,7 @@ export default function HomePage() {
             <Menu size={18} color="#F5E6D3" strokeWidth={2.2} />
           </button>
           <div className="text-center">
-            <h1 className="text-lg font-bold tracking-tight" style={{ color: "#2E1A0F" }}>Jengo</h1>
+            <h1 className="font-heading text-lg tracking-tight" style={{ color: "#2E1A0F" }}>Jengo</h1>
             <p className="text-[9px] tracking-[0.2em] uppercase font-semibold" style={{ color: "#8B5E3C" }}>
               Marketplace
             </p>
@@ -237,7 +242,7 @@ export default function HomePage() {
           </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-2" style={{ WebkitOverflowScrolling: "touch", minHeight: 0 }}>
-          {sideLinks.map((item) => {
+          {sideLinks.filter((item) => item.href !== "/admin" || isAdmin).map((item) => {
             const Icon = item.icon;
             return (
               <Link key={item.label} href={item.href} onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 my-1 px-3 py-3.5 rounded-[16px]">
@@ -287,7 +292,7 @@ export default function HomePage() {
                 Karibu Jengo
               </span>
             </div>
-            <h2 className="text-xl font-bold leading-snug mb-1" style={{ color: "#FFF6ED" }}>
+            <h2 className="font-heading text-xl leading-snug mb-1" style={{ color: "#FFF6ED" }}>
               Pata makazi na nafasi za biashara
             </h2>
             <p className="text-xs leading-relaxed max-w-[90%]" style={{ color: "rgba(255,246,237,0.75)" }}>
@@ -335,7 +340,7 @@ export default function HomePage() {
         {/* Section title */}
         <div className="flex items-end justify-between mb-3 mt-2">
           <div>
-            <h2 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Kategoria</h2>
+            <h2 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Kategoria</h2>
             <p className="text-xs" style={{ color: "#5C4033" }}>Chagua unachotafuta</p>
           </div>
           <Link href="/discover" className="text-xs font-bold flex items-center gap-0.5" style={{ color: "#8B5E3C" }}>

@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Playfair_Display } from "next/font/google";
+import { Playfair_Display, Source_Sans_3 } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
 const playfair = Playfair_Display({
   subsets: ["latin"],
   variable: "--font-playfair",
+  display: "swap",
+});
+
+const sourceSans = Source_Sans_3({
+  subsets: ["latin"],
+  variable: "--font-sans",
   display: "swap",
 });
 
@@ -20,16 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sw" className={playfair.variable}>
-      <body
-        className="antialiased"
-        style={{
-          backgroundColor: "#FFF6ED",
-          color: "#2E1A0F",
-          fontFamily: "var(--font-playfair), Georgia, serif",
-        }}
-        suppressHydrationWarning
-      >
+    <html lang="sw" className={`${playfair.variable} ${sourceSans.variable}`}>
+      <body className="antialiased" suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>
     </html>

@@ -16,6 +16,7 @@ export type Listing = {
   created_at?: string;
   unit?: string | null;
   stock?: number | null;
+  owner_id?: string;
 };
 
 const TOKEN_KEY = "jengo_token";
@@ -25,21 +26,15 @@ export type AuthUser = {
   access_token: string;
   user_id: string;
   full_name?: string | null;
+  username?: string | null;
   email?: string | null;
+  is_admin?: boolean;
 };
 
-export function demoLogin(email: string, full_name?: string): AuthUser {
-  const data: AuthUser = {
-    access_token: "demo-token",
-    user_id: "demo-user",
-    email: email || "demo@jengo.app",
-    full_name: full_name || "Mtumiaji Demo",
-  };
-  if (typeof window !== "undefined") {
-    localStorage.setItem(TOKEN_KEY, data.access_token);
-    localStorage.setItem(USER_KEY, JSON.stringify(data));
-  }
-  return data;
+export function saveAuth(data: AuthUser) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(TOKEN_KEY, data.access_token);
+  localStorage.setItem(USER_KEY, JSON.stringify(data));
 }
 
 export function clearAuth() {
@@ -63,19 +58,13 @@ export function getAuthUser(): AuthUser | null {
   }
 }
 
-export async function register(email: string, _p: string, full_name: string) {
-  return demoLogin(email, full_name);
-}
-
-export async function login(email: string, _p: string) {
-  return demoLogin(email);
-}
-
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
   };
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   const text = await res.text();
   let data: unknown = null;
@@ -89,9 +78,65 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
       typeof data === "object" && data && "detail" in data
         ? String((data as { detail: unknown }).detail)
         : `Hitilafu ${res.status}`;
-    throw new Error(detail);
+    const err = new Error(detail) as Error & { status?: number };
+    err.status = res.status;
+    throw err;
   }
   return data as T;
+}
+
+export async function register(body: {
+  email: string;
+  password: string;
+  username: string;
+  full_name: string;
+}) {
+  return request<{ ok: boolean; email: string; needs_verify?: boolean }>("/auth/register", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function verifyEmail(email: string, code: string) {
+  const data = await request<AuthUser>("/auth/verify", {
+    method: "POST",
+    body: JSON.stringify({ email, code }),
+  });
+  saveAuth(data);
+  return data;
+}
+
+export async function resendOtp(email: string) {
+  return request<{ ok: boolean }>("/auth/resend", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function login(email: string, password: string) {
+  const data = await request<AuthUser>("/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
+  saveAuth(data);
+  return data;
+}
+
+export async function startGoogle(redirectTo: string) {
+  return request<{ url: string }>(`/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`);
+}
+
+export async function adoptSession(accessToken: string) {
+  const data = await request<AuthUser>("/auth/session", {
+    method: "POST",
+    body: JSON.stringify({ access_token: accessToken }),
+  });
+  saveAuth(data);
+  return data;
+}
+
+export async function fetchMe() {
+  return request<AuthUser>("/auth/me");
 }
 
 export async function fetchListings(params?: {
@@ -99,11 +144,14 @@ export async function fetchListings(params?: {
   q?: string;
   sort?: string;
   status?: string;
+  mine?: boolean;
 }): Promise<{ items: Listing[] }> {
   const sp = new URLSearchParams();
   if (params?.category) sp.set("category", params.category);
   if (params?.q) sp.set("q", params.q);
-  sp.set("status", params?.status || "active");
+  if (params?.mine) sp.set("mine", "true");
+  else sp.set("status", params?.status || "active");
+  if (params?.sort) sp.set("sort", params.sort);
   const data = await request<{ items?: Listing[] }>(`/listings?${sp}`);
   return { items: data.items || [] };
 }
@@ -181,7 +229,6 @@ export function listingUnit(item: { category?: string; unit?: string | null; per
   return "";
 }
 
-
 export async function likeListing(id: string, on: boolean): Promise<number> {
   const data = await request<{ likes_count: number }>(`/listings/${id}/like`, {
     method: "POST",
@@ -190,7 +237,6 @@ export async function likeListing(id: string, on: boolean): Promise<number> {
   return data.likes_count;
 }
 
-
 export type Booking = {
   id: string;
   listing_id: string;
@@ -198,18 +244,43 @@ export type Booking = {
   status?: string;
   created_at?: string;
   quantity?: number | null;
+  user_id?: string;
   commission_amount?: number | null;
   commission_rate?: number | null;
+  review?: { rating: number; comment?: string } | null;
 };
 
 export async function createBooking(body: { listing_id: string; message?: string; quantity?: number }) {
   return request<Booking>("/bookings", { method: "POST", body: JSON.stringify(body) });
 }
 
-export async function fetchBookings(listingId: string) {
-  return request<{ items: Booking[] }>(`/bookings?listing_id=${encodeURIComponent(listingId)}`);
+export async function fetchBookings(listingId?: string, mine?: "sent" | "incoming") {
+  const sp = new URLSearchParams();
+  if (listingId) sp.set("listing_id", listingId);
+  if (mine) sp.set("mine", mine);
+  const q = sp.toString();
+  return request<{ items: Booking[] }>(`/bookings${q ? `?${q}` : ""}`);
 }
 
 export async function setBookingStatus(id: string, status: "accepted" | "rejected" | "moved_in") {
   return request<Booking>(`/bookings/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+}
+
+export type Review = {
+  booking_id: string;
+  listing_id?: string;
+  rating: number;
+  comment?: string;
+};
+
+export async function createReview(body: { booking_id: string; rating: number; comment?: string }) {
+  return request<Review>("/reviews", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function fetchReviews(params?: { listing_id?: string; booking_id?: string }) {
+  const sp = new URLSearchParams();
+  if (params?.listing_id) sp.set("listing_id", params.listing_id);
+  if (params?.booking_id) sp.set("booking_id", params.booking_id);
+  const q = sp.toString();
+  return request<{ items: Review[] }>(`/reviews${q ? `?${q}` : ""}`);
 }

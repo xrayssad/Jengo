@@ -47,7 +47,7 @@ export default function DiscoverPage() {
     <main className="min-h-screen pb-24" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
         <div className="max-w-md mx-auto">
-          <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Discover</h1>
+          <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Discover</h1>
           <div className="mt-3 flex items-center gap-2 px-3 py-2.5 rounded-[16px]" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
             <Search size={16} color="#8B5E3C" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tafuta jina au eneo" className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#2E1A0F" }} />
@@ -62,15 +62,15 @@ export default function DiscoverPage() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 pt-4 space-y-3">
+      <div className="max-w-md mx-auto px-5 pt-6 space-y-5">
         {loading && <div className="flex justify-center py-16"><Loader2 className="animate-spin" color="#8B5E3C" /></div>}
         {!loading && shown.length === 0 && <p className="text-center py-16 font-bold" style={{ color: "#2E1A0F" }}>Hakuna tangazo</p>}
         {shown.map((item) => (
-          <div key={item.id} className="p-4 rounded-[18px]" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}>
+          <div key={item.id} className="market-card p-5">
             <Link href={`/tangazo/${item.id}`} className="block">
               {item.images?.[0] && <img src={item.images[0]} alt="" className="w-full h-40 object-cover rounded-[14px] mb-3" />}
               <p className="text-[10px] font-bold uppercase" style={{ color: "#8B5E3C" }}>{catLabel[item.category || ""] || item.category}</p>
-              <h2 className="font-bold mt-1" style={{ color: "#2E1A0F" }}>{item.title}</h2>
+              <h2 className="font-heading mt-1" style={{ color: "#2E1A0F" }}>{item.title}</h2>
               <div className="flex items-center gap-1 mt-1">
                 <MapPin size={12} color="#8B5E3C" />
                 <span className="text-xs" style={{ color: "#5C4033" }}>{item.location}{item.city ? `, ${item.city}` : ""}</span>
