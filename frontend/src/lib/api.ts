@@ -168,3 +168,24 @@ export async function likeListing(id: string, on: boolean): Promise<number> {
   });
   return data.likes_count;
 }
+
+
+export type Booking = {
+  id: string;
+  listing_id: string;
+  message?: string;
+  status?: string;
+  created_at?: string;
+};
+
+export async function createBooking(body: { listing_id: string; message?: string }) {
+  return request<Booking>("/bookings", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function fetchBookings(listingId: string) {
+  return request<{ items: Booking[] }>(`/bookings?listing_id=${encodeURIComponent(listingId)}`);
+}
+
+export async function setBookingStatus(id: string, status: "accepted" | "rejected") {
+  return request<Booking>(`/bookings/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+}
