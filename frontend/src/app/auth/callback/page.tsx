@@ -19,7 +19,21 @@ function googleOffMessage(raw: string) {
   if (text.includes("provider") || text.includes("validation_failed") || text.includes("not enabled")) {
     return "Google haijaunganishwa kwenye Supabase. Ingia kwa barua pepe, au washa Google provider.";
   }
+  if (text.includes("exchange external code") || text.includes("invalid_client") || text.includes("unauthorized")) {
+    return "Google imeshindwa kuthibitisha Client ID au Secret. Angalia Google Cloud na Supabase, kisha jaribu tena. Hii si OTP.";
+  }
   return raw;
+}
+
+function errorTitle(raw: string) {
+  const text = raw.toLowerCase();
+  if (text.includes("google") || text.includes("exchange") || text.includes("oauth") || text.includes("client")) {
+    return "Kuingia na Google";
+  }
+  if (text.includes("kiungo") || text.includes("thibitisho") || text.includes("token")) {
+    return "Thibitisho";
+  }
+  return "Kuingia";
 }
 
 async function goHome(accessToken: string) {
@@ -78,7 +92,7 @@ export default function AuthCallbackPage() {
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "#FFF6ED" }}>
       <div className="text-center max-w-sm">
         <h1 className="font-heading text-2xl mb-3" style={{ color: "#2E1A0F" }}>
-          {error ? "Thibitisho" : "Inakamilisha..."}
+          {error ? errorTitle(error) : "Inakamilisha..."}
         </h1>
         {error ? (
           <>

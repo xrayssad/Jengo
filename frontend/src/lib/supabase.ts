@@ -13,8 +13,7 @@ export function getSupabase() {
     auth: {
       flowType: "pkce",
       detectSessionInUrl: false,
-      persistSession: false,
-      autoRefreshToken: false,
+      persistSession: true,
     },
   });
   return client;
