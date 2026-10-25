@@ -110,6 +110,10 @@ export async function fetchListing(id: string): Promise<Listing> {
   return request<Listing>(`/listings/${id}`);
 }
 
+export async function setListingStatus(id: string, status: "active" | "hidden" | "rejected") {
+  return request<Listing>(`/listings/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
+}
+
 export async function createListing(body: {
   category: string;
   title: string;

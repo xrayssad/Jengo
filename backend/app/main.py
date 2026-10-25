@@ -92,7 +92,7 @@ def create_listing(body: ListingIn):
         "location": body.location.strip()[:200],
         "city": (body.city or "Dar es Salaam").strip()[:80],
         "images": body.images[:6],
-        "status": "active",
+        "status": "pending",
         "verified": False,
         "likes_count": 0,
     }
@@ -100,6 +100,21 @@ def create_listing(body: ListingIn):
     if not res.data:
         raise HTTPException(status_code=400, detail="Imeshindwa kuhifadhi")
     return res.data[0]
+
+
+class ListingStatusIn(BaseModel):
+    status: str
+
+
+@app.patch("/listings/{listing_id}")
+def set_listing_status(listing_id: str, body: ListingStatusIn):
+    if body.status not in {"active", "hidden", "rejected"}:
+        raise HTTPException(status_code=400, detail="Hali si sahihi")
+    res = db().table("listings").update({"status": body.status}).eq("id", listing_id).execute()
+    rows = res.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Tangazo halipo")
+    return rows[0]
 
 
 @app.post("/listings/{listing_id}/like")
