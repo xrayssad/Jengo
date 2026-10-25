@@ -17,16 +17,20 @@ const filters = [
 function SearchInner() {
   const search = useSearchParams();
   const initialQ = search.get("q") || "";
+  const initialCat = filters.some((f) => f.id === (search.get("category") || ""))
+    ? search.get("category") || ""
+    : "";
   const [query, setQuery] = useState(initialQ);
   const [debounced, setDebounced] = useState(initialQ.trim());
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState(initialCat);
   const [items, setItems] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
     setQuery(initialQ);
-  }, [initialQ]);
+    setCategory(initialCat);
+  }, [initialQ, initialCat]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(query.trim()), 300);

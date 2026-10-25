@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, MapPin, BadgeCheck, Heart, Loader2 } from "lucide-react";
+import { ArrowLeft, MapPin, BadgeCheck, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { fetchListings, formatPrice, periodLabel, type Listing } from "@/lib/api";
+import FavoriteButton from "@/components/FavoriteButton";
 
 type Props = {
   title: string;
@@ -132,15 +133,14 @@ export default function CategoryListings({
                     <BadgeCheck size={13} strokeWidth={2.2} /> Amethibitishwa
                   </div>
                 )}
-                <div
+                <FavoriteButton
+                  id={item.id}
                   className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
                   style={{
                     backgroundColor: "white",
                     boxShadow: "0 2px 10px rgba(46,26,15,0.12)",
                   }}
-                >
-                  <Heart size={16} color="#8B5E3C" strokeWidth={2} />
-                </div>
+                />
               </div>
               <div className="p-4">
                 <div className="flex items-start justify-between gap-3">

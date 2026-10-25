@@ -10,11 +10,6 @@ const methods = [
   { icon: CreditCard, title: "Kadi", desc: "Visa / Mastercard (baadaye)" },
 ];
 
-const history = [
-  { id: 1, title: "Ada ya tangazo — Apartment Masaki", amount: "15,000", date: "20 Okt 2026", status: "Imelipwa" },
-  { id: 2, title: "Kamisheni — Godown Mikocheni", amount: "45,000", date: "18 Okt 2026", status: "Imelipwa" },
-];
-
 export default function PaymentsPage() {
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
@@ -57,23 +52,14 @@ export default function PaymentsPage() {
 
         <div>
           <h2 className="text-sm font-bold mb-3" style={{ color: "#2E1A0F" }}>Historia</h2>
-          <div className="space-y-2">
-            {history.map((h) => (
-              <div
-                key={h.id}
-                className="p-3.5 rounded-[16px]"
-                style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}
-              >
-                <div className="flex justify-between gap-2">
-                  <p className="text-sm font-medium" style={{ color: "#2E1A0F" }}>{h.title}</p>
-                  <p className="text-sm font-bold shrink-0" style={{ color: "#2E1A0F" }}>TZS {h.amount}</p>
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-xs" style={{ color: "#5C4033" }}>{h.date}</span>
-                  <span className="text-xs font-semibold" style={{ color: "#5E7F4F" }}>{h.status}</span>
-                </div>
-              </div>
-            ))}
+          <div
+            className="p-6 rounded-[16px] text-center"
+            style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}
+          >
+            <p className="font-semibold text-sm" style={{ color: "#2E1A0F" }}>Hakuna malipo bado</p>
+            <p className="text-xs mt-1" style={{ color: "#5C4033" }}>
+              Malipo halisi yataunganishwa baadaye.
+            </p>
           </div>
         </div>
 

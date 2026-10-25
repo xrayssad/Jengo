@@ -1,12 +1,7 @@
 "use client";
-import { ArrowLeft, MapPin, BadgeCheck, Heart, Gavel } from "lucide-react";
-import Link from "next/link";
 
-const listings = [
-  { id: 1, title: "Mnada wa Godown - Mikocheni", price: "380,000", period: "kuanzia", location: "Mikocheni, Dar", verified: true },
-  { id: 2, title: "Mnada wa Saruji 50 mifuko", price: "980,000", period: "kuanzia", location: "Kariakoo, Dar", verified: true },
-  { id: 3, title: "Mnada wa Frame ya Duka", price: "200,000", period: "kuanzia", location: "Sinza, Dar", verified: false },
-];
+import { ArrowLeft, Gavel } from "lucide-react";
+import Link from "next/link";
 
 export default function MnadaPage() {
   return (
@@ -18,43 +13,24 @@ export default function MnadaPage() {
           </Link>
           <div>
             <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Mnada</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>{listings.length} yanapatikana</p>
+            <p className="text-xs" style={{ color: "#5C4033" }}>Si katika Jengo sasa</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-5 space-y-4">
-        {listings.map((item, i) => (
-          <div key={item.id} className={`card-lift rounded-[22px] overflow-hidden anim-up d${Math.min(i + 1, 5)}`}
-            style={{ backgroundColor: "white", border: "1px solid rgba(210,166,121,0.4)", boxShadow: "0 8px 24px rgba(46,26,15,0.08)" }}>
-            <div className="relative h-44 flex items-center justify-center"
-              style={{ background: "linear-gradient(160deg, #FFF6ED 0%, #E8D5B7 100%)" }}>
-              <Gavel size={52} color="#8B5E3C" strokeWidth={1.35} />
-              {item.verified && (
-                <div className="badge-shimmer absolute top-3 left-3 flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-semibold text-[#FFF6ED]">
-                  <BadgeCheck size={13} strokeWidth={2.2} /> Amethibitishwa
-                </div>
-              )}
-              <button className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: "white", boxShadow: "0 2px 10px rgba(46,26,15,0.12)" }}>
-                <Heart size={16} color="#8B5E3C" strokeWidth={2} />
-              </button>
-            </div>
-            <div className="p-4">
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="font-bold text-[15px] leading-snug" style={{ color: "#2E1A0F" }}>{item.title}</h3>
-                <div className="text-right shrink-0">
-                  <p className="font-bold text-[15px]" style={{ color: "#2E1A0F" }}>TZS {item.price}</p>
-                  <p className="text-xs" style={{ color: "#5C4033" }}>{item.period}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-1.5 mt-3">
-                <MapPin size={13} color="#8B5E3C" strokeWidth={2} />
-                <span className="text-xs" style={{ color: "#5C4033" }}>{item.location}</span>
-              </div>
-            </div>
-          </div>
-        ))}
+      <div className="max-w-md mx-auto px-4 py-16 text-center">
+        <Gavel size={40} color="#D2A679" className="mx-auto mb-3 opacity-60" />
+        <p className="font-bold" style={{ color: "#2E1A0F" }}>Huduma hii haijaanza</p>
+        <p className="text-sm mt-1 mb-4" style={{ color: "#5C4033" }}>
+          Jengo sasa ni chumba, nyumba, apartment, store na frame.
+        </p>
+        <Link
+          href="/home"
+          className="inline-block px-6 py-3 rounded-full text-sm font-semibold"
+          style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}
+        >
+          Rudi Home
+        </Link>
       </div>
     </main>
   );
