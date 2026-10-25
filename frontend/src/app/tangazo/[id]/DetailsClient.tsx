@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Tag, FileText, Loader2, MessageSquare } from "lucide-react";
-import { fetchListing, formatPrice, periodLabel, catLabel, type Listing } from "@/lib/api";
+import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabel, type Listing } from "@/lib/api";
 import LikeButton from "@/components/LikeButton";
 import SaveButton from "@/components/SaveButton";
 import SaveImageButton from "@/components/SaveImageButton";
@@ -14,6 +14,7 @@ export default function DetailsClient({ id }: { id: string }) {
   const [item, setItem] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [qty, setQty] = useState("1");
 
   useEffect(() => {
     let stop = false;
@@ -34,7 +35,7 @@ export default function DetailsClient({ id }: { id: string }) {
   }, [id]);
 
   return (
-    <main className="min-h-screen pb-28" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen pb-40" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3" style={{ backgroundColor: "rgba(255,246,237,0.92)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
         <button type="button" onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
           <ArrowLeft size={18} color="#2E1A0F" />
@@ -73,9 +74,19 @@ export default function DetailsClient({ id }: { id: string }) {
                 <Tag size={18} color="#8B5E3C" />
                 <p className="text-lg font-bold" style={{ color: "#2E1A0F" }}>
                   TZS {formatPrice(item.price)}
-                  <span className="text-sm font-normal" style={{ color: "#5C4033" }}> {periodLabel(item.period)}</span>
+                  <span className="text-sm font-normal" style={{ color: "#5C4033" }}>
+                    {" "}
+                    {item.category === "vifaa"
+                      ? (listingUnit(item) ? `/ ${unitLabel(listingUnit(item))}` : "")
+                      : periodLabel(item.period)}
+                  </span>
                 </p>
               </div>
+              {item.category === "vifaa" && item.stock != null && (
+                <p className="text-sm mt-2 font-semibold" style={{ color: "#8B5E3C" }}>
+                  Stock: {item.stock}{listingUnit(item) ? ` ${unitLabel(listingUnit(item))}` : ""}
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-5 mb-5">
               <LikeButton id={item.id} count={item.likes_count} />
@@ -95,14 +106,28 @@ export default function DetailsClient({ id }: { id: string }) {
 
       {!loading && item && (
         <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ backgroundColor: "rgba(255,246,237,0.97)", borderTop: "1px solid rgba(210,166,121,0.4)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-          <div className="max-w-md mx-auto flex gap-3">
-            <Link href={`/tuma-ombi?listing=${item.id}&title=${encodeURIComponent(item.title)}`} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[16px] font-semibold text-sm" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
+          <div className="max-w-md mx-auto">
+            {item.category === "vifaa" && (
+              <label className="block mb-2">
+                <span className="text-xs font-semibold" style={{ color: "#5C4033" }}>Kiasi</span>
+                <input
+                  value={qty}
+                  onChange={(e) => setQty(e.target.value)}
+                  inputMode="numeric"
+                  className="w-full mt-1 px-4 py-2.5 text-sm rounded-[14px]"
+                  style={{ backgroundColor: "white", border: "1.5px solid #3D2415", color: "#2E1A0F" }}
+                />
+              </label>
+            )}
+            <div className="flex gap-3">
+            <Link href={`/tuma-ombi?listing=${item.id}&title=${encodeURIComponent(item.title)}&category=${encodeURIComponent(item.category || "")}&qty=${encodeURIComponent(qty)}`} className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-[16px] font-semibold text-sm" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
               <MessageSquare size={18} />
               Tuma Ombi
             </Link>
             <Link href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`} className="flex items-center justify-center px-4 rounded-[16px] font-semibold text-sm" style={{ border: "1.5px solid #3D2415", color: "#2E1A0F", backgroundColor: "white" }}>
               Ujumbe
             </Link>
+            </div>
           </div>
         </div>
       )}

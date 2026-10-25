@@ -23,20 +23,27 @@ def db():
     return create_client(url, key)
 
 
+UNITS = {"mfuko", "tani", "kipande", "dei"}
+RENTAL_PERIODS = {"mwezi", "miezi_3", "miezi_6", "mwaka", "usiku", "siku", "wiki"}
+
+
 class ListingIn(BaseModel):
     category: str
     title: str
     description: str = ""
     price: float
-    period: str
+    period: str = ""
     location: str
     city: str = "Dar es Salaam"
     images: list[str] = Field(default_factory=list)
+    unit: str | None = None
+    stock: float | None = None
 
 
 class BookingIn(BaseModel):
     listing_id: str
     message: str = ""
+    quantity: float | None = None
 
 
 class LikeIn(BaseModel):
@@ -76,19 +83,37 @@ def get_listing(listing_id: str):
     return rows[0]
 
 
+def _save_row(table: str, row: dict, fallback: dict):
+    try:
+        return db().table(table).insert(row).execute()
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "column" in msg or "pgrst204" in msg or "schema cache" in msg:
+            return db().table(table).insert(fallback).execute()
+        raise
+
+
 @app.post("/listings")
 def create_listing(body: ListingIn):
-    allowed = {"chumba_nyumba", "apartment_airbnb", "store_godown", "frame"}
+    allowed = {"chumba_nyumba", "apartment_airbnb", "store_godown", "frame", "vifaa"}
     if body.category not in allowed:
         raise HTTPException(status_code=400, detail="Kategoria si sahihi")
     if len(body.title.strip()) < 3:
         raise HTTPException(status_code=400, detail="Kichwa kifupi")
+    unit = (body.unit or "").strip().lower() or None
+    if unit and unit not in UNITS:
+        raise HTTPException(status_code=400, detail="Kipimo si sahihi")
+    if body.stock is not None and body.stock < 0:
+        raise HTTPException(status_code=400, detail="Stock si sahihi")
+    period = "" if body.category == "vifaa" else body.period
+    if body.category == "vifaa" and period in RENTAL_PERIODS:
+        period = ""
     row = {
         "category": body.category,
         "title": body.title.strip()[:200],
         "description": body.description.strip()[:2000],
         "price": body.price,
-        "period": body.period,
+        "period": period,
         "location": body.location.strip()[:200],
         "city": (body.city or "Dar es Salaam").strip()[:80],
         "images": body.images[:6],
@@ -96,7 +121,14 @@ def create_listing(body: ListingIn):
         "verified": False,
         "likes_count": 0,
     }
-    res = db().table("listings").insert(row).execute()
+    extras = dict(row)
+    if body.category == "vifaa":
+        if unit:
+            extras["unit"] = unit
+        if body.stock is not None:
+            extras["stock"] = body.stock
+    fallback = {**row, "period": unit} if body.category == "vifaa" and unit else row
+    res = _save_row("listings", extras, fallback)
     if not res.data:
         raise HTTPException(status_code=400, detail="Imeshindwa kuhifadhi")
     return res.data[0]
@@ -132,8 +164,25 @@ def like_listing(listing_id: str, body: LikeIn):
 
 @app.post("/bookings")
 def create_booking(body: BookingIn):
+    listing_res = db().table("listings").select("*").eq("id", body.listing_id).limit(1).execute()
+    listing = (listing_res.data or [None])[0]
+    if not listing:
+        raise HTTPException(status_code=404, detail="Tangazo halipo")
+    if body.quantity is not None and body.quantity <= 0:
+        raise HTTPException(status_code=400, detail="Kiasi si sahihi")
+    raw_stock = listing.get("stock")
+    if raw_stock is not None and body.quantity is not None:
+        try:
+            stock = float(raw_stock)
+        except (TypeError, ValueError):
+            stock = None
+        if stock is not None and body.quantity > stock:
+            raise HTTPException(status_code=400, detail="Kiasi kinazidi stock")
     row = {"listing_id": body.listing_id, "message": (body.message or "")[:1000], "status": "pending"}
-    res = db().table("bookings").insert(row).execute()
+    extras = dict(row)
+    if body.quantity is not None:
+        extras["quantity"] = body.quantity
+    res = _save_row("bookings", extras, row)
     if not res.data:
         raise HTTPException(status_code=400, detail="Ombi halijahifadhiwa")
     return res.data[0]

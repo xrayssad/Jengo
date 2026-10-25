@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Send, CheckCircle2, Loader2 } from "lucide-react";
-import { createBooking } from "@/lib/api"
+import { createBooking, fetchListing, listingUnit, unitLabel, type Listing } from "@/lib/api";
 import { rememberBooking } from "@/lib/mine";
 import AppAlert, { AlertKind } from "@/components/AppAlert";
 
@@ -12,9 +12,12 @@ function TumaOmbiForm() {
   const search = useSearchParams();
   const listingId = search.get("listing") || "";
   const title = search.get("title") || "Tangazo";
+  const hintCat = search.get("category") || "";
   const backHref = listingId ? `/tangazo/${listingId}` : "/home";
 
   const [message, setMessage] = useState("");
+  const [qty, setQty] = useState(search.get("qty") || "1");
+  const [listing, setListing] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
   const [alertOpen, setAlertOpen] = useState(false);
@@ -29,15 +32,41 @@ function TumaOmbiForm() {
     setAlertOpen(true);
   };
 
+  useEffect(() => {
+    if (!listingId) return;
+    let stop = false;
+    (async () => {
+      try {
+        const data = await fetchListing(listingId);
+        if (!stop) setListing(data);
+      } catch {}
+    })();
+    return () => {
+      stop = true;
+    };
+  }, [listingId]);
+
+  const isVifaa = listing?.category === "vifaa" || hintCat === "vifaa";
+  const unit = listing ? listingUnit(listing) : "";
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!listingId) {
       showAlert("error", "Hitilafu", "Tangazo halijulikani. Rudi undani wa tangazo.");
       return;
     }
+    const quantity = Number(qty);
+    if (isVifaa && (qty.trim() === "" || Number.isNaN(quantity) || quantity <= 0)) {
+      showAlert("error", "Jaza kiasi", "Weka kiasi unachotaka.");
+      return;
+    }
     setLoading(true);
     try {
-      await createBooking({ listing_id: listingId, message: message.trim() || "Nina nia ya tangazo hili." });
+      await createBooking({
+        listing_id: listingId,
+        message: message.trim() || "Nina nia ya tangazo hili.",
+        ...(isVifaa ? { quantity } : {}),
+      });
       rememberBooking({ listing_id: listingId, title, message: message.trim(), created_at: new Date().toISOString() });
       setDone(true);
     } catch (err) {
@@ -113,6 +142,22 @@ function TumaOmbiForm() {
         <p className="text-sm" style={{ color: "#5C4033" }}>
           Andika ujumbe mfupi kwa mwenye tangazo. (Auth kamili itakuja baadaye.)
         </p>
+        {isVifaa && (
+          <label className="block">
+            <span className="text-sm font-semibold" style={{ color: "#2E1A0F" }}>
+              Kiasi{unit ? ` (${unitLabel(unit)})` : ""}
+            </span>
+            <input
+              value={qty}
+              onChange={(e) => setQty(e.target.value)}
+              inputMode="numeric"
+              className="input-chocolate w-full mt-2 px-4 py-3.5 text-sm"
+            />
+            {listing?.stock != null && (
+              <span className="block text-xs mt-1" style={{ color: "#8B5E3C" }}>Stock: {listing.stock}</span>
+            )}
+          </label>
+        )}
         <textarea
           value={message}
           onChange={(e) => setMessage(e.target.value)}

@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download, Receipt, ShieldCheck } from "lucide-react";
+import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download, Receipt, ShieldCheck, BrickWall } from "lucide-react";
 import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import { clearAuth } from "@/lib/api";
@@ -39,6 +39,14 @@ const categories = [
     icon: LayoutGrid,
     href: "/maduka?aina=frame",
     images: ["/real/shop.jpg", "/real/warehouse.jpg"],
+  },
+  {
+    title: "Vifaa vya Ujenzi",
+    description: "Simenti · chuma · tofali · mchanga",
+    badge: "Vifaa",
+    icon: BrickWall,
+    href: "/vifaa",
+    images: ["/real/materials.jpg", "/poster_vifaa_ujenzi.png"],
   },
 ];
 
@@ -343,6 +351,7 @@ export default function HomePage() {
             <CategoryCard {...categories[2]} />
           </div>
           <CategoryCard {...categories[3]} large />
+          <CategoryCard {...categories[4]} large />
         </div>
 
         {/* Trust strip */}

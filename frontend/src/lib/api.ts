@@ -14,6 +14,8 @@ export type Listing = {
   images?: string[];
   likes_count?: number;
   created_at?: string;
+  unit?: string | null;
+  stock?: number | null;
 };
 
 const TOKEN_KEY = "jengo_token";
@@ -119,11 +121,13 @@ export async function createListing(body: {
   title: string;
   description?: string;
   price: number;
-  period: string;
+  period?: string;
   location: string;
   city?: string;
   images?: string[];
   likes_count?: number;
+  unit?: string;
+  stock?: number;
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",
@@ -155,7 +159,27 @@ export const catLabel: Record<string, string> = {
   apartment_airbnb: "Apartment & Airbnb",
   store_godown: "Store & Godown",
   frame: "Frame za Maduka",
+  vifaa: "Vifaa vya Ujenzi",
 };
+
+const RENTAL_PERIODS = new Set(["mwezi", "miezi_3", "miezi_6", "mwaka", "usiku", "siku", "wiki"]);
+
+export function unitLabel(unit?: string | null) {
+  const map: Record<string, string> = {
+    mfuko: "mfuko",
+    tani: "tani",
+    kipande: "kipande",
+    dei: "dei",
+  };
+  if (!unit) return "";
+  return map[unit] || unit;
+}
+
+export function listingUnit(item: { category?: string; unit?: string | null; period?: string }) {
+  if (item.unit) return item.unit;
+  if (item.category === "vifaa" && item.period && !RENTAL_PERIODS.has(item.period)) return item.period;
+  return "";
+}
 
 
 export async function likeListing(id: string, on: boolean): Promise<number> {
@@ -173,11 +197,12 @@ export type Booking = {
   message?: string;
   status?: string;
   created_at?: string;
+  quantity?: number | null;
   commission_amount?: number | null;
   commission_rate?: number | null;
 };
 
-export async function createBooking(body: { listing_id: string; message?: string }) {
+export async function createBooking(body: { listing_id: string; message?: string; quantity?: number }) {
   return request<Booking>("/bookings", { method: "POST", body: JSON.stringify(body) });
 }
 

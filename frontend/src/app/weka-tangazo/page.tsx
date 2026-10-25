@@ -12,6 +12,14 @@ const categories = [
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
   { id: "store_godown", label: "Store & Godown" },
   { id: "frame", label: "Frame za Maduka" },
+  { id: "vifaa", label: "Vifaa" },
+];
+
+const units = [
+  { id: "mfuko", label: "Mfuko" },
+  { id: "tani", label: "Tani" },
+  { id: "kipande", label: "Kipande" },
+  { id: "dei", label: "Dei" },
 ];
 
 const periods: Record<string, { id: string; label: string }[]> = {
@@ -47,6 +55,8 @@ export default function WekaTangazoPage() {
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
   const [period, setPeriod] = useState("mwezi");
+  const [unit, setUnit] = useState("mfuko");
+  const [stock, setStock] = useState("");
   const [location, setLocation] = useState("");
   const [city, setCity] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -71,17 +81,23 @@ export default function WekaTangazoPage() {
       show("error", "Jaza sehemu", "Kichwa, bei na eneo vinahitajika.");
       return;
     }
+    if (category === "vifaa" && (stock === "" || Number.isNaN(Number(stock)) || Number(stock) < 0)) {
+      show("error", "Jaza stock", "Idadi iliyopo inahitajika.");
+      return;
+    }
     setLoading(true);
     try {
+      const isVifaa = category === "vifaa";
       const created = await createListing({
         category,
         title: title.trim(),
         description: description.trim(),
         price: Number(price),
-        period,
+        period: isVifaa ? "" : period,
         location: location.trim(),
         city: city.trim() || "Dar es Salaam",
         images: imageUrl.trim() ? [imageUrl.trim()] : [],
+        ...(isVifaa ? { unit, stock: Number(stock) } : {}),
       });
       if (created?.id) rememberListing(String(created.id));
       setDone(true);
@@ -125,7 +141,7 @@ export default function WekaTangazoPage() {
               type="button"
               onClick={() => {
                 setCategory(c.id);
-                setPeriod(periods[c.id][0].id);
+                if (c.id !== "vifaa") setPeriod(periods[c.id][0].id);
               }}
               className="p-3 rounded-[16px] text-sm font-semibold"
               style={{
@@ -142,13 +158,26 @@ export default function WekaTangazoPage() {
         <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kichwa" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
         <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Bei" inputMode="numeric" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
 
-        <div className="flex flex-wrap gap-2">
-          {periods[category].map((p) => (
-            <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className="px-3 py-2 rounded-full text-xs font-semibold" style={{ backgroundColor: period === p.id ? "#8B5E3C" : "white", color: period === p.id ? "#FFF6ED" : "#2E1A0F", border: "1px solid #D2A679" }}>
-              {p.label}
-            </button>
-          ))}
-        </div>
+        {category === "vifaa" ? (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {units.map((u) => (
+                <button key={u.id} type="button" onClick={() => setUnit(u.id)} className="px-3 py-2 rounded-full text-xs font-semibold" style={{ backgroundColor: unit === u.id ? "#8B5E3C" : "white", color: unit === u.id ? "#FFF6ED" : "#2E1A0F", border: "1px solid #D2A679" }}>
+                  {u.label}
+                </button>
+              ))}
+            </div>
+            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Stock / idadi" inputMode="numeric" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
+          </>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {periods[category].map((p) => (
+              <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className="px-3 py-2 rounded-full text-xs font-semibold" style={{ backgroundColor: period === p.id ? "#8B5E3C" : "white", color: period === p.id ? "#FFF6ED" : "#2E1A0F", border: "1px solid #D2A679" }}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
 
         <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Eneo, mfano Kinondoni" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />
         <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mji" className="w-full px-4 py-3.5 text-sm rounded-[16px]" style={box} />

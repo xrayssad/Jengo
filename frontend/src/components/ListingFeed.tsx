@@ -28,7 +28,7 @@ export default function ListingFeed({
       setLoading(true);
       const res = await fetchListings({ category, status: "active" });
       if (!stop) {
-        setItems(res.items || []);
+        setItems((res.items || []).filter((item) => item.category === category));
         setLoading(false);
       }
     })();

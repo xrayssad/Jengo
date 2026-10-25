@@ -55,6 +55,9 @@ export default function IncomingPage() {
         {rows.map((r) => (
           <div key={r.id} className="p-4 rounded-[18px]" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}>
             <h2 className="font-bold" style={{ color: "#2E1A0F" }}>{r.title}</h2>
+            {r.quantity != null && (
+              <p className="text-sm mt-1 font-semibold" style={{ color: "#8B5E3C" }}>Kiasi: {r.quantity}</p>
+            )}
             <p className="text-sm mt-1" style={{ color: "#5C4033" }}>{r.message || "Hakuna ujumbe"}</p>
             <p className="text-xs mt-2 font-semibold" style={{ color: "#8B5E3C" }}>{r.status || "pending"}</p>
             {r.status !== "accepted" && r.status !== "rejected" && (
