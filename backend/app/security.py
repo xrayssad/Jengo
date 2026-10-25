@@ -46,6 +46,7 @@ def current_user(authorization: str | None = Header(default=None)):
     user = getattr(res, "user", None)
     if not user:
         raise HTTPException(status_code=401, detail="Kipindi kimeisha")
+    assert_active_account(user)
     return user
 
 
@@ -76,6 +77,27 @@ def require_admin(user):
     return user
 
 
+def _meta_of(user) -> dict:
+    meta = getattr(user, "user_metadata", None) or {}
+    return meta if isinstance(meta, dict) else {}
+
+
+def account_status(profile: dict | None, user=None) -> str:
+    raw = str((profile or {}).get("status") or "").strip().lower()
+    if raw == "suspended":
+        return "suspended"
+    meta = _meta_of(user) if user is not None else {}
+    if str(meta.get("account_status") or "").strip().lower() == "suspended":
+        return "suspended"
+    return "active"
+
+
+def assert_active_account(user):
+    if account_status(profile_of(user.id), user) == "suspended":
+        raise HTTPException(status_code=403, detail="Akaunti imesimamishwa")
+    return user
+
+
 def needs_username(profile: dict | None) -> bool:
     name = str((profile or {}).get("username") or "").strip()
     return not bool(USERNAME_RE.match(name))
@@ -91,6 +113,7 @@ def public_profile(user, token: str | None = None) -> dict:
         "full_name": p.get("full_name"),
         "role": role,
         "is_admin": role == "admin",
+        "status": account_status(p, user),
         "needs_username": needs_username(p),
     }
     if token:

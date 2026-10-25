@@ -10,7 +10,9 @@ from pydantic import BaseModel, Field
 from app.security import (
     LOGIN_ERROR,
     USERNAME_RE,
+    account_status,
     anon,
+    assert_active_account,
     booking_message,
     commission_from_booking,
     current_user,
@@ -20,6 +22,7 @@ from app.security import (
     limiter,
     needs_username,
     profile_of,
+    profile_role,
     public_profile,
     qty_from_booking,
     require_admin,
@@ -68,6 +71,10 @@ class LikeIn(BaseModel):
 
 
 class ListingStatusIn(BaseModel):
+    status: str
+
+
+class UserStatusIn(BaseModel):
     status: str
 
 
@@ -186,6 +193,7 @@ def _session_from_verify(res):
     if not session or not user:
         raise HTTPException(status_code=400, detail="Thibitisho si sahihi")
     _finish_signup_profile(user)
+    assert_active_account(user)
     return public_profile(user, session.access_token)
 
 
@@ -493,6 +501,7 @@ def login(request: Request, body: LoginIn):
     if confirmed is None and not getattr(user, "confirmed_at", None):
         raise HTTPException(status_code=403, detail="Barua pepe haijathibitishwa")
     _finish_signup_profile(user)
+    assert_active_account(user)
     return public_profile(user, session.access_token)
 
 
@@ -537,6 +546,7 @@ def auth_session(body: SessionIn):
     if not user:
         raise HTTPException(status_code=401, detail="Kipindi si sahihi")
     _finish_signup_profile(user)
+    assert_active_account(user)
     return public_profile(user, body.access_token)
 
 
@@ -574,22 +584,162 @@ def _table_count(table: str) -> int:
     return len(res.data or [])
 
 
+def _recorded_commission(rows: list[dict]) -> float:
+    total = 0.0
+    for row in rows:
+        amt = commission_from_booking(row).get("commission_amount")
+        if amt is None:
+            continue
+        try:
+            total += float(amt)
+        except (TypeError, ValueError):
+            continue
+    return total
+
+
+def _admin_user_row(row: dict, user=None) -> dict:
+    return {
+        "id": row.get("id"),
+        "username": row.get("username"),
+        "email": row.get("email"),
+        "role": profile_role(row),
+        "status": account_status(row, user),
+        "full_name": row.get("full_name"),
+    }
+
+
+def _auth_status_map() -> dict[str, str]:
+    out: dict[str, str] = {}
+    try:
+        listed = db().auth.admin.list_users()
+        users = listed.users if hasattr(listed, "users") else listed
+        for item in users or []:
+            if str(_user_meta(item).get("account_status") or "").strip().lower() == "suspended":
+                uid = getattr(item, "id", None)
+                if uid:
+                    out[str(uid)] = "suspended"
+    except Exception:
+        pass
+    return out
+
+
+def _profiles_for_admin() -> list[dict]:
+    try:
+        res = (
+            db()
+            .table("profiles")
+            .select("id,username,email,role,status,full_name,created_at")
+            .order("created_at", desc=True)
+            .limit(200)
+            .execute()
+        )
+        return res.data or []
+    except Exception:
+        res = (
+            db()
+            .table("profiles")
+            .select("id,username,email,role,full_name,created_at")
+            .order("created_at", desc=True)
+            .limit(200)
+            .execute()
+        )
+        return res.data or []
+
+
+def _set_account_status(user_id: str, status: str):
+    auth_user = _get_auth_user(user_id)
+    meta = dict(_user_meta(auth_user) if auth_user else {})
+    meta["account_status"] = status
+    try:
+        db().auth.admin.update_user_by_id(user_id, {"user_metadata": meta})
+    except Exception:
+        pass
+    try:
+        db().table("profiles").update({"status": status}).eq("id", user_id).execute()
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "column" not in msg and "pgrst204" not in msg and "schema cache" not in msg:
+            raise
+
+
 @app.get("/admin/stats")
 def admin_stats(user=Depends(current_user)):
     require_admin(user)
-    recent = (
-        db()
-        .table("listings")
-        .select("*")
-        .order("created_at", desc=True)
-        .limit(20)
-        .execute()
-    )
+    bookings = db().table("bookings").select("*").limit(500).execute()
+    rows = bookings.data or []
     return {
         "users": _table_count("profiles"),
         "listings": _table_count("listings"),
-        "recent": [decorate_listing(x) for x in (recent.data or [])],
+        "bookings": _table_count("bookings"),
+        "commission": _recorded_commission(rows),
     }
+
+
+@app.get("/admin/users")
+def admin_users(user=Depends(current_user)):
+    require_admin(user)
+    flags = _auth_status_map()
+    items = []
+    for row in _profiles_for_admin():
+        if flags.get(str(row.get("id") or "")) == "suspended" and not row.get("status"):
+            row = dict(row)
+            row["status"] = "suspended"
+        items.append(_admin_user_row(row))
+    return {"items": items}
+
+
+@app.get("/admin/listings")
+def admin_listings(user=Depends(current_user)):
+    require_admin(user)
+    res = db().table("listings").select("*").order("created_at", desc=True).limit(200).execute()
+    return {"items": [decorate_listing(x) for x in (res.data or [])]}
+
+
+@app.get("/admin/bookings")
+def admin_bookings(user=Depends(current_user)):
+    require_admin(user)
+    res = db().table("bookings").select("*").order("created_at", desc=True).limit(200).execute()
+    rows = res.data or []
+    listing_ids = [x.get("listing_id") for x in rows if x.get("listing_id")]
+    titles: dict[str, str] = {}
+    if listing_ids:
+        found = db().table("listings").select("id,title").in_("id", listing_ids).execute()
+        titles = {x["id"]: x.get("title") or "" for x in (found.data or [])}
+    items = []
+    for row in rows:
+        item = _public_booking(row)
+        item["listing_title"] = titles.get(row.get("listing_id") or "", "")
+        items.append(item)
+    return {"items": items}
+
+
+@app.patch("/admin/listings/{listing_id}")
+def admin_set_listing(listing_id: str, body: ListingStatusIn, user=Depends(current_user)):
+    require_admin(user)
+    if body.status not in {"active", "hidden"}:
+        raise HTTPException(status_code=400, detail="Hali si sahihi")
+    res = db().table("listings").update({"status": body.status}).eq("id", listing_id).execute()
+    rows = res.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Tangazo halipo")
+    return decorate_listing(rows[0])
+
+
+@app.patch("/admin/users/{user_id}")
+def admin_set_user(user_id: str, body: UserStatusIn, user=Depends(current_user)):
+    require_admin(user)
+    if body.status not in {"active", "suspended"}:
+        raise HTTPException(status_code=400, detail="Hali si sahihi")
+    if user_id == user.id:
+        raise HTTPException(status_code=400, detail="Huwezi kusimamisha akaunti yako")
+    target = profile_of(user_id)
+    if not target:
+        raise HTTPException(status_code=404, detail="Mtumiaji hayupo")
+    if profile_role(target) == "admin":
+        raise HTTPException(status_code=400, detail="Admin hasimamishwi hapa")
+    _set_account_status(user_id, body.status)
+    fresh = profile_of(user_id) or target
+    return _admin_user_row(fresh, _get_auth_user(user_id))
 
 
 @app.api_route("/admin/{rest:path}", methods=["POST", "PUT", "PATCH", "DELETE"])

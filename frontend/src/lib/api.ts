@@ -34,7 +34,9 @@ export type AuthUser = {
 };
 
 export function afterAuthPath(user: AuthUser) {
-  return user.needs_username ? "/username" : "/home";
+  if (user.needs_username) return "/username";
+  if (user.role === "admin" || user.is_admin) return "/admin";
+  return "/home";
 }
 
 export function saveAuth(data: AuthUser) {
@@ -208,11 +210,59 @@ export async function refreshAuth(): Promise<AuthUser | null> {
 export type AdminStats = {
   users: number;
   listings: number;
-  recent: Listing[];
+  bookings: number;
+  commission: number;
+};
+
+export type AdminUser = {
+  id: string;
+  username?: string | null;
+  email?: string | null;
+  role?: string;
+  status?: string;
+  full_name?: string | null;
+};
+
+export type AdminBooking = {
+  id: string;
+  listing_id: string;
+  listing_title?: string;
+  message?: string;
+  status?: string;
+  created_at?: string;
+  quantity?: number | null;
+  user_id?: string;
+  commission_amount?: number | null;
 };
 
 export async function fetchAdminStats() {
   return request<AdminStats>("/admin/stats");
+}
+
+export async function fetchAdminUsers() {
+  return request<{ items: AdminUser[] }>("/admin/users");
+}
+
+export async function fetchAdminListings() {
+  return request<{ items: Listing[] }>("/admin/listings");
+}
+
+export async function fetchAdminBookings() {
+  return request<{ items: AdminBooking[] }>("/admin/bookings");
+}
+
+export async function setAdminListingStatus(id: string, status: "active" | "hidden") {
+  return request<Listing>(`/admin/listings/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export async function setAdminUserStatus(id: string, status: "active" | "suspended") {
+  return request<AdminUser>(`/admin/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
 }
 
 export async function fetchListings(params?: {
