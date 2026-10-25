@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { adoptSession, confirmEmailLink } from "@/lib/api";
+import { adoptSession, afterAuthPath, confirmEmailLink } from "@/lib/api";
 import { getSupabase } from "@/lib/supabase";
 
 function readParams() {
@@ -36,9 +36,9 @@ function errorTitle(raw: string) {
   return "Kuingia";
 }
 
-async function goHome(accessToken: string) {
-  await adoptSession(accessToken);
-  window.location.href = "/home";
+async function finishSession(accessToken: string) {
+  const user = await adoptSession(accessToken);
+  window.location.href = afterAuthPath(user);
 }
 
 export default function AuthCallbackPage() {
@@ -62,7 +62,7 @@ export default function AuthCallbackPage() {
           if (exchangeError || !data.session?.access_token) {
             throw new Error(exchangeError?.message || "Kipindi hakikubaliki");
           }
-          return goHome(data.session.access_token);
+          return finishSession(data.session.access_token);
         })
         .catch((caught) => {
           setError(googleOffMessage(caught instanceof Error ? caught.message : "Kipindi hakikubaliki"));
@@ -70,15 +70,15 @@ export default function AuthCallbackPage() {
       return;
     }
     if (token) {
-      goHome(token).catch((caught) => {
+      finishSession(token).catch((caught) => {
         setError(caught instanceof Error ? caught.message : "Kipindi hakikubaliki");
       });
       return;
     }
     if (tokenHash) {
       confirmEmailLink(tokenHash, type)
-        .then(() => {
-          window.location.href = "/home";
+        .then((user) => {
+          window.location.href = afterAuthPath(user);
         })
         .catch((caught) => {
           setError(caught instanceof Error ? caught.message : "Kiungo kimeisha au si sahihi");

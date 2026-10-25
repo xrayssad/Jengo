@@ -70,6 +70,11 @@ def require_admin(user):
     return user
 
 
+def needs_username(profile: dict | None) -> bool:
+    name = str((profile or {}).get("username") or "").strip()
+    return not bool(USERNAME_RE.match(name))
+
+
 def public_profile(user, token: str | None = None) -> dict:
     p = profile_of(user.id) or {}
     out = {
@@ -78,6 +83,7 @@ def public_profile(user, token: str | None = None) -> dict:
         "username": p.get("username"),
         "full_name": p.get("full_name"),
         "is_admin": is_admin(user.id),
+        "needs_username": needs_username(p),
     }
     if token:
         out["access_token"] = token
@@ -170,13 +176,16 @@ class RateGate:
     def __init__(self):
         self.hits: dict[str, list[float]] = defaultdict(list)
 
-    def check(self, key: str, limit: int, window: int = 60):
+    def check(self, key: str, limit: int, window: int = 60, detail: str = "Jaribu tena baadaye"):
         now = time.time()
         bucket = [t for t in self.hits[key] if now - t < window]
         if len(bucket) >= limit:
-            raise HTTPException(status_code=429, detail="Jaribu tena baadaye")
+            raise HTTPException(status_code=429, detail=detail)
         bucket.append(now)
         self.hits[key] = bucket
+
+    def touch(self, key: str):
+        self.hits[key].append(time.time())
 
 
 limiter = RateGate()

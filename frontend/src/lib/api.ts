@@ -29,7 +29,12 @@ export type AuthUser = {
   username?: string | null;
   email?: string | null;
   is_admin?: boolean;
+  needs_username?: boolean;
 };
+
+export function afterAuthPath(user: AuthUser) {
+  return user.needs_username ? "/username" : "/home";
+}
 
 export function saveAuth(data: AuthUser) {
   if (typeof window === "undefined") return;
@@ -93,10 +98,7 @@ export async function register(body: {
 }) {
   return request<{ ok: boolean; email: string; needs_verify?: boolean }>("/auth/register", {
     method: "POST",
-    body: JSON.stringify({
-      ...body,
-      redirect_to: typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
-    }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -112,10 +114,7 @@ export async function verifyEmail(email: string, code: string) {
 export async function resendOtp(email: string) {
   return request<{ ok: boolean }>("/auth/resend", {
     method: "POST",
-    body: JSON.stringify({
-      email,
-      redirect_to: typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
-    }),
+    body: JSON.stringify({ email }),
   });
 }
 
@@ -167,6 +166,21 @@ export async function adoptSession(accessToken: string) {
     body: JSON.stringify({ access_token: accessToken }),
   });
   saveAuth(data);
+  return data;
+}
+
+export async function setUsername(username: string, fullName?: string) {
+  const data = await request<AuthUser>("/auth/username", {
+    method: "POST",
+    body: JSON.stringify({ username, full_name: fullName || "" }),
+  });
+  const current = getAuthUser();
+  saveAuth({
+    ...current,
+    ...data,
+    access_token: data.access_token || current?.access_token || "",
+    needs_username: data.needs_username ?? false,
+  });
   return data;
 }
 

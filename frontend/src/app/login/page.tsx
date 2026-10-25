@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, Mail, Lock } from "lucide-react";
-import { login as apiLogin, startGoogle } from "@/lib/api";
+import { afterAuthPath, login as apiLogin, resendOtp, startGoogle } from "@/lib/api";
 
 const slides = [
   { image: "/poster_nyumba_salama.png", title: "Chumba & Nyumba" },
@@ -34,13 +34,13 @@ export default function LoginPage() {
     setUnverified(false);
     setBusy(true);
     try {
-      await apiLogin(email.trim(), password);
-      window.location.href = "/home";
+      const user = await apiLogin(email.trim(), password);
+      window.location.href = afterAuthPath(user);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Barua pepe au nenosiri si sahihi";
       if (msg.toLowerCase().includes("haijathibitishwa")) {
         setUnverified(true);
-        setError("Barua pepe haijathibitishwa");
+        setError("Akaunti haijathibitishwa. Tuma namba ili uithibitishe.");
       } else {
         setError("Barua pepe au nenosiri si sahihi");
       }
@@ -95,9 +95,26 @@ export default function LoginPage() {
             </div>
             {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
             {unverified && (
-              <Link href={`/verify?email=${encodeURIComponent(email)}`} className="block text-sm font-semibold" style={{ color: "#8B5E3C" }}>
+              <button
+                type="button"
+                className="block text-sm font-semibold"
+                style={{ color: "#8B5E3C" }}
+                onClick={async () => {
+                  try {
+                    await resendOtp(email.trim());
+                    window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
+                  } catch (err) {
+                    const msg = err instanceof Error ? err.message : "Imeshindikana kutuma";
+                    if (msg.toLowerCase().includes("60") || msg.toLowerCase().includes("baadaye")) {
+                      window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
+                      return;
+                    }
+                    setError(msg);
+                  }
+                }}
+              >
                 Tuma namba tena
-              </Link>
+              </button>
             )}
             <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-[18px] text-sm font-semibold">
               {busy ? "Inaingia..." : "Ingia"}

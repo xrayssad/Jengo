@@ -20,6 +20,10 @@ export default function AuthGate({
       router.replace("/login");
       return;
     }
+    if (user.needs_username) {
+      router.replace("/username");
+      return;
+    }
     if (admin && !user.is_admin) {
       router.replace("/home");
       return;

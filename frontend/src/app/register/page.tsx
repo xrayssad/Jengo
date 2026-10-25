@@ -50,7 +50,7 @@ export default function RegisterPage() {
         username: username.trim(),
         full_name: fullName.trim(),
       });
-      router.push(`/verify?email=${encodeURIComponent(email.trim())}`);
+      router.push(`/verify?email=${encodeURIComponent(email.trim())}&sent=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Imeshindikana kujisajili");
     } finally {
@@ -83,7 +83,7 @@ export default function RegisterPage() {
       <div className="flex-1 flex items-center justify-center px-5 py-10">
         <div className="w-full max-w-sm">
           <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Fungua akaunti</h1>
-          <p className="text-sm mb-7" style={{ color: "#5C4033" }}>Thibitisha barua pepe kabla ya kutumia akaunti.</p>
+          <p className="text-sm mb-7" style={{ color: "#5C4033" }}>Baada ya kujisajili, weka namba ya tarakimu 6 kutoka barua pepe.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Jina kamili</label>
@@ -119,7 +119,7 @@ export default function RegisterPage() {
             </button>
           </form>
           <button type="button" onClick={google} className="btn-secondary w-full mt-3 py-3.5 rounded-[18px] text-sm font-semibold">
-            Jisajili na Google
+            Ingia na Google
           </button>
           {googleMsg && <p className="text-sm mt-3 font-semibold" style={{ color: "#A6452E" }}>{googleMsg}</p>}
           <p className="text-center text-sm mt-8">

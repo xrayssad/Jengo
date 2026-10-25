@@ -18,6 +18,7 @@ from app.security import (
     decorate_listing,
     is_admin,
     limiter,
+    needs_username,
     profile_of,
     public_profile,
     qty_from_booking,
@@ -104,6 +105,11 @@ class SessionIn(BaseModel):
 class ConfirmIn(BaseModel):
     token_hash: str
     type: str = "signup"
+
+
+class UsernameIn(BaseModel):
+    username: str
+    full_name: str = ""
 
 
 class ReviewIn(BaseModel):
@@ -231,7 +237,9 @@ def register(request: Request, body: RegisterIn):
             {
                 "email": email,
                 "password": body.password,
-                "options": _signup_options(body.redirect_to),
+                "options": {
+                    "data": {"username": username, "full_name": full_name},
+                },
             }
         )
     except Exception as exc:
@@ -243,6 +251,7 @@ def register(request: Request, body: RegisterIn):
     if not user:
         raise HTTPException(status_code=400, detail="Imeshindikana kujisajili")
     _upsert_profile(user.id, email, username, full_name)
+    limiter.touch(f"resend-otp:{email}")
     return {"ok": True, "email": email, "needs_verify": True}
 
 
@@ -251,15 +260,15 @@ def verify(request: Request, body: VerifyIn):
     limiter.check(f"verify:{_client_key(request)}", 8)
     email = body.email.strip().lower()
     code = body.code.strip()
-    if not email or not code:
-        raise HTTPException(status_code=400, detail="Weka barua pepe na namba")
+    if not email or not re.fullmatch(r"\d{6}", code):
+        raise HTTPException(status_code=400, detail="Weka namba ya tarakimu 6")
     try:
         res = anon().auth.verify_otp({"email": email, "token": code, "type": "signup"})
     except Exception:
         try:
             res = anon().auth.verify_otp({"email": email, "token": code, "type": "email"})
         except Exception:
-            raise HTTPException(status_code=400, detail="Namba au kiungo si sahihi")
+            raise HTTPException(status_code=400, detail="Namba si sahihi")
     return _session_from_verify(res)
 
 
@@ -285,20 +294,20 @@ def confirm_email_link(request: Request, body: ConfirmIn):
 
 @app.post("/auth/resend")
 def resend(request: Request, body: ResendIn):
-    limiter.check(f"resend:{_client_key(request)}", 3)
+    limiter.check(f"resend:{_client_key(request)}", 5)
     email = body.email.strip().lower()
     if not email:
         raise HTTPException(status_code=400, detail="Barua pepe inahitajika")
+    limiter.check(
+        f"resend-otp:{email}",
+        1,
+        60,
+        "Subiri sekunde 60 kisha tuma namba tena",
+    )
     try:
-        anon().auth.resend(
-            {
-                "type": "signup",
-                "email": email,
-                "options": {"email_redirect_to": _safe_redirect(body.redirect_to)},
-            }
-        )
+        anon().auth.resend({"type": "signup", "email": email})
     except Exception:
-        raise HTTPException(status_code=400, detail="Imeshindikana kutuma thibitisho")
+        raise HTTPException(status_code=400, detail="Imeshindikana kutuma namba")
     return {"ok": True}
 
 
@@ -366,21 +375,42 @@ def auth_session(body: SessionIn):
     p = profile_of(user.id)
     if not p:
         email = getattr(user, "email", "") or ""
-        base = re.sub(r"[^A-Za-z0-9_]", "", (email.split("@")[0] or "user"))[:16] or "user"
-        name = base
-        n = 0
-        while _username_taken(name):
-            n += 1
-            name = f"{base}{n}"[:20]
         meta = getattr(user, "user_metadata", None) or {}
-        full = meta.get("full_name") or meta.get("name") or name
-        _upsert_profile(user.id, email, name, str(full))
+        full = str(meta.get("full_name") or meta.get("name") or "").strip()[:120]
+        row = {
+            "id": user.id,
+            "email": email[:200],
+            "full_name": full,
+            "role": "user",
+        }
+        try:
+            db().table("profiles").insert(row).execute()
+        except Exception:
+            pass
     return public_profile(user, body.access_token)
 
 
 @app.get("/auth/me")
 def me(user=Depends(current_user)):
     return public_profile(user)
+
+
+@app.post("/auth/username")
+def set_username(request: Request, body: UsernameIn, user=Depends(current_user)):
+    username = body.username.strip()
+    if not USERNAME_RE.match(username):
+        raise HTTPException(status_code=400, detail="Username: herufi 3–20, herufi, namba au _")
+    if _username_taken(username, user.id):
+        raise HTTPException(status_code=400, detail="Username imeshatumika")
+    p = profile_of(user.id)
+    header = request.headers.get("authorization") or ""
+    token = header.split(" ", 1)[1].strip() if header.lower().startswith("bearer ") else None
+    if p and not needs_username(p):
+        return public_profile(user, token)
+    full = (body.full_name or "").strip() or (p or {}).get("full_name") or username
+    email = getattr(user, "email", None)
+    _upsert_profile(user.id, email, username, str(full)[:120])
+    return public_profile(user, token)
 
 
 @app.get("/listings")
