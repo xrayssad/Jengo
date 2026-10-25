@@ -151,11 +151,43 @@ def list_bookings(listing_id: str | None = None):
 class BookingStatusIn(BaseModel):
     status: str
 
+
+def _listing_price(listing_id: str | None) -> float | None:
+    if not listing_id:
+        return None
+    res = db().table("listings").select("price").eq("id", listing_id).limit(1).execute()
+    rows = res.data or []
+    if not rows:
+        return None
+    try:
+        return float(rows[0].get("price"))
+    except (TypeError, ValueError):
+        return None
+
+
 @app.patch("/bookings/{booking_id}")
 def set_booking_status(booking_id: str, body: BookingStatusIn):
-    if body.status not in {"pending", "accepted", "rejected"}:
+    if body.status not in {"pending", "accepted", "rejected", "moved_in"}:
         raise HTTPException(status_code=400, detail="Hali si sahihi")
-    res = db().table("bookings").update({"status": body.status}).eq("id", booking_id).execute()
+    cur = db().table("bookings").select("*").eq("id", booking_id).limit(1).execute()
+    existing = (cur.data or [None])[0]
+    if not existing:
+        raise HTTPException(status_code=404, detail="Ombi halipo")
+    payload: dict = {"status": body.status}
+    if body.status == "moved_in":
+        price = _listing_price(existing.get("listing_id"))
+        if price is not None:
+            payload["commission_amount"] = price * 0.10
+        else:
+            payload["commission_rate"] = 0.10
+    try:
+        res = db().table("bookings").update(payload).eq("id", booking_id).execute()
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "column" in msg or "pgrst204" in msg or "schema cache" in msg:
+            res = db().table("bookings").update({"status": body.status}).eq("id", booking_id).execute()
+        else:
+            raise
     rows = res.data or []
     if not rows:
         raise HTTPException(status_code=404, detail="Ombi halipo")

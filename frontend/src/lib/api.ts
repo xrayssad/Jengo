@@ -173,6 +173,8 @@ export type Booking = {
   message?: string;
   status?: string;
   created_at?: string;
+  commission_amount?: number | null;
+  commission_rate?: number | null;
 };
 
 export async function createBooking(body: { listing_id: string; message?: string }) {
@@ -183,6 +185,6 @@ export async function fetchBookings(listingId: string) {
   return request<{ items: Booking[] }>(`/bookings?listing_id=${encodeURIComponent(listingId)}`);
 }
 
-export async function setBookingStatus(id: string, status: "accepted" | "rejected") {
+export async function setBookingStatus(id: string, status: "accepted" | "rejected" | "moved_in") {
   return request<Booking>(`/bookings/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
 }
