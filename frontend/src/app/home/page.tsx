@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download } from "lucide-react";
+import { Home, Store, Building2, Plus, Search, Menu, User, MessageCircle, LayoutGrid, Compass, Heart, CreditCard, Bookmark, Settings, X, Sparkles, ChevronRight, MapPin, LayoutList, Inbox, Download, Receipt } from "lucide-react";
 import Link from "next/link";
 import BottomNav from "@/components/BottomNav";
 import { clearAuth } from "@/lib/api";
@@ -43,6 +43,7 @@ const categories = [
 ];
 
 const sideLinks = [
+  { label: "Risiti", href: "/risiti", icon: Receipt },
   { label: "Maombi niliyopokea", href: "/maombi-niliyopokea", icon: Inbox },
   { label: "Profile", href: "/profile", icon: User },
   { label: "Messages", href: "/messages", icon: MessageCircle },
