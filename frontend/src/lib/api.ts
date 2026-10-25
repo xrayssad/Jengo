@@ -95,6 +95,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 export async function fetchListings(params?: {
   category?: string;
   q?: string;
+  sort?: string;
   status?: string;
 }): Promise<{ items: Listing[] }> {
   const sp = new URLSearchParams();

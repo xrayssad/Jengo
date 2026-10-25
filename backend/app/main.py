@@ -51,14 +51,14 @@ def list_listings(
     q: Optional[str] = None,
     status: str = "active",
     limit: int = 50,
-):
+, sort: str = "new"):
     sb = get_supabase()
     try:
         query = (
             sb.table("listings")
             .select("*")
             .eq("status", status)
-            .order("created_at", desc=True)
+            .order("likes_count" if sort == "likes" else "created_at", desc=True)
             .limit(min(limit, 100))
         )
         if category:

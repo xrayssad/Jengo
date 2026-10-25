@@ -19,7 +19,7 @@ export default function DiscoverPage() {
     let stop = false;
     (async () => {
       setLoading(true);
-      const res = await fetchListings({ status: "active" });
+      const res = await fetchListings({ status: "active", sort: sort === "maarufu" ? "likes" : "new" });
       if (!stop) {
         setItems(res.items || []);
         setLoading(false);
@@ -28,7 +28,7 @@ export default function DiscoverPage() {
     return () => {
       stop = true;
     };
-  }, []);
+  }, [sort]);
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -40,9 +40,6 @@ export default function DiscoverPage() {
         .toLowerCase()
         .includes(needle);
     });
-    if (sort === "maarufu") {
-      list = [...list].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0));
-    }
     return list;
   }, [items, q, sort]);
 
