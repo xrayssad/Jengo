@@ -56,7 +56,8 @@ export default function LoginPage() {
       const res = await startGoogle(redirect);
       window.location.href = res.url;
     } catch (err) {
-      setGoogleMsg(err instanceof Error ? err.message : "Google haijaunganishwa.");
+      const msg = err instanceof Error ? err.message : "Google haijaunganishwa kwenye Supabase.";
+      setGoogleMsg(msg);
     }
   };
 

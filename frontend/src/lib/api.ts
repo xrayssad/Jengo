@@ -93,7 +93,10 @@ export async function register(body: {
 }) {
   return request<{ ok: boolean; email: string; needs_verify?: boolean }>("/auth/register", {
     method: "POST",
-    body: JSON.stringify(body),
+    body: JSON.stringify({
+      ...body,
+      redirect_to: typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
+    }),
   });
 }
 
@@ -109,8 +112,20 @@ export async function verifyEmail(email: string, code: string) {
 export async function resendOtp(email: string) {
   return request<{ ok: boolean }>("/auth/resend", {
     method: "POST",
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({
+      email,
+      redirect_to: typeof window !== "undefined" ? `${window.location.origin}/auth/callback` : undefined,
+    }),
   });
+}
+
+export async function confirmEmailLink(tokenHash: string, type?: string) {
+  const data = await request<AuthUser>("/auth/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token_hash: tokenHash, type: type || "signup" }),
+  });
+  saveAuth(data);
+  return data;
 }
 
 export async function login(email: string, password: string) {

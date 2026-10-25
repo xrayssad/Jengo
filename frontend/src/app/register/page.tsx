@@ -65,7 +65,7 @@ export default function RegisterPage() {
       const res = await startGoogle(redirect);
       window.location.href = res.url;
     } catch (err) {
-      setGoogleMsg(err instanceof Error ? err.message : "Google haijaunganishwa.");
+      setGoogleMsg(err instanceof Error ? err.message : "Google haijaunganishwa kwenye Supabase.");
     }
   };
 

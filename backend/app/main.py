@@ -79,6 +79,7 @@ class RegisterIn(BaseModel):
     password: str
     username: str
     full_name: str
+    redirect_to: str = ""
 
 
 class LoginIn(BaseModel):
@@ -93,10 +94,16 @@ class VerifyIn(BaseModel):
 
 class ResendIn(BaseModel):
     email: str
+    redirect_to: str = ""
 
 
 class SessionIn(BaseModel):
     access_token: str
+
+
+class ConfirmIn(BaseModel):
+    token_hash: str
+    type: str = "signup"
 
 
 class ReviewIn(BaseModel):
@@ -117,6 +124,39 @@ def _save_row(table: str, row: dict, fallback: dict):
 
 def _client_key(request: Request) -> str:
     return request.client.host if request.client else "unknown"
+
+
+def _safe_redirect(raw: str | None) -> str:
+    fallback = (os.getenv("FRONTEND_URL") or "").strip().rstrip("/")
+    if not fallback:
+        first = (os.getenv("CORS_ORIGINS") or "http://localhost:3000").split(",")[0].strip()
+        fallback = first.rstrip("/")
+    dest = (raw or "").strip()
+    if not dest:
+        dest = f"{fallback}/auth/callback"
+    allowed = {o.strip().rstrip("/") for o in (os.getenv("CORS_ORIGINS") or "").split(",") if o.strip()}
+    if fallback:
+        allowed.add(fallback)
+    allowed.add("http://localhost:3000")
+    allowed.add("http://127.0.0.1:3000")
+    origin = dest.split("/auth/")[0].rstrip("/") if "/auth/" in dest else dest.rstrip("/")
+    if allowed and origin not in allowed and not origin.endswith(".vercel.app"):
+        dest = f"{fallback}/auth/callback"
+    if dest.endswith("/auth/callback"):
+        return dest
+    return f"{origin}/auth/callback"
+
+
+def _signup_options(redirect_to: str | None) -> dict:
+    return {"email_redirect_to": _safe_redirect(redirect_to)}
+
+
+def _session_from_verify(res):
+    session = getattr(res, "session", None)
+    user = getattr(res, "user", None)
+    if not session or not user:
+        raise HTTPException(status_code=400, detail="Thibitisho si sahihi")
+    return public_profile(user, session.access_token)
 
 
 def _upsert_profile(user_id: str, email: str | None, username: str, full_name: str, role: str = "user"):
@@ -187,7 +227,13 @@ def register(request: Request, body: RegisterIn):
     if _username_taken(username):
         raise HTTPException(status_code=400, detail="Username imeshatumika")
     try:
-        res = anon().auth.sign_up({"email": email, "password": body.password})
+        res = anon().auth.sign_up(
+            {
+                "email": email,
+                "password": body.password,
+                "options": _signup_options(body.redirect_to),
+            }
+        )
     except Exception as exc:
         msg = str(exc).lower()
         if "already" in msg or "registered" in msg:
@@ -213,12 +259,28 @@ def verify(request: Request, body: VerifyIn):
         try:
             res = anon().auth.verify_otp({"email": email, "token": code, "type": "email"})
         except Exception:
-            raise HTTPException(status_code=400, detail="Namba si sahihi")
-    session = getattr(res, "session", None)
-    user = getattr(res, "user", None)
-    if not session or not user:
-        raise HTTPException(status_code=400, detail="Namba si sahihi")
-    return public_profile(user, session.access_token)
+            raise HTTPException(status_code=400, detail="Namba au kiungo si sahihi")
+    return _session_from_verify(res)
+
+
+@app.post("/auth/confirm")
+def confirm_email_link(request: Request, body: ConfirmIn):
+    limiter.check(f"confirm:{_client_key(request)}", 8)
+    token_hash = body.token_hash.strip()
+    kind = (body.type or "signup").strip() or "signup"
+    if not token_hash:
+        raise HTTPException(status_code=400, detail="Kiungo si sahihi")
+    last = None
+    for otp_type in (kind, "signup", "email", "magiclink"):
+        try:
+            res = anon().auth.verify_otp({"token_hash": token_hash, "type": otp_type})
+            return _session_from_verify(res)
+        except HTTPException:
+            raise
+        except Exception as exc:
+            last = exc
+            continue
+    raise HTTPException(status_code=400, detail="Kiungo kimeisha au si sahihi") from last
 
 
 @app.post("/auth/resend")
@@ -228,9 +290,15 @@ def resend(request: Request, body: ResendIn):
     if not email:
         raise HTTPException(status_code=400, detail="Barua pepe inahitajika")
     try:
-        anon().auth.resend({"type": "signup", "email": email})
+        anon().auth.resend(
+            {
+                "type": "signup",
+                "email": email,
+                "options": {"email_redirect_to": _safe_redirect(body.redirect_to)},
+            }
+        )
     except Exception:
-        raise HTTPException(status_code=400, detail="Imeshindikana kutuma namba")
+        raise HTTPException(status_code=400, detail="Imeshindikana kutuma thibitisho")
     return {"ok": True}
 
 
@@ -255,21 +323,35 @@ def login(request: Request, body: LoginIn):
     return public_profile(user, session.access_token)
 
 
+GOOGLE_OFF = "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe."
+
+
 @app.get("/auth/google")
 def google_start(redirect_to: str):
+    dest = _safe_redirect(redirect_to)
     try:
         res = anon().auth.sign_in_with_oauth(
-            {"provider": "google", "options": {"redirect_to": redirect_to}}
+            {"provider": "google", "options": {"redirect_to": dest}}
         )
         url = getattr(res, "url", None)
         if not url:
             raise RuntimeError("no url")
-        return {"url": url}
+    except HTTPException:
+        raise
     except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail="Google haijaunganishwa. Weka Google provider kwenye Supabase Auth.",
-        )
+        raise HTTPException(status_code=400, detail=GOOGLE_OFF)
+    try:
+        import httpx
+
+        probe = httpx.get(url, follow_redirects=False, timeout=15)
+        body = (probe.text or "").lower()
+        if probe.status_code >= 400 or "provider is not enabled" in body or "unsupported provider" in body:
+            raise HTTPException(status_code=400, detail=GOOGLE_OFF)
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+    return {"url": url}
 
 
 @app.post("/auth/session")
