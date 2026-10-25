@@ -43,31 +43,6 @@ def root(request: Request):
 def health(request: Request):
     return {"ok": True, "service": "jengo", "supabase": settings.supabase_url}
 
-@app.get("/listings")
-@limiter.limit("60/minute")
-def list_listings(
-    request: Request,
-    category: Optional[str] = None,
-    q: Optional[str] = None,
-    status: str = "active",
-    limit: int = 50,
-    sb = get_supabase()
-    try:
-        query = (
-            sb.table("listings")
-            .select("*")
-            .eq("status", status)
-            .order("likes_count" if sort == "likes" else "created_at", desc=True)
-            .limit(min(limit, 100))
-        )
-        if category:
-            query = query.eq("category", category)
-        if q:
-            query = query.or_(f"title.ilike.%{q}%,location.ilike.%{q}%")
-        r = query.execute()
-        return {"items": r.data or []}
-    except Exception as e:
-        return {"items": [], "error": str(e)}
 
 @app.get("/listings/{listing_id}")
 @limiter.limit("60/minute")
@@ -138,47 +113,6 @@ def create_booking(request: Request, body: schemas.BookingIn):
         raise HTTPException(400, str(e))
 
 
-class LikeIn(BaseModel):
-    on: bool = True
-
-@app.post("/listings/{listing_id}/like")
-@limiter.limit("30/minute")
-def like_listing(request: Request, listing_id: str, body: LikeIn):
-    sb = get_sb()
-    cur = sb.table("listings").select("likes_count").eq("id", listing_id).single().execute()
-    if not cur.data:
-        raise HTTPException(404, "Tangazo halipo")
-    n = int(cur.data.get("likes_count") or 0) + (1 if body.on else -1)
-    n = max(0, n)
-    sb.table("listings").update({"likes_count": n}).eq("id", listing_id).execute()
-    return {"id": listing_id, "likes_count": n}
-, sort: str = "new"from pydantic import BaseModel
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from typing import Optional
-from app.config import settings
-from app.db import get_supabase
-from app import schemas
-
-limiter = Limiter(key_func=get_remote_address, default_limits=["120/minute"])
-
-app = FastAPI(title="Jengo API", version="1.0.2")
-app.state.limiter = limiter
-app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
-
-# Origins kutoka env + vercel.app (preview + production)
-_raw = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=_raw or ["*"],
-    allow_origin_regex=r"https://.*\.vercel\.app",
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.middleware("http")
 async def security_headers(request: Request, call_next):
@@ -292,8 +226,6 @@ def create_booking(request: Request, body: schemas.BookingIn):
         raise HTTPException(400, str(e))
 
 
-class LikeIn(BaseModel):
-    on: bool = True
 
 @app.post("/listings/{listing_id}/like")
 @limiter.limit("30/minute")
@@ -305,4 +237,40 @@ def like_listing(request: Request, listing_id: str, body: LikeIn):
     n = int(cur.data.get("likes_count") or 0) + (1 if body.on else -1)
     n = max(0, n)
     sb.table("listings").update({"likes_count": n}).eq("id", listing_id).execute()
+    return {"id": listing_id, "likes_count": n}
+
+@app.get("/listings")
+def list_listings(
+    status: str = "active",
+    category: str | None = None,
+    q: str | None = None,
+    sort: str = "new",
+):
+    db = sb
+    query = db.table("listings").select("*")
+    if status:
+        query = query.eq("status", status)
+    if category:
+        query = query.eq("category", category)
+    if q:
+        query = query.ilike("title", f"%{q}%")
+    column = "likes_count" if sort == "likes" else "created_at"
+    res = query.order(column, desc=True).limit(100).execute()
+    return {"items": res.data or []}
+
+
+class LikeIn(BaseModel):
+    on: bool = True
+
+
+@app.post("/listings/{listing_id}/like")
+def like_listing(listing_id: str, body: LikeIn):
+    db = sb
+    cur = db.table("listings").select("likes_count").eq("id", listing_id).limit(1).execute()
+    rows = cur.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Tangazo halipo")
+    n = int(rows[0].get("likes_count") or 0) + (1 if body.on else -1)
+    n = max(0, n)
+    db.table("listings").update({"likes_count": n}).eq("id", listing_id).execute()
     return {"id": listing_id, "likes_count": n}
