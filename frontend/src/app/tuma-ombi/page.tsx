@@ -37,7 +37,7 @@ function TumaOmbiForm() {
     }
     setLoading(true);
     try {
-      await createBooking(listingId, message.trim() || "Nina nia ya tangazo hili.");
+      await createBooking({ listing_id: listingId, message: message.trim() || "Nina nia ya tangazo hili." });
       rememberBooking({ listing_id: listingId, title, message: message.trim(), created_at: new Date().toISOString() });
       setDone(true);
     } catch (err) {

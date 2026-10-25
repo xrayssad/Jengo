@@ -127,13 +127,6 @@ export async function createListing(body: {
   });
 }
 
-export async function createBooking(listing_id: string, message: string) {
-  return request("/bookings", {
-    method: "POST",
-    body: JSON.stringify({ listing_id, message }),
-  });
-}
-
 export function formatPrice(price: number | string) {
   const n = typeof price === "string" ? parseFloat(price) : price;
   if (Number.isNaN(n)) return String(price);
