@@ -13,7 +13,7 @@ QTY_RE = re.compile(r"^\[\[qty:([0-9.]+)\]\]\s*")
 REVIEW_RE = re.compile(r"\[\[review:(\d+):(.*?)\]\]\s*$", re.S)
 COMMISSION_RE = re.compile(r"\[\[commission:([^:\]]*):([^:\]]*)\]\]")
 
-LOGIN_ERROR = "Barua pepe au nenosiri si sahihi"
+LOGIN_ERROR = "Barua pepe, simu au nenosiri si sahihi"
 
 
 def load_env():

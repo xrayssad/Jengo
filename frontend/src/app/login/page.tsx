@@ -37,12 +37,12 @@ export default function LoginPage() {
       const user = await apiLogin(email.trim(), password);
       window.location.href = afterAuthPath(user);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Barua pepe au nenosiri si sahihi";
+      const msg = err instanceof Error ? err.message : "Barua pepe, simu au nenosiri si sahihi";
       if (msg.toLowerCase().includes("haijathibitishwa")) {
         setUnverified(true);
         setError("Akaunti haijathibitishwa. Tuma namba ili uithibitishe.");
       } else {
-        setError("Barua pepe au nenosiri si sahihi");
+        setError("Simu, barua pepe au nenosiri si sahihi");
       }
     } finally {
       setBusy(false);
@@ -72,13 +72,13 @@ export default function LoginPage() {
         <div className="sheet max-w-sm mx-auto p-6 rounded-[28px] fade-up">
           <p className="text-sm" style={{ color: "#8B5E3C" }}>Jengo</p>
           <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "#2E1A0F" }}>Karibu tena</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Ingia kwa barua pepe au Google.</p>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Ingia kwa simu, barua pepe au Google.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Barua pepe</label>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Simu au barua pepe</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="barua@pepe.com" inputMode="email" autoComplete="username" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
+                <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="0712 345 678 au barua pepe" inputMode="email" autoComplete="username" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
               </div>
             </div>
             <div>
@@ -99,6 +99,10 @@ export default function LoginPage() {
                 style={{ color: "#8B5E3C" }}
                 onClick={async () => {
                   try {
+                    if (!email.includes("@")) {
+                      setError("OTP inatumwa kwenye barua pepe tu. Ingia kwa barua pepe ili uthibitishe.");
+                      return;
+                    }
                     await resendOtp({ email: email.trim() });
                     window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
                   } catch (err) {

@@ -103,10 +103,12 @@ export async function register(body: {
   username: string;
   full_name: string;
 }) {
-  return request<{ ok: boolean; email?: string; phone?: string; needs_verify?: boolean }>("/auth/register", {
+  const data = await request<AuthUser & { ok?: boolean; email?: string; phone?: string; needs_verify?: boolean }>("/auth/register", {
     method: "POST",
     body: JSON.stringify(body),
   });
+  if (data.access_token) saveAuth(data);
+  return data;
 }
 
 export async function verifyOtp(ident: { email?: string; phone?: string }, code: string) {

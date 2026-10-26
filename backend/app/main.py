@@ -343,6 +343,9 @@ def _continue_unconfirmed_signup(user, email: str, password: str, username: str,
     except Exception:
         raise HTTPException(status_code=400, detail="Imeshindikana kujisajili")
     _drop_profile(user.id)
+    if phone and not email:
+        _confirm_phone_user(user.id, phone)
+        return
     if not email or not _issue_otp(user.id, email):
         raise HTTPException(status_code=400, detail="Imeshindikana kutuma namba ya tarakimu 6 kwenye barua pepe")
     limiter.touch(f"resend-otp:{email}")
@@ -465,6 +468,50 @@ def _phone_placeholder_email(phone: str) -> str:
     return f"{digits}@simu.jengo.app"
 
 
+def _confirm_phone_user(user_id: str, phone: str):
+    email = _phone_placeholder_email(phone)
+    payload = {
+        "email": email,
+        "email_confirm": True,
+        "phone_confirm": True,
+        "user_metadata": phone_auth.clear_otp(_user_meta(_get_auth_user(user_id))),
+    }
+    try:
+        payload["phone"] = phone
+        db().auth.admin.update_user_by_id(user_id, payload)
+    except Exception:
+        payload.pop("phone", None)
+        db().auth.admin.update_user_by_id(user_id, payload)
+
+
+def _password_session(password: str, email: str = "", phone: str = ""):
+    attempts = []
+    if phone:
+        attempts.append({"password": password, "phone": phone})
+        attempts.append({"password": password, "email": _phone_placeholder_email(phone)})
+    if email:
+        attempts.append({"password": password, "email": email})
+    last = None
+    for creds in attempts:
+        try:
+            res = anon().auth.sign_in_with_password(creds)
+        except Exception as exc:
+            last = exc
+            continue
+        session = getattr(res, "session", None)
+        user = getattr(res, "user", None)
+        if session and user:
+            if not _account_confirmed(user):
+                raise HTTPException(status_code=403, detail="Akaunti haijathibitishwa")
+            _finish_signup_profile(user)
+            assert_active_account(user)
+            return public_profile(user, session.access_token)
+    msg = str(last or "").lower()
+    if "not confirmed" in msg or "email not confirmed" in msg or "phone not confirmed" in msg:
+        raise HTTPException(status_code=403, detail="Akaunti haijathibitishwa")
+    raise HTTPException(status_code=401, detail=LOGIN_ERROR)
+
+
 def _session_after_otp(user):
     phone = _user_phone(user)
     real_email = str(getattr(user, "email", None) or "").strip()
@@ -513,7 +560,7 @@ def _existing_account_detail(user) -> str:
     if "google" in _auth_providers(user):
         return "Akaunti hii ipo kwa Google. Ingia na Google. Haitaji OTP."
     if _account_confirmed(user):
-        return "Akaunti ipo. Ingia kwa barua pepe na nenosiri."
+        return "Akaunti ipo. Ingia kwa simu au barua pepe na nenosiri."
     return "Akaunti ipo. Thibitisha namba kwenye barua pepe, au ingia."
 
 
@@ -548,11 +595,11 @@ def health():
 @app.post("/auth/register")
 def register(request: Request, body: RegisterIn):
     limiter.check(f"register:{_client_key(request)}", 5)
-    kind, ident = phone_auth.parse_ident(body.email)
+    kind, ident = phone_auth.parse_ident(body.phone, body.email)
     username = body.username.strip()
     full_name = body.full_name.strip()
-    if kind != "email":
-        raise HTTPException(status_code=400, detail="Weka barua pepe")
+    if kind not in {"email", "phone"}:
+        raise HTTPException(status_code=400, detail="Weka namba ya simu au barua pepe")
     if len(body.password) < 8:
         raise HTTPException(status_code=400, detail="Nenosiri liwe angalau herufi 8")
     if not USERNAME_RE.match(username):
@@ -561,13 +608,18 @@ def register(request: Request, body: RegisterIn):
         raise HTTPException(status_code=400, detail="Jina linahitajika")
     if _username_taken(username):
         raise HTTPException(status_code=400, detail="Username imeshatumika")
-    email = ident
-    existing = _find_account(email)
+    email = ident if kind == "email" else ""
+    phone = ident if kind == "phone" else ""
+    existing = _find_account(email, phone)
     if existing:
         if _account_confirmed(existing) or "google" in _auth_providers(existing):
             raise HTTPException(status_code=400, detail=_existing_account_detail(existing))
-        _continue_unconfirmed_signup(existing, email, body.password, username, full_name)
+        _continue_unconfirmed_signup(existing, email, body.password, username, full_name, phone)
+        if phone:
+            return _password_session(body.password, phone=phone)
         return {"ok": True, "email": email, "needs_verify": True}
+    if phone:
+        return _register_phone(phone, body.password, username, full_name)
     return _register_email(email, body.password, username, full_name)
 
 
@@ -598,6 +650,53 @@ def _register_email(email: str, password: str, username: str, full_name: str):
         raise HTTPException(status_code=400, detail="Imeshindikana kutuma namba ya tarakimu 6 kwenye barua pepe")
     limiter.touch(f"resend-otp:{email}")
     return {"ok": True, "email": email, "needs_verify": True}
+
+
+def _register_phone(phone: str, password: str, username: str, full_name: str):
+    meta = {"username": username, "full_name": full_name, "phone": phone}
+    try:
+        created = db().auth.admin.create_user(
+            {
+                "phone": phone,
+                "email": _phone_placeholder_email(phone),
+                "password": password,
+                "phone_confirm": True,
+                "email_confirm": True,
+                "user_metadata": meta,
+            }
+        )
+        user = getattr(created, "user", None) or created
+    except Exception as exc:
+        msg = str(exc).lower()
+        if "already" in msg or "registered" in msg or "exists" in msg:
+            again = _auth_user_by_phone(phone)
+            if again and not _account_confirmed(again):
+                _continue_unconfirmed_signup(again, "", password, username, full_name, phone)
+                return _password_session(password, phone=phone)
+            raise HTTPException(status_code=400, detail="Akaunti ipo. Ingia kwa simu na nenosiri.")
+        try:
+            created = db().auth.admin.create_user(
+                {
+                    "email": _phone_placeholder_email(phone),
+                    "password": password,
+                    "email_confirm": True,
+                    "user_metadata": meta,
+                }
+            )
+            user = getattr(created, "user", None) or created
+        except Exception:
+            raise HTTPException(status_code=400, detail="Imeshindikana kujisajili kwa simu") from exc
+    if not user:
+        raise HTTPException(status_code=400, detail="Imeshindikana kujisajili kwa simu")
+    _confirm_phone_user(user.id, phone)
+    try:
+        out = _password_session(password, phone=phone)
+        out["ok"] = True
+        out["phone"] = phone
+        out["needs_verify"] = False
+        return out
+    except HTTPException:
+        return {"ok": True, "phone": phone, "needs_verify": False}
 
 
 @app.post("/auth/verify")
@@ -660,26 +759,12 @@ def resend(request: Request, body: ResendIn):
 @app.post("/auth/login")
 def login(request: Request, body: LoginIn):
     limiter.check(f"login:{_client_key(request)}", 8)
-    kind, ident = phone_auth.parse_ident(body.email)
+    kind, ident = phone_auth.parse_ident(body.phone, body.email)
+    if kind == "phone":
+        return _password_session(body.password, phone=ident)
     if kind != "email":
         raise HTTPException(status_code=401, detail=LOGIN_ERROR)
-    creds = {"password": body.password, "email": ident}
-    try:
-        res = anon().auth.sign_in_with_password(creds)
-    except Exception as exc:
-        msg = str(exc).lower()
-        if "not confirmed" in msg or "email not confirmed" in msg or "phone not confirmed" in msg:
-            raise HTTPException(status_code=403, detail="Akaunti haijathibitishwa")
-        raise HTTPException(status_code=401, detail=LOGIN_ERROR)
-    session = getattr(res, "session", None)
-    user = getattr(res, "user", None)
-    if not session or not user:
-        raise HTTPException(status_code=401, detail=LOGIN_ERROR)
-    if not _account_confirmed(user):
-        raise HTTPException(status_code=403, detail="Akaunti haijathibitishwa")
-    _finish_signup_profile(user)
-    assert_active_account(user)
-    return public_profile(user, session.access_token)
+    return _password_session(body.password, email=ident)
 
 
 GOOGLE_OFF = "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe."
