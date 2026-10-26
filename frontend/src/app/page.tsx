@@ -2,18 +2,18 @@ import Link from "next/link";
 import NextImage from "next/image";
 
 const categories = [
-  { href: "/nyumba", title: "Nyumba/Chumba", line: "Makazi ya mwezi au mwaka", img: "/real/room.jpg" },
-  { href: "/godown", title: "Godown/Store", line: "Hifadhi na store, si maduka", img: "/real/shop.jpg" },
-  { href: "/airbnb", title: "Airbnb", line: "Apartment kwa usiku", img: "/real/apartment.jpg" },
-  { href: "/maduka", title: "Maduka", line: "Frame za maduka", img: "/real/shop.jpg" },
-  { href: "/vifaa", title: "Vifaa", line: "Simenti, chuma, tofali", img: "/real/materials.jpg" },
+  { href: "/nyumba", title: "Houses / Rooms", line: "Monthly or yearly stays", img: "/real/room.jpg" },
+  { href: "/godown", title: "Godown / Store", line: "Storage space, not shop frames", img: "/real/shop.jpg" },
+  { href: "/airbnb", title: "Airbnb", line: "Apartments by the night", img: "/real/apartment.jpg" },
+  { href: "/maduka", title: "Shop frames", line: "Shop frames for rent", img: "/real/shop.jpg" },
+  { href: "/vifaa", title: "Building materials", line: "Cement, steel, bricks", img: "/real/materials.jpg" },
 ];
 
 export default function LandingPage() {
   return (
     <main className="overflow-x-hidden" style={{ backgroundColor: "#2E1A0F" }}>
       <section className="relative h-dvh min-h-[640px]">
-        <NextImage src="/real/apartment.jpg" alt="Makazi" fill className="object-cover" priority sizes="100vw" />
+        <NextImage src="/real/apartment.jpg" alt="Homes" fill className="object-cover" priority sizes="100vw" />
         <div
           className="absolute inset-0"
           style={{
@@ -29,14 +29,14 @@ export default function LandingPage() {
             </p>
             <div className="flex items-center gap-4 md:gap-7 shrink-0">
               <Link href="/login" className="hidden sm:inline text-sm" style={{ color: "#C4A35A" }}>
-                Ingia
+                Log in
               </Link>
               <Link
                 href="/register"
                 className="inline-flex text-sm px-3 py-1.5 md:px-5 md:py-2"
                 style={{ color: "#C4A35A", border: "1px solid #C4A35A" }}
               >
-                Jisajili
+                Sign up
               </Link>
             </div>
           </div>
@@ -48,17 +48,17 @@ export default function LandingPage() {
             className="font-heading text-[52px] sm:text-[72px] md:text-[96px] leading-[0.94] max-w-[10ch]"
             style={{ color: "#FFF6ED" }}
           >
-            Makazi yenye utulivu
+            Calm places to live
           </h1>
           <p className="mt-6 max-w-sm md:max-w-md text-[15px] md:text-lg leading-relaxed" style={{ color: "#D2A679" }}>
-            Nyumba, Airbnb, maduka na vifaa vya ujenzi. Bei wazi, picha halisi.
+            Houses, Airbnb, shop frames and building materials. Clear prices, real photos.
           </p>
           <Link
             href="/login"
             className="inline-flex mt-9 px-9 py-3.5 text-sm font-semibold"
             style={{ backgroundColor: "#C4A35A", color: "#2E1A0F" }}
           >
-            Ingia
+            Log in
           </Link>
         </div>
       </section>
@@ -67,10 +67,10 @@ export default function LandingPage() {
         <div className="max-w-2xl mx-auto text-center">
           <div className="gold-rule w-12 mx-auto mb-8" />
           <p className="font-heading text-[32px] md:text-[44px] leading-[1.15]" style={{ color: "#2E1A0F" }}>
-            Chumba, apartment, duka na vifaa — mahali pamoja.
+            Rooms, apartments, shops and materials — in one place.
           </p>
           <p className="mt-6 text-[15px] md:text-base leading-relaxed" style={{ color: "#5C4033" }}>
-            Jengo inakutanisha na mwenye mali bila kelele. Unaona picha, bei, kisha unaomba.
+            Jengo connects you with owners, quietly. See photos and prices, then send a request.
           </p>
         </div>
       </section>
@@ -101,7 +101,7 @@ export default function LandingPage() {
           Jengo
         </p>
         <Link href="/register" className="text-sm" style={{ color: "#C4A35A" }}>
-          Fungua akaunti
+          Create account
         </Link>
       </footer>
     </main>

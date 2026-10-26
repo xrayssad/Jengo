@@ -19,7 +19,7 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
         setItems(res.items || []);
         if (res.title) setHeading(res.title);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Ujumbe haujafunguka"));
+      .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"));
   };
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
       setText("");
       setError("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Ujumbe haukuenda");
+      setError(err instanceof Error ? err.message : "Message was not sent");
     }
   };
 
@@ -58,13 +58,13 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
           </button>
           <div className="min-w-0">
             <h1 className="font-heading truncate" style={{ color: "#2E1A0F" }}>{heading}</h1>
-            <p className="text-xs" style={{ color: "#8B5E3C" }}>Ujumbe wa moja kwa moja</p>
+            <p className="text-xs" style={{ color: "#8B5E3C" }}>Direct message</p>
           </div>
         </header>
         <div className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-2">
           {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
           {items.length === 0 && !error && (
-            <p className="text-sm text-center py-10" style={{ color: "#5C4033" }}>Andika ujumbe wa moja kwa moja kwa mwenye tangazo.</p>
+            <p className="text-sm text-center py-10" style={{ color: "#5C4033" }}>Write a direct message to the listing owner.</p>
           )}
           {items.map((m) => (
             <div key={m.id} className="flex" style={{ justifyContent: m.mine ? "flex-end" : "flex-start" }}>
@@ -79,8 +79,8 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
         </div>
         <form onSubmit={submit} className="sticky bottom-0 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
           <div className="nav-island max-w-md w-full mx-auto px-3 py-2 flex gap-2">
-            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Andika ujumbe..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "#2E1A0F" }} />
-            <button type="submit" className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#2E1A0F" }} aria-label="Tuma ujumbe">
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "#2E1A0F" }} />
+            <button type="submit" className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#2E1A0F" }} aria-label="Send message">
               <Send size={18} color="#FFF6ED" />
             </button>
           </div>

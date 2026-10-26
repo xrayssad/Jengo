@@ -7,7 +7,7 @@ export function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
   const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
   if (!url || !anon) {
-    throw new Error("Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe.");
+    throw new Error("Google is not connected in Supabase. Turn on the Google provider, or log in with email.");
   }
   client = createClient(url, anon, {
     auth: {

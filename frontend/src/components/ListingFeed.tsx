@@ -86,8 +86,8 @@ export default function ListingFeed({
         {loading && <div className="flex justify-center py-16"><Loader2 size={28} color="#8B5E3C" className="animate-spin" /></div>}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading" style={{ color: "#2E1A0F" }}>Hakuna matangazo bado</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Weka tangazo</Link>
+            <p className="font-heading" style={{ color: "#2E1A0F" }}>No listings yet</p>
+            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}
         {items.map((item, i) => (

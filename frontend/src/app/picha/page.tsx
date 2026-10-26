@@ -17,8 +17,8 @@ export default function SavedImagesPage() {
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Picha zilizohifadhiwa</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>Picha ulizopakua kutoka kwenye post</p>
+            <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Saved photos</h1>
+            <p className="text-xs" style={{ color: "#5C4033" }}>Photos you saved from a post</p>
           </div>
         </div>
       </header>
@@ -26,7 +26,7 @@ export default function SavedImagesPage() {
         {items.length === 0 && (
           <div className="col-span-2 text-center py-16">
             <Download size={32} color="#D2A679" className="mx-auto mb-3" />
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna picha bado</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No photos yet</p>
           </div>
         )}
         {items.map((img) => (

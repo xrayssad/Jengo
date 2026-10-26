@@ -5,14 +5,14 @@ from app.security import db, is_admin, profile_of
 
 def _name(user_id: str) -> str:
     p = profile_of(user_id) or {}
-    return str(p.get("username") or p.get("full_name") or p.get("email") or "Mtumiaji")
+    return str(p.get("username") or p.get("full_name") or p.get("email") or "User")
 
 
 def listing_row(listing_id: str) -> dict:
     res = db().table("listings").select("id,owner_id,title,status").eq("id", listing_id).limit(1).execute()
     rows = res.data or []
     if not rows:
-        raise HTTPException(status_code=404, detail="Tangazo halipo")
+        raise HTTPException(status_code=404, detail="Listing not found")
     return rows[0]
 
 
@@ -20,7 +20,7 @@ def booking_row(booking_id: str) -> dict:
     res = db().table("bookings").select("*").eq("id", booking_id).limit(1).execute()
     rows = res.data or []
     if not rows:
-        raise HTTPException(status_code=404, detail="Ombi halipo")
+        raise HTTPException(status_code=404, detail="Request not found")
     return rows[0]
 
 
@@ -60,7 +60,7 @@ def public_message(row: dict, me_id: str) -> dict:
         "body": row.get("body"),
         "created_at": row.get("created_at"),
         "mine": sender == me_id,
-        "sender_name": _name(sender) if sender else "Mtumiaji",
+        "sender_name": _name(sender) if sender else "User",
     }
 
 
@@ -80,7 +80,7 @@ def list_thread(thread_key: str, me_id: str) -> list[dict]:
 def add_message(thread_key: str, kind: str, sender_id: str, body: str, booking_id=None, listing_id=None) -> dict:
     text = (body or "").strip()[:2000]
     if not text:
-        raise HTTPException(status_code=400, detail="Andika ujumbe")
+        raise HTTPException(status_code=400, detail="Write a message")
     row = {
         "thread_key": thread_key,
         "kind": kind,
@@ -91,7 +91,7 @@ def add_message(thread_key: str, kind: str, sender_id: str, body: str, booking_i
     }
     res = db().table("jengo_messages").insert(row).execute()
     if not res.data:
-        raise HTTPException(status_code=400, detail="Ujumbe haujahifadhiwa")
+        raise HTTPException(status_code=400, detail="Message was not saved")
     msg = public_message(res.data[0], sender_id)
     _notify_thread(thread_key, booking_id, sender_id, msg.get("id"))
     return msg
@@ -168,11 +168,11 @@ def inbox_for(user_id: str) -> list[dict]:
         latest[key] = row
     items = []
     for row in latest.values():
-        title = "Ujumbe"
+        title = "Message"
         href = ""
         kind = row.get("kind")
         if kind == "booking" and row.get("booking_id"):
-            title = "Ombi"
+            title = "Request"
             href = f"/bookings/{row['booking_id']}/chat"
             try:
                 listing = listing_row(booking_row(row["booking_id"]).get("listing_id"))
@@ -185,9 +185,9 @@ def inbox_for(user_id: str) -> list[dict]:
             peer = next((m for m in members if m != user_id), "")
             href = f"/chat/{row['listing_id']}" + (f"?peer={peer}" if peer else "")
             try:
-                title = listing_row(row["listing_id"]).get("title") or "Ujumbe wa moja kwa moja"
+                title = listing_row(row["listing_id"]).get("title") or "Direct message"
             except Exception:
-                title = "Ujumbe wa moja kwa moja"
+                title = "Direct message"
         items.append(
             {
                 **public_message(row, user_id),
@@ -267,12 +267,12 @@ def add_comment(listing_id: str, user_id: str, body: str, parent_id: str | None)
     listing_row(listing_id)
     text = (body or "").strip()[:2000]
     if not text:
-        raise HTTPException(status_code=400, detail="Andika maoni")
+        raise HTTPException(status_code=400, detail="Write a comment")
     if parent_id:
         parent = db().table("jengo_comments").select("id,listing_id").eq("id", parent_id).limit(1).execute()
         prow = (parent.data or [None])[0]
         if not prow or prow.get("listing_id") != listing_id:
-            raise HTTPException(status_code=404, detail="Maoni hayapo")
+            raise HTTPException(status_code=404, detail="Comment not found")
     row = {
         "listing_id": listing_id,
         "user_id": user_id,
@@ -282,7 +282,7 @@ def add_comment(listing_id: str, user_id: str, body: str, parent_id: str | None)
     }
     res = db().table("jengo_comments").insert(row).execute()
     if not res.data:
-        raise HTTPException(status_code=400, detail="Maoni hayajahifadhiwa")
+        raise HTTPException(status_code=400, detail="Comment was not saved")
     item = res.data[0]
     return {
         "id": item.get("id"),
@@ -301,7 +301,7 @@ def toggle_comment_like(comment_id: str, user_id: str) -> dict:
     cur = db().table("jengo_comments").select("*").eq("id", comment_id).limit(1).execute()
     comment = (cur.data or [None])[0]
     if not comment:
-        raise HTTPException(status_code=404, detail="Maoni hayapo")
+        raise HTTPException(status_code=404, detail="Comment not found")
     existing = (
         db()
         .table("jengo_comment_likes")

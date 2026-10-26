@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import {
   Menu, Search, User, Send, Compass, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard,
@@ -10,28 +11,28 @@ import {
 import AdminLink from "@/components/AdminLink";
 import ListingCard from "@/components/ListingCard";
 import { InboxLink } from "@/components/MqttInbox";
-import { clearAuth, fetchListings, readHomeListingsCache, writeHomeListingsCache, type Listing } from "@/lib/api";
+import { clearAuth, fetchListings, readHomeListingsCache, suggestPlaces, writeHomeListingsCache, type Listing, type PlaceHit } from "@/lib/api";
 
 const chips = [
-  { href: "/nyumba", label: "Nyumba/Chumba" },
+  { href: "/nyumba", label: "Houses/Rooms" },
   { href: "/godown", label: "Godown/Store" },
   { href: "/airbnb", label: "Airbnb" },
-  { href: "/maduka", label: "Maduka" },
-  { href: "/vifaa", label: "Vifaa" },
+  { href: "/maduka", label: "Shops" },
+  { href: "/vifaa", label: "Materials" },
 ];
 
 const sideLinks = [
-  { label: "Risiti", href: "/risiti", icon: Receipt },
-  { label: "Maombi niliyopokea", href: "/maombi-niliyopokea", icon: Inbox },
+  { label: "Receipts", href: "/risiti", icon: Receipt },
+  { label: "Requests I received", href: "/maombi-niliyopokea", icon: Inbox },
   { label: "Profile", href: "/profile", icon: User },
-  { label: "Ujumbe", href: "/messages", icon: Send },
+  { label: "Messages", href: "/messages", icon: Send },
   { label: "Discover", href: "/discover", icon: Compass },
-  { label: "Vipendwa", href: "/favorites", icon: Bookmark },
-  { label: "Picha zilizohifadhiwa", href: "/picha", icon: Download },
-  { label: "Malipo", href: "/malipo", icon: CreditCard },
-  { label: "Matangazo yangu", href: "/matangazo-yangu", icon: LayoutList },
-  { label: "Maombi yangu", href: "/maombi-yangu", icon: Inbox },
-  { label: "Mipangilio", href: "/settings", icon: Settings },
+  { label: "Favorites", href: "/favorites", icon: Bookmark },
+  { label: "Saved photos", href: "/picha", icon: Download },
+  { label: "Payments", href: "/malipo", icon: CreditCard },
+  { label: "My listings", href: "/matangazo-yangu", icon: LayoutList },
+  { label: "My requests", href: "/maombi-yangu", icon: Inbox },
+  { label: "Settings", href: "/settings", icon: Settings },
 ];
 
 function CardSkeleton() {
@@ -45,9 +46,21 @@ function CardSkeleton() {
 const primed = typeof window === "undefined" ? null : fetchListings({ status: "active", limit: 8 });
 
 export default function HomePage() {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [placeQ, setPlaceQ] = useState("");
+  const [hits, setHits] = useState<PlaceHit[]>([]);
+  const [openHits, setOpenHits] = useState(false);
+  const searchBox = useRef<HTMLFormElement>(null);
   const [items, setItems] = useState<Listing[]>([]);
   const [waiting, setWaiting] = useState(true);
+
+  const goSearch = (q: string) => {
+    const next = q.split(",")[0].trim() || q.trim();
+    if (!next) return;
+    setOpenHits(false);
+    router.push(`/search?q=${encodeURIComponent(next)}`);
+  };
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -68,6 +81,31 @@ export default function HomePage() {
       })
       .catch(() => {})
       .finally(() => setWaiting(false));
+  }, []);
+
+  useEffect(() => {
+    const q = placeQ.trim();
+    if (q.length < 2) {
+      setHits([]);
+      return;
+    }
+    const t = window.setTimeout(() => {
+      suggestPlaces(q)
+        .then((res) => {
+          setHits(res.items || []);
+          setOpenHits(true);
+        })
+        .catch(() => setHits([]));
+    }, 260);
+    return () => window.clearTimeout(t);
+  }, [placeQ]);
+
+  useEffect(() => {
+    const hide = (e: MouseEvent) => {
+      if (!searchBox.current?.contains(e.target as Node)) setOpenHits(false);
+    };
+    document.addEventListener("mousedown", hide);
+    return () => document.removeEventListener("mousedown", hide);
   }, []);
 
   useEffect(() => {
@@ -112,7 +150,7 @@ export default function HomePage() {
       >
         <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: "1px solid #C4A35A" }}>
           <p className="font-heading text-[28px] leading-none" style={{ color: "#C4A35A" }}>Jengo</p>
-          <button type="button" onClick={() => setOpen(false)} className="drawer-close w-9 h-9 flex items-center justify-center" aria-label="Funga">
+          <button type="button" onClick={() => setOpen(false)} className="drawer-close w-9 h-9 flex items-center justify-center" aria-label="Close">
             <X size={16} color="#C4A35A" />
           </button>
         </div>
@@ -127,21 +165,55 @@ export default function HomePage() {
             );
           })}
           <Link href="/login" onClick={() => { clearAuth(); setOpen(false); }} className="flex mx-3 mt-4 mb-6 px-3 py-3" style={{ border: "1px solid #C4A35A", color: "#C4A35A" }}>
-            <span className="text-sm">Tokaa</span>
+            <span className="text-sm">Log out</span>
           </Link>
         </nav>
       </aside>
 
       <div className="max-w-md mx-auto px-5 pt-5">
-        <p className="text-sm" style={{ color: "#8B5E3C" }}>Karibu</p>
+        <p className="text-sm" style={{ color: "#8B5E3C" }}>Welcome</p>
         <h2 className="font-heading text-[32px] leading-[1.08] mt-1 mb-5" style={{ color: "#2E1A0F" }}>
-          Tafuta makazi yenye utulivu
+          Find a calm place to stay
         </h2>
 
-        <Link href="/search" className="flex items-center gap-3 px-4 py-3 mb-4 sheet rounded-full">
-          <Search size={16} color="#8B5E3C" />
-          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta nyumba, chumba, godown, store...</span>
-        </Link>
+        <form
+          ref={searchBox}
+          action="/search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            goSearch(placeQ);
+          }}
+          className="relative mb-4"
+        >
+          <div className="flex items-center gap-3 px-4 py-3 sheet rounded-full">
+            <Search size={16} color="#8B5E3C" />
+            <input
+              name="q"
+              value={placeQ}
+              onChange={(e) => setPlaceQ(e.target.value)}
+              onFocus={() => hits.length && setOpenHits(true)}
+              placeholder="Search city or street"
+              className="flex-1 bg-transparent outline-none text-sm min-w-0"
+              style={{ color: "#2E1A0F" }}
+              autoComplete="off"
+            />
+          </div>
+          {openHits && hits.length > 0 && (
+            <div className="absolute z-20 left-0 right-0 mt-2 overflow-hidden sheet" style={{ borderRadius: 22 }}>
+              {hits.map((h) => (
+                <button
+                  key={`${h.label}-${h.place_id || h.lat}`}
+                  type="button"
+                  onClick={() => goSearch(h.label || h.city || "")}
+                  className="block w-full text-left px-4 py-2.5 text-sm"
+                  style={{ color: "#2E1A0F", borderBottom: "1px solid rgba(139,94,60,0.14)" }}
+                >
+                  {h.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </form>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
           {chips.map((c, i) => (
@@ -160,13 +232,13 @@ export default function HomePage() {
           <Image src="/real/apartment.jpg" alt="" fill className="object-cover" sizes="400px" priority />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(46,26,15,0.55), rgba(46,26,15,0.05))" }} />
           <div className="photo-dock">
-            <h3 className="font-heading text-xl leading-snug" style={{ color: "#2E1A0F" }}>Nafasi za kuishi na kufanya kazi</h3>
-            <p className="text-xs mt-1" style={{ color: "#5C4033" }}>Picha halisi, bei wazi.</p>
+            <h3 className="font-heading text-xl leading-snug" style={{ color: "#2E1A0F" }}>Places to live and work</h3>
+            <p className="text-xs mt-1" style={{ color: "#5C4033" }}>Real photos, clear prices.</p>
           </div>
         </div>
 
         <div className="flex items-end justify-between mb-3">
-          <h3 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Karibu nawe</h3>
+          <h3 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Near you</h3>
           <Link href="/discover" className="text-sm" style={{ color: "#8B5E3C" }}>Discover</Link>
         </div>
         <div className="space-y-5">

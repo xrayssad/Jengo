@@ -1,5 +1,5 @@
 "use client";
 import ListingFeed from "@/components/ListingFeed";
 export default function Page() {
-  return <ListingFeed title="Nyumba / Chumba" subtitle="Mwezi, miezi 3, 6 au mwaka" category="chumba_nyumba" />;
+  return <ListingFeed title="Houses / Rooms" subtitle="Month, 3 months, 6 months or year" category="chumba_nyumba" />;
 }

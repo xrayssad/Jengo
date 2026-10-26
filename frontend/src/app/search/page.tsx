@@ -8,11 +8,12 @@ import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "@/components/ListingCard";
 
 const filters = [
-  { id: "", label: "Zote" },
-  { id: "chumba_nyumba", label: "Nyumba / Chumba" },
+  { id: "", label: "All" },
+  { id: "chumba_nyumba", label: "Houses / Rooms" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
   { id: "store_godown", label: "Godown / Store" },
-  { id: "frame", label: "Frame za Maduka" },
+  { id: "frame", label: "Shop frames" },
+  { id: "vifaa", label: "Building materials" },
 ];
 
 function SearchInner() {
@@ -48,10 +49,11 @@ function SearchInner() {
           status: "active",
           category: category || undefined,
           q: debounced || undefined,
+          limit: 100,
         });
         if (!cancelled) setItems(res.items || []);
       } catch {
-        if (!cancelled) setError("Imeshindikana kupakia. Hakikisha API inaendesha.");
+        if (!cancelled) setError("Could not load listings. Check that the API is running.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -75,7 +77,7 @@ function SearchInner() {
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Tafuta chumba, nyumba, apartment..."
+                placeholder="Search city or street"
                 autoFocus
                 className="input-chocolate w-full pl-10 pr-10 py-3 text-sm"
               />
@@ -107,8 +109,7 @@ function SearchInner() {
 
       <div className="max-w-md mx-auto px-4 py-4">
         <p className="text-xs mb-4" style={{ color: "#5C4033" }}>
-          {loading ? "Inapakia..." : `${items.length} matokeo`}
-          {!loading && query ? ` kwa "${query}"` : ""}
+          {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
         </p>
 
         {loading && (
@@ -125,14 +126,14 @@ function SearchInner() {
           <div className="text-center py-16">
             <Search size={40} color="#D2A679" className="mx-auto mb-4 opacity-60" />
             <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>
-              {query || category ? "Hakuna matokeo" : "Hakuna matangazo bado"}
+              {query || category ? "No listings match this city or street" : "No listings yet"}
             </p>
             {!query && !category && (
               <Link
                 href="/weka-tangazo"
                 className="btn-primary inline-block mt-4 px-6 py-3 rounded-full text-sm font-semibold"
               >
-                Weka Tangazo
+                Post a listing
               </Link>
             )}
           </div>

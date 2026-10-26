@@ -80,7 +80,7 @@ def clear_otp(meta: dict | None) -> dict:
 
 
 def otp_text(code: str) -> str:
-    return f"Jengo namba: {code}"
+    return f"Jengo code: {code}"
 
 
 def send_sms(phone: str, code: str) -> bool:
@@ -154,7 +154,7 @@ def _resend(to: str, text: str) -> bool:
     try:
         res = httpx.post(
             "https://api.resend.com/emails",
-            json={"from": _mail_from(), "to": [to], "subject": "Jengo namba", "text": text},
+            json={"from": _mail_from(), "to": [to], "subject": "Jengo code", "text": text},
             headers={"Authorization": f"Bearer {key}"},
             timeout=10.0,
         )
@@ -174,7 +174,7 @@ def _sendgrid(to: str, text: str) -> bool:
             json={
                 "personalizations": [{"to": [{"email": to}]}],
                 "from": {"email": sender[sender.find("<") + 1 : sender.find(">")] if "<" in sender else sender, "name": "Jengo"},
-                "subject": "Jengo namba",
+                "subject": "Jengo code",
                 "content": [{"type": "text/plain", "value": text}],
             },
             headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
@@ -197,7 +197,7 @@ def _brevo(to: str, text: str) -> bool:
             json={
                 "sender": {"email": email, "name": "Jengo"},
                 "to": [{"email": to}],
-                "subject": "Jengo namba",
+                "subject": "Jengo code",
                 "textContent": text,
             },
             headers={"api-key": key, "Accept": "application/json"},
@@ -217,7 +217,7 @@ def _smtp(to: str, text: str) -> bool:
     port = int(os.getenv("SMTP_PORT") or "587")
     sender = _mail_from()
     from_addr = sender[sender.find("<") + 1 : sender.find(">")] if "<" in sender else sender
-    message = f"From: {sender}\r\nTo: {to}\r\nSubject: Jengo namba\r\n\r\n{text}\r\n"
+    message = f"From: {sender}\r\nTo: {to}\r\nSubject: Jengo code\r\n\r\n{text}\r\n"
     try:
         import smtplib
         import ssl

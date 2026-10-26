@@ -49,7 +49,7 @@ export default function OtpBoxes({
           autoFocus={i === 0}
           size={1}
           maxLength={i === 0 ? length : 1}
-          aria-label={`Tarakimu ${i + 1} kati ya ${length}`}
+          aria-label={`Digit ${i + 1} of ${length}`}
           value={digits[i] || ""}
           onChange={(e) => fill(e.target.value, i)}
           onKeyDown={(e) => {

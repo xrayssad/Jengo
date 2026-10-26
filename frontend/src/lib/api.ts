@@ -88,7 +88,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const detail =
       typeof data === "object" && data && "detail" in data
         ? String((data as { detail: unknown }).detail)
-        : `Hitilafu ${res.status}`;
+        : `Error ${res.status}`;
     const err = new Error(detail) as Error & { status?: number };
     err.status = res.status;
     throw err;
@@ -150,7 +150,7 @@ export async function login(ident: string, password: string) {
   return data;
 }
 
-const GOOGLE_OFF = "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe.";
+const GOOGLE_OFF = "Google is not connected in Supabase. Turn on the Google provider, or log in with email.";
 
 function googleError(raw: string) {
   const text = raw.toLowerCase();
@@ -355,23 +355,23 @@ export function formatPrice(price: number | string) {
 
 export function periodLabel(period?: string) {
   const map: Record<string, string> = {
-    mwezi: "/mwezi",
-    miezi_3: "/miezi 3",
-    miezi_6: "/miezi 6",
-    mwaka: "/mwaka",
-    usiku: "/usiku",
-    siku: "/siku",
-    wiki: "/wiki",
+    mwezi: "/month",
+    miezi_3: "/3 months",
+    miezi_6: "/6 months",
+    mwaka: "/year",
+    usiku: "/night",
+    siku: "/day",
+    wiki: "/week",
   };
   return period ? map[period] || `/${period}` : "";
 }
 
 export const catLabel: Record<string, string> = {
-  chumba_nyumba: "Nyumba / Chumba",
+  chumba_nyumba: "Houses / Rooms",
   apartment_airbnb: "Apartment & Airbnb",
   store_godown: "Godown / Store",
-  frame: "Frame za Maduka",
-  vifaa: "Vifaa vya Ujenzi",
+  frame: "Shop frames",
+  vifaa: "Building materials",
 };
 
 export const shopCategories = ["frame"];
@@ -389,7 +389,7 @@ export function listingPhones(item: { phones?: string[]; phone?: string; descrip
   };
   for (const n of raw) push(n);
   if (!out.length && item.description) {
-    const m = item.description.match(/Simu:\s*(.+)$/m);
+    const m = item.description.match(/(?:Simu|Phone):\s*(.+)$/m);
     if (m) for (const n of m[1].split(",")) push(n);
   }
   return out;
@@ -411,10 +411,10 @@ const RENTAL_PERIODS = new Set(["mwezi", "miezi_3", "miezi_6", "mwaka", "usiku",
 
 export function unitLabel(unit?: string | null) {
   const map: Record<string, string> = {
-    mfuko: "mfuko",
-    tani: "tani",
-    kipande: "kipande",
-    dei: "dei",
+    mfuko: "bag",
+    tani: "tonne",
+    kipande: "piece",
+    dei: "day",
   };
   if (!unit) return "";
   return map[unit] || unit;
@@ -564,7 +564,7 @@ export async function uploadPhoto(file: File) {
     const detail =
       typeof data === "object" && data && "detail" in data
         ? String((data as { detail: unknown }).detail)
-        : `Hitilafu ${res.status}`;
+        : `Error ${res.status}`;
     throw new Error(detail);
   }
   return data as { url: string };

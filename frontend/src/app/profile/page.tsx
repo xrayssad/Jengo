@@ -12,20 +12,20 @@ import AuthGate from "@/components/AuthGate";
 import AdminLink from "@/components/AdminLink";
 
 const menuItems = [
-  { icon: FileText, label: "Maombi yangu", desc: "Maombi uliyotuma", href: "/maombi-yangu" },
-  { icon: Home, label: "Matangazo yangu", desc: "Uliyoweka", href: "/matangazo-yangu" },
-  { icon: Heart, label: "Vipendwa", desc: "Matangazo uliyohifadhi", href: "/favorites" },
-  { icon: Settings, label: "Mipangilio", desc: "Akaunti na faragha", href: "/settings" },
+  { icon: FileText, label: "My requests", desc: "Requests you sent", href: "/maombi-yangu" },
+  { icon: Home, label: "My listings", desc: "Listings you posted", href: "/matangazo-yangu" },
+  { icon: Heart, label: "Favorites", desc: "Listings you saved", href: "/favorites" },
+  { icon: Settings, label: "Settings", desc: "Account and privacy", href: "/settings" },
 ];
 
 export default function ProfilePage() {
-  const [name, setName] = useState("Mtumiaji");
+  const [name, setName] = useState("User");
   const [email, setEmail] = useState("");
 
   useEffect(() => {
     const user = getAuthUser();
     if (user) {
-      setName(user.username || user.full_name || user.email || "Mtumiaji");
+      setName(user.username || user.full_name || user.email || "User");
       setEmail(user.email || "");
     }
   }, []);
@@ -50,7 +50,7 @@ export default function ProfilePage() {
             <p className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>{name}</p>
             <p className="flex items-center gap-1.5 mt-1 text-sm" style={{ color: "#5C4033" }}>
               <Mail size={12} color="#8B5E3C" />
-              {email || "Akaunti"}
+              {email || "Account"}
             </p>
           </div>
         </div>
@@ -60,7 +60,7 @@ export default function ProfilePage() {
           className="btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-full font-semibold text-sm"
         >
           <Plus size={18} strokeWidth={2.5} />
-          Weka Tangazo Jipya
+          Post a new listing
         </Link>
         <div className="text-center">
           <AdminLink />
@@ -104,7 +104,7 @@ export default function ProfilePage() {
           }}
         >
           <LogOut size={16} strokeWidth={2} />
-          Tokaa
+          Log out
         </button>
       </div>
     </main>

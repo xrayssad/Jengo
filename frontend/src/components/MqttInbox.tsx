@@ -41,7 +41,7 @@ function viewingInbox(path: string) {
 export function InboxLink({ className }: { className?: string }) {
   const inbox = useInboxLive();
   return (
-    <Link href="/messages" className={className} aria-label="Ujumbe">
+    <Link href="/messages" className={className} aria-label="Messages">
       <span className="relative inline-flex">
         <Send size={16} color="#2E1A0F" />
         {inbox.unread && (

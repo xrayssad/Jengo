@@ -8,10 +8,10 @@ import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 import { afterAuthPath, register as apiRegister, startGoogle } from "@/lib/api";
 
 const slides = [
-  { image: "/real/room.jpg", title: "Chumba & Nyumba" },
-  { image: "/real/warehouse.jpg", title: "Store & Godown" },
+  { image: "/real/room.jpg", title: "Houses / Rooms" },
+  { image: "/real/warehouse.jpg", title: "Godown / Store" },
   { image: "/real/apartment.jpg", title: "Apartment & Airbnb" },
-  { image: "/real/shop.jpg", title: "Frame za Maduka" },
+  { image: "/real/shop.jpg", title: "Shop frames" },
 ];
 
 export default function RegisterPage() {
@@ -37,11 +37,11 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
     if (password.length < 8) {
-      setError("Nenosiri liwe angalau herufi 8");
+      setError("Password must be at least 8 characters");
       return;
     }
     if (!/^[A-Za-z0-9_]{3,20}$/.test(username.trim())) {
-      setError("Username: herufi 3–20, herufi, namba au _");
+      setError("Username: 3–20 characters, letters, numbers or _");
       return;
     }
     setBusy(true);
@@ -63,7 +63,7 @@ export default function RegisterPage() {
       }
       router.push("/login");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Imeshindikana kujisajili");
+      setError(err instanceof Error ? err.message : "Could not create the account");
     } finally {
       setBusy(false);
     }
@@ -74,7 +74,7 @@ export default function RegisterPage() {
     try {
       await startGoogle(`${window.location.origin}/auth/callback`);
     } catch (err) {
-      setGoogleMsg(err instanceof Error ? err.message : "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe.");
+      setGoogleMsg(err instanceof Error ? err.message : "Google is not connected in Supabase. Turn on the Google provider, or log in with email.");
     }
   };
 
@@ -91,13 +91,13 @@ export default function RegisterPage() {
       <div className="px-5 -mt-14 relative z-10 pb-12">
         <div className="sheet max-w-sm mx-auto p-6 rounded-[28px] fade-up">
           <p className="text-sm" style={{ color: "#8B5E3C" }}>Jengo</p>
-          <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "#2E1A0F" }}>Fungua akaunti</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Jisajili kwa simu au barua pepe. Namba ya tarakimu 6 inatumwa kwenye barua pepe tu.</p>
+          <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "#2E1A0F" }}>Create account</h1>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Sign up with phone or email. The 6-digit code is sent to email only.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="flex gap-2">
               {([
-                { id: "phone", label: "Simu" },
-                { id: "email", label: "Barua pepe" },
+                { id: "phone", label: "Phone" },
+                { id: "email", label: "Email" },
               ] as const).map((opt) => (
                 <button
                   key={opt.id}
@@ -111,7 +111,7 @@ export default function RegisterPage() {
               ))}
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Jina kamili</label>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Full name</label>
               <div className="relative">
                 <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
                 <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
@@ -123,7 +123,7 @@ export default function RegisterPage() {
             </div>
             {via === "phone" ? (
               <div>
-                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Namba ya simu</label>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Phone number</label>
                 <div className="relative">
                   <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
                   <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0712 345 678" inputMode="tel" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
@@ -131,7 +131,7 @@ export default function RegisterPage() {
               </div>
             ) : (
               <div>
-                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Barua pepe</label>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Email</label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
                   <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
@@ -139,7 +139,7 @@ export default function RegisterPage() {
               </div>
             )}
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Nenosiri</label>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Password</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
                 <input type={show ? "text" : "password"} required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="input-chocolate w-full pl-10 pr-12 py-3.5 text-sm" />
@@ -150,15 +150,15 @@ export default function RegisterPage() {
             </div>
             {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
             <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
-              {busy ? "Inasajili..." : "Endelea"}
+              {busy ? "Creating account..." : "Continue"}
             </button>
           </form>
           <button type="button" onClick={google} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
-            Ingia na Google
+            Continue with Google
           </button>
           {googleMsg && <p className="text-sm mt-3 font-semibold" style={{ color: "#A6452E" }}>{googleMsg}</p>}
           <p className="text-center text-sm mt-6">
-            <Link href="/login" className="font-bold" style={{ color: "#8B5E3C" }}>Ingia</Link>
+            <Link href="/login" className="font-bold" style={{ color: "#8B5E3C" }}>Log in</Link>
           </p>
         </div>
       </div>

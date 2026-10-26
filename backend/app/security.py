@@ -13,7 +13,7 @@ QTY_RE = re.compile(r"^\[\[qty:([0-9.]+)\]\]\s*")
 REVIEW_RE = re.compile(r"\[\[review:(\d+):(.*?)\]\]\s*$", re.S)
 COMMISSION_RE = re.compile(r"\[\[commission:([^:\]]*):([^:\]]*)\]\]")
 
-LOGIN_ERROR = "Barua pepe, simu au nenosiri si sahihi"
+LOGIN_ERROR = "Email, phone or password is incorrect"
 
 
 def load_env():
@@ -35,17 +35,17 @@ def anon():
 
 def current_user(authorization: str | None = Header(default=None)):
     if not authorization or not authorization.lower().startswith("bearer "):
-        raise HTTPException(status_code=401, detail="Ingia kwanza")
+        raise HTTPException(status_code=401, detail="Log in first")
     token = authorization.split(" ", 1)[1].strip()
     if not token:
-        raise HTTPException(status_code=401, detail="Ingia kwanza")
+        raise HTTPException(status_code=401, detail="Log in first")
     try:
         res = anon().auth.get_user(token)
     except Exception:
-        raise HTTPException(status_code=401, detail="Kipindi kimeisha")
+        raise HTTPException(status_code=401, detail="Session expired")
     user = getattr(res, "user", None)
     if not user:
-        raise HTTPException(status_code=401, detail="Kipindi kimeisha")
+        raise HTTPException(status_code=401, detail="Session expired")
     assert_active_account(user)
     return user
 
@@ -73,7 +73,7 @@ def is_admin(user_id: str) -> bool:
 
 def require_admin(user):
     if not is_admin(user.id):
-        raise HTTPException(status_code=403, detail="Admin tu")
+        raise HTTPException(status_code=403, detail="Admins only")
     return user
 
 
@@ -94,7 +94,7 @@ def account_status(profile: dict | None, user=None) -> str:
 
 def assert_active_account(user):
     if account_status(profile_of(user.id), user) == "suspended":
-        raise HTTPException(status_code=403, detail="Akaunti imesimamishwa")
+        raise HTTPException(status_code=403, detail="Account is suspended")
     return user
 
 
@@ -223,7 +223,7 @@ class RateGate:
     def __init__(self):
         self.hits: dict[str, list[float]] = defaultdict(list)
 
-    def check(self, key: str, limit: int, window: int = 60, detail: str = "Jaribu tena baadaye"):
+    def check(self, key: str, limit: int, window: int = 60, detail: str = "Try again later"):
         now = time.time()
         bucket = [t for t in self.hits[key] if now - t < window]
         if len(bucket) >= limit:

@@ -232,7 +232,7 @@ def _session_from_verify(res):
     session = getattr(res, "session", None)
     user = getattr(res, "user", None)
     if not session or not user:
-        raise HTTPException(status_code=400, detail="Thibitisho si sahihi")
+        raise HTTPException(status_code=400, detail="Verification failed")
     _finish_signup_profile(user)
     assert_active_account(user)
     return public_profile(user, session.access_token)
@@ -341,13 +341,13 @@ def _continue_unconfirmed_signup(user, email: str, password: str, username: str,
     try:
         db().auth.admin.update_user_by_id(user.id, payload)
     except Exception:
-        raise HTTPException(status_code=400, detail="Imeshindikana kujisajili")
+        raise HTTPException(status_code=400, detail="Could not create the account")
     _drop_profile(user.id)
     if phone and not email:
         _confirm_phone_user(user.id, phone)
         return
     if not email or not _issue_otp(user.id, email):
-        raise HTTPException(status_code=400, detail="Imeshindikana kutuma namba ya tarakimu 6 kwenye barua pepe")
+        raise HTTPException(status_code=400, detail="Could not send the 6-digit code to your email")
     limiter.touch(f"resend-otp:{email}")
 
 
@@ -502,13 +502,13 @@ def _password_session(password: str, email: str = "", phone: str = ""):
         user = getattr(res, "user", None)
         if session and user:
             if not _account_confirmed(user):
-                raise HTTPException(status_code=403, detail="Akaunti haijathibitishwa")
+                raise HTTPException(status_code=403, detail="Account not verified")
             _finish_signup_profile(user)
             assert_active_account(user)
             return public_profile(user, session.access_token)
     msg = str(last or "").lower()
     if "not confirmed" in msg or "email not confirmed" in msg or "phone not confirmed" in msg:
-        raise HTTPException(status_code=403, detail="Akaunti haijathibitishwa")
+        raise HTTPException(status_code=403, detail="Account not verified")
     raise HTTPException(status_code=401, detail=LOGIN_ERROR)
 
 
@@ -533,7 +533,7 @@ def _session_after_otp(user):
     if not token_hash and isinstance(props, dict):
         token_hash = props.get("hashed_token")
     if not token_hash:
-        raise HTTPException(status_code=400, detail="Thibitisho si sahihi")
+        raise HTTPException(status_code=400, detail="Verification failed")
     res = anon().auth.verify_otp({"token_hash": token_hash, "type": "magiclink"})
     restore = {}
     if real_email:
@@ -547,10 +547,10 @@ def _session_after_otp(user):
             pass
     session = getattr(res, "session", None)
     if not session:
-        raise HTTPException(status_code=400, detail="Thibitisho si sahihi")
+        raise HTTPException(status_code=400, detail="Verification failed")
     fresh = _get_auth_user(user.id) or getattr(res, "user", None)
     if not fresh:
-        raise HTTPException(status_code=400, detail="Thibitisho si sahihi")
+        raise HTTPException(status_code=400, detail="Verification failed")
     _finish_signup_profile(fresh)
     assert_active_account(fresh)
     return public_profile(fresh, session.access_token)
@@ -558,17 +558,17 @@ def _session_after_otp(user):
 
 def _existing_account_detail(user) -> str:
     if "google" in _auth_providers(user):
-        return "Akaunti hii ipo kwa Google. Ingia na Google. Haitaji OTP."
+        return "This account uses Google. Log in with Google. No OTP needed."
     if _account_confirmed(user):
-        return "Akaunti ipo. Ingia kwa simu au barua pepe na nenosiri."
-    return "Akaunti ipo. Thibitisha namba kwenye barua pepe, au ingia."
+        return "Account exists. Log in with phone or email and password."
+    return "Account exists. Verify the code in your email, or log in."
 
 
 def _listing(listing_id: str) -> dict:
     res = db().table("listings").select("*").eq("id", listing_id).limit(1).execute()
     rows = res.data or []
     if not rows:
-        raise HTTPException(status_code=404, detail="Tangazo halipo")
+        raise HTTPException(status_code=404, detail="Listing not found")
     return rows[0]
 
 
@@ -599,15 +599,15 @@ def register(request: Request, body: RegisterIn):
     username = body.username.strip()
     full_name = body.full_name.strip()
     if kind not in {"email", "phone"}:
-        raise HTTPException(status_code=400, detail="Weka namba ya simu au barua pepe")
+        raise HTTPException(status_code=400, detail="Enter a phone number or email")
     if len(body.password) < 8:
-        raise HTTPException(status_code=400, detail="Nenosiri liwe angalau herufi 8")
+        raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     if not USERNAME_RE.match(username):
-        raise HTTPException(status_code=400, detail="Username: herufi 3–20, herufi, namba au _")
+        raise HTTPException(status_code=400, detail="Username: 3–20 characters, letters, numbers or _")
     if len(full_name) < 2:
-        raise HTTPException(status_code=400, detail="Jina linahitajika")
+        raise HTTPException(status_code=400, detail="Name is required")
     if _username_taken(username):
-        raise HTTPException(status_code=400, detail="Username imeshatumika")
+        raise HTTPException(status_code=400, detail="Username is already taken")
     email = ident if kind == "email" else ""
     phone = ident if kind == "phone" else ""
     existing = _find_account(email, phone)
@@ -642,12 +642,12 @@ def _register_email(email: str, password: str, username: str, full_name: str):
             if again and not _account_confirmed(again) and "google" not in _auth_providers(again):
                 _continue_unconfirmed_signup(again, email, password, username, full_name)
                 return {"ok": True, "email": email, "needs_verify": True}
-            raise HTTPException(status_code=400, detail="Akaunti ipo. Ingia au thibitisha namba.")
-        raise HTTPException(status_code=400, detail="Imeshindikana kujisajili") from exc
+            raise HTTPException(status_code=400, detail="Account exists. Log in or verify the code.")
+        raise HTTPException(status_code=400, detail="Could not create the account") from exc
     if not user:
-        raise HTTPException(status_code=400, detail="Imeshindikana kujisajili")
+        raise HTTPException(status_code=400, detail="Could not create the account")
     if not _issue_otp(user.id, email):
-        raise HTTPException(status_code=400, detail="Imeshindikana kutuma namba ya tarakimu 6 kwenye barua pepe")
+        raise HTTPException(status_code=400, detail="Could not send the 6-digit code to your email")
     limiter.touch(f"resend-otp:{email}")
     return {"ok": True, "email": email, "needs_verify": True}
 
@@ -673,7 +673,7 @@ def _register_phone(phone: str, password: str, username: str, full_name: str):
             if again and not _account_confirmed(again):
                 _continue_unconfirmed_signup(again, "", password, username, full_name, phone)
                 return _password_session(password, phone=phone)
-            raise HTTPException(status_code=400, detail="Akaunti ipo. Ingia kwa simu na nenosiri.")
+            raise HTTPException(status_code=400, detail="Account exists. Log in with phone and password.")
         try:
             created = db().auth.admin.create_user(
                 {
@@ -685,9 +685,9 @@ def _register_phone(phone: str, password: str, username: str, full_name: str):
             )
             user = getattr(created, "user", None) or created
         except Exception:
-            raise HTTPException(status_code=400, detail="Imeshindikana kujisajili kwa simu") from exc
+            raise HTTPException(status_code=400, detail="Could not create the phone account") from exc
     if not user:
-        raise HTTPException(status_code=400, detail="Imeshindikana kujisajili kwa simu")
+        raise HTTPException(status_code=400, detail="Could not create the phone account")
     _confirm_phone_user(user.id, phone)
     try:
         out = _password_session(password, phone=phone)
@@ -705,14 +705,14 @@ def verify(request: Request, body: VerifyIn):
     kind, ident = phone_auth.parse_ident(body.email)
     code = body.code.strip()
     if not OTP_RE.fullmatch(code):
-        raise HTTPException(status_code=400, detail="Weka namba ya tarakimu 6 tuliyotuma")
+        raise HTTPException(status_code=400, detail="Enter the 6-digit code we sent")
     if kind != "email":
-        raise HTTPException(status_code=400, detail="Weka barua pepe")
+        raise HTTPException(status_code=400, detail="Enter your email")
     user = _find_account(ident)
     fresh = _get_auth_user(user.id) if user else None
     if fresh and phone_auth.otp_ok(_user_meta(fresh), code):
         return _session_after_otp(fresh)
-    raise HTTPException(status_code=400, detail="Namba si sahihi")
+    raise HTTPException(status_code=400, detail="Code is incorrect")
 
 
 @app.post("/auth/confirm")
@@ -721,7 +721,7 @@ def confirm_email_link(request: Request, body: ConfirmIn):
     token_hash = body.token_hash.strip()
     kind = (body.type or "signup").strip() or "signup"
     if not token_hash:
-        raise HTTPException(status_code=400, detail="Kiungo si sahihi")
+        raise HTTPException(status_code=400, detail="Link is invalid")
     last = None
     for otp_type in (kind, "signup", "email", "magiclink"):
         try:
@@ -732,7 +732,7 @@ def confirm_email_link(request: Request, body: ConfirmIn):
         except Exception as exc:
             last = exc
             continue
-    raise HTTPException(status_code=400, detail="Kiungo kimeisha au si sahihi") from last
+    raise HTTPException(status_code=400, detail="Link expired or is invalid") from last
 
 
 @app.post("/auth/resend")
@@ -740,7 +740,7 @@ def resend(request: Request, body: ResendIn):
     limiter.check(f"resend:{_client_key(request)}", 5)
     kind, ident = phone_auth.parse_ident(body.email)
     if kind != "email":
-        raise HTTPException(status_code=400, detail="Weka barua pepe")
+        raise HTTPException(status_code=400, detail="Enter your email")
     existing = _find_account(ident)
     if existing and _account_confirmed(existing):
         raise HTTPException(status_code=400, detail=_existing_account_detail(existing))
@@ -748,11 +748,11 @@ def resend(request: Request, body: ResendIn):
         f"resend-otp:{ident}",
         1,
         60,
-        "Subiri sekunde 60 kisha tuma namba tena",
+        "Wait 60 seconds, then resend the code",
     )
     user = existing or _auth_user_by_email(ident)
     if not user or not _issue_otp(user.id, ident):
-        raise HTTPException(status_code=400, detail="Imeshindikana kutuma namba ya tarakimu 6 kwenye barua pepe")
+        raise HTTPException(status_code=400, detail="Could not send the 6-digit code to your email")
     return {"ok": True}
 
 
@@ -767,7 +767,7 @@ def login(request: Request, body: LoginIn):
     return _password_session(body.password, email=ident)
 
 
-GOOGLE_OFF = "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe."
+GOOGLE_OFF = "Google is not connected in Supabase. Turn on the Google provider, or log in with email."
 
 
 @app.get("/auth/google")
@@ -803,10 +803,10 @@ def auth_session(body: SessionIn):
     try:
         res = anon().auth.get_user(body.access_token)
     except Exception:
-        raise HTTPException(status_code=401, detail="Kipindi si sahihi")
+        raise HTTPException(status_code=401, detail="Invalid session")
     user = getattr(res, "user", None)
     if not user:
-        raise HTTPException(status_code=401, detail="Kipindi si sahihi")
+        raise HTTPException(status_code=401, detail="Invalid session")
     _finish_signup_profile(user)
     assert_active_account(user)
     return public_profile(user, body.access_token)
@@ -821,9 +821,9 @@ def me(user=Depends(current_user)):
 def set_username(request: Request, body: UsernameIn, user=Depends(current_user)):
     username = body.username.strip()
     if not USERNAME_RE.match(username):
-        raise HTTPException(status_code=400, detail="Username: herufi 3–20, herufi, namba au _")
+        raise HTTPException(status_code=400, detail="Username: 3–20 characters, letters, numbers or _")
     if _username_taken(username, user.id):
-        raise HTTPException(status_code=400, detail="Username imeshatumika")
+        raise HTTPException(status_code=400, detail="Username is already taken")
     p = profile_of(user.id)
     header = request.headers.get("authorization") or ""
     token = header.split(" ", 1)[1].strip() if header.lower().startswith("bearer ") else None
@@ -979,11 +979,11 @@ def admin_bookings(user=Depends(current_user)):
 def admin_set_listing(listing_id: str, body: ListingStatusIn, user=Depends(current_user)):
     require_admin(user)
     if body.status not in {"active", "hidden"}:
-        raise HTTPException(status_code=400, detail="Hali si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid status")
     res = db().table("listings").update({"status": body.status}).eq("id", listing_id).execute()
     rows = res.data or []
     if not rows:
-        raise HTTPException(status_code=404, detail="Tangazo halipo")
+        raise HTTPException(status_code=404, detail="Listing not found")
     return decorate_listing(rows[0])
 
 
@@ -991,14 +991,14 @@ def admin_set_listing(listing_id: str, body: ListingStatusIn, user=Depends(curre
 def admin_set_user(user_id: str, body: UserStatusIn, user=Depends(current_user)):
     require_admin(user)
     if body.status not in {"active", "suspended"}:
-        raise HTTPException(status_code=400, detail="Hali si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid status")
     if user_id == user.id:
-        raise HTTPException(status_code=400, detail="Huwezi kusimamisha akaunti yako")
+        raise HTTPException(status_code=400, detail="You cannot suspend your own account")
     target = profile_of(user_id)
     if not target:
-        raise HTTPException(status_code=404, detail="Mtumiaji hayupo")
+        raise HTTPException(status_code=404, detail="User not found")
     if profile_role(target) == "admin":
-        raise HTTPException(status_code=400, detail="Admin hasimamishwi hapa")
+        raise HTTPException(status_code=400, detail="Admins cannot be suspended here")
     _set_account_status(user_id, body.status)
     fresh = profile_of(user_id) or target
     return _admin_user_row(fresh, _get_auth_user(user_id))
@@ -1007,7 +1007,7 @@ def admin_set_user(user_id: str, body: UserStatusIn, user=Depends(current_user))
 @app.api_route("/admin/{rest:path}", methods=["POST", "PUT", "PATCH", "DELETE"])
 def admin_writes(rest: str, user=Depends(current_user)):
     require_admin(user)
-    raise HTTPException(status_code=404, detail="Haipo")
+    raise HTTPException(status_code=404, detail="Not found")
 
 
 @app.get("/listings")
@@ -1028,7 +1028,7 @@ def list_listings(
         if status and status != "active":
             user = current_user(request.headers.get("authorization"))
             if not is_admin(user.id):
-                raise HTTPException(status_code=403, detail="Admin tu")
+                raise HTTPException(status_code=403, detail="Admins only")
         query = db().table("listings").select("*")
         if status:
             query = query.eq("status", status)
@@ -1039,7 +1039,20 @@ def list_listings(
         elif cats:
             query = query.in_("category", cats)
     if q:
-        query = query.ilike("title", "%" + q + "%")
+        primary = re.split(r"\s*,\s*", str(q).strip())[0]
+        needle = re.sub(r"[,%()*.]", " ", primary).strip()[:80]
+        if needle:
+            parts = [needle]
+            first = re.split(r"\s+", needle)[0]
+            if first and len(first) >= 4 and first.lower() != needle.lower():
+                parts.append(first)
+            clauses = []
+            for part in parts:
+                like = f"%{part}%"
+                clauses.append(f"location.ilike.{like}")
+                clauses.append(f"city.ilike.{like}")
+            query = query.or_(",".join(clauses))
+            cap = max(cap, 100)
     column = "likes_count" if sort == "likes" else "created_at"
     res = query.order(column, desc=True).limit(cap).execute()
     items = [decorate_listing(x) for x in (res.data or [])]
@@ -1057,7 +1070,7 @@ def get_listing(request: Request, listing_id: str):
         except HTTPException:
             user = None
     if not _can_see_listing(item, user):
-        raise HTTPException(status_code=404, detail="Tangazo halipo")
+        raise HTTPException(status_code=404, detail="Listing not found")
     out = decorate_listing(item)
     social.attach_comment_counts([out])
     return out
@@ -1067,14 +1080,14 @@ def get_listing(request: Request, listing_id: str):
 def create_listing(body: ListingIn, user=Depends(current_user)):
     allowed = {"chumba_nyumba", "apartment_airbnb", "store_godown", "frame", "vifaa"}
     if body.category not in allowed:
-        raise HTTPException(status_code=400, detail="Kategoria si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid category")
     if len(body.title.strip()) < 3:
-        raise HTTPException(status_code=400, detail="Kichwa kifupi")
+        raise HTTPException(status_code=400, detail="Title is too short")
     unit = (body.unit or "").strip().lower() or None
     if unit and unit not in UNITS:
-        raise HTTPException(status_code=400, detail="Kipimo si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid unit")
     if body.stock is not None and body.stock < 0:
-        raise HTTPException(status_code=400, detail="Stock si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid stock")
     period = "" if body.category == "vifaa" else body.period
     if body.category == "vifaa":
         period = unit or ""
@@ -1116,7 +1129,7 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         extras["phones"] = phones
     res = _save_row("listings", extras, row)
     if not res.data:
-        raise HTTPException(status_code=400, detail="Imeshindwa kuhifadhi")
+        raise HTTPException(status_code=400, detail="Could not save")
     return decorate_listing(res.data[0])
 
 
@@ -1124,11 +1137,11 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
 def set_listing_status(listing_id: str, body: ListingStatusIn, user=Depends(current_user)):
     require_admin(user)
     if body.status not in {"active", "hidden", "rejected"}:
-        raise HTTPException(status_code=400, detail="Hali si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid status")
     res = db().table("listings").update({"status": body.status}).eq("id", listing_id).execute()
     rows = res.data or []
     if not rows:
-        raise HTTPException(status_code=404, detail="Tangazo halipo")
+        raise HTTPException(status_code=404, detail="Listing not found")
     return decorate_listing(rows[0])
 
 
@@ -1137,7 +1150,7 @@ def like_listing(listing_id: str, body: LikeIn, user=Depends(current_user)):
     cur = db().table("listings").select("id,likes_count,owner_id").eq("id", listing_id).limit(1).execute()
     rows = cur.data or []
     if not rows:
-        raise HTTPException(status_code=404, detail="Tangazo halipo")
+        raise HTTPException(status_code=404, detail="Listing not found")
     n = int(rows[0].get("likes_count") or 0) + (1 if body.on else -1)
     if n < 0:
         n = 0
@@ -1154,7 +1167,7 @@ def like_listing(listing_id: str, body: LikeIn, user=Depends(current_user)):
 def create_booking(body: BookingIn, user=Depends(current_user)):
     listing = decorate_listing(_listing(body.listing_id))
     if body.quantity is not None and body.quantity <= 0:
-        raise HTTPException(status_code=400, detail="Kiasi si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid quantity")
     raw_stock = listing.get("stock")
     if raw_stock is not None and body.quantity is not None:
         try:
@@ -1162,7 +1175,7 @@ def create_booking(body: BookingIn, user=Depends(current_user)):
         except (TypeError, ValueError):
             stock = None
         if stock is not None and body.quantity > stock:
-            raise HTTPException(status_code=400, detail="Kiasi kinazidi stock")
+            raise HTTPException(status_code=400, detail="Quantity exceeds stock")
     msg = (body.message or "")[:1000]
     if body.quantity is not None:
         msg = f"[[qty:{body.quantity}]] {msg}".strip()
@@ -1177,7 +1190,7 @@ def create_booking(body: BookingIn, user=Depends(current_user)):
         extras["quantity"] = body.quantity
     res = _save_row("bookings", extras, row)
     if not res.data:
-        raise HTTPException(status_code=400, detail="Ombi halijahifadhiwa")
+        raise HTTPException(status_code=400, detail="Request was not saved")
     return _public_booking(res.data[0])
 
 
@@ -1235,20 +1248,20 @@ def _listing_price(listing_id: str | None) -> float | None:
 @app.patch("/bookings/{booking_id}")
 def set_booking_status(booking_id: str, body: BookingStatusIn, user=Depends(current_user)):
     if body.status not in {"pending", "accepted", "rejected", "moved_in"}:
-        raise HTTPException(status_code=400, detail="Hali si sahihi")
+        raise HTTPException(status_code=400, detail="Invalid status")
     cur = db().table("bookings").select("*").eq("id", booking_id).limit(1).execute()
     existing = (cur.data or [None])[0]
     if not existing:
-        raise HTTPException(status_code=404, detail="Ombi halipo")
+        raise HTTPException(status_code=404, detail="Request not found")
     listing = _listing(existing.get("listing_id"))
     if body.status in {"accepted", "rejected"}:
         if listing.get("owner_id") != user.id and not is_admin(user.id):
-            raise HTTPException(status_code=403, detail="Si tangazo lako")
+            raise HTTPException(status_code=403, detail="This is not your listing")
     elif body.status == "moved_in":
         if existing.get("user_id") != user.id:
-            raise HTTPException(status_code=403, detail="Si ombi lako")
+            raise HTTPException(status_code=403, detail="This is not your request")
         if existing.get("status") != "accepted":
-            raise HTTPException(status_code=400, detail="Kubali ombi kwanza")
+            raise HTTPException(status_code=400, detail="Accept the request first")
     payload: dict = {"status": body.status}
     if body.status == "moved_in":
         price = _listing_price(existing.get("listing_id"))
@@ -1274,24 +1287,24 @@ def set_booking_status(booking_id: str, body: BookingStatusIn, user=Depends(curr
             raise
     rows = res.data or []
     if not rows:
-        raise HTTPException(status_code=404, detail="Ombi halipo")
+        raise HTTPException(status_code=404, detail="Request not found")
     return _public_booking(rows[0])
 
 
 @app.post("/reviews")
 def create_review(body: ReviewIn, user=Depends(current_user)):
     if body.rating < 1 or body.rating > 5:
-        raise HTTPException(status_code=400, detail="Alama 1 hadi 5")
+        raise HTTPException(status_code=400, detail="Rating must be 1 to 5")
     cur = db().table("bookings").select("*").eq("id", body.booking_id).limit(1).execute()
     booking = (cur.data or [None])[0]
     if not booking:
-        raise HTTPException(status_code=404, detail="Ombi halipo")
+        raise HTTPException(status_code=404, detail="Request not found")
     if booking.get("user_id") != user.id:
-        raise HTTPException(status_code=403, detail="Si ombi lako")
+        raise HTTPException(status_code=403, detail="This is not your request")
     if booking.get("status") != "moved_in":
-        raise HTTPException(status_code=400, detail="Thibitisha kuhamia kwanza")
+        raise HTTPException(status_code=400, detail="Confirm move-in first")
     if review_from_booking(booking):
-        raise HTTPException(status_code=400, detail="Tayari umeweka tathmini")
+        raise HTTPException(status_code=400, detail="You already left a review")
     comment = (body.comment or "")[:500]
     row = {
         "booking_id": body.booking_id,
@@ -1343,15 +1356,15 @@ def upload_photo(user=Depends(current_user), file: UploadFile = File(...)):
 
 
 @app.get("/places")
-def place_suggest(q: str = "", user=Depends(current_user)):
+def place_suggest(q: str = ""):
     return {"items": places.suggest(q)}
 
 
 @app.get("/places/details")
-def place_details(place_id: str = "", user=Depends(current_user)):
+def place_details(place_id: str = ""):
     row = places.details(place_id)
     if not row:
-        raise HTTPException(status_code=404, detail="Eneo halipatikani")
+        raise HTTPException(status_code=404, detail="Place not found")
     return row
 
 
@@ -1374,7 +1387,7 @@ def inbox(user=Depends(current_user)):
 def booking_messages(booking_id: str, user=Depends(current_user)):
     booking = social.booking_row(booking_id)
     if not social.can_see_booking_thread(user, booking):
-        raise HTTPException(status_code=403, detail="Si mazungumzo yako")
+        raise HTTPException(status_code=403, detail="This is not your conversation")
     return {"items": social.list_thread(f"booking:{booking_id}", user.id)}
 
 
@@ -1382,7 +1395,7 @@ def booking_messages(booking_id: str, user=Depends(current_user)):
 def send_booking_message(booking_id: str, body: MessageIn, user=Depends(current_user)):
     booking = social.booking_row(booking_id)
     if not social.can_see_booking_thread(user, booking):
-        raise HTTPException(status_code=403, detail="Si mazungumzo yako")
+        raise HTTPException(status_code=403, detail="This is not your conversation")
     return social.add_message(
         f"booking:{booking_id}",
         "booking",
@@ -1401,7 +1414,7 @@ def listing_dm(listing_id: str, request: Request, user=Depends(current_user)):
     other = peer if user.id == owner and peer else user.id
     key = social.listing_dm_key(listing_id, other, owner)
     if not social.can_see_listing_dm(user, listing, key):
-        raise HTTPException(status_code=403, detail="Si ujumbe wako")
+        raise HTTPException(status_code=403, detail="This is not your message")
     return {"items": social.list_thread(key, user.id), "title": listing.get("title"), "owner_id": owner}
 
 
@@ -1411,12 +1424,12 @@ def send_listing_dm(listing_id: str, body: MessageIn, user=Depends(current_user)
     owner = str(listing.get("owner_id") or "")
     other = body.peer_id.strip() if user.id == owner else user.id
     if user.id == owner and not other:
-        raise HTTPException(status_code=400, detail="Chagua mpokeaji")
+        raise HTTPException(status_code=400, detail="Choose a recipient")
     if other == owner and user.id == owner:
-        raise HTTPException(status_code=400, detail="Huu ni ujumbe wa moja kwa moja kwa mwenye tangazo")
+        raise HTTPException(status_code=400, detail="This is a direct message to the listing owner")
     key = social.listing_dm_key(listing_id, other, owner)
     if not social.can_see_listing_dm(user, listing, key):
-        raise HTTPException(status_code=403, detail="Si ujumbe wako")
+        raise HTTPException(status_code=403, detail="This is not your message")
     return social.add_message(key, "listing_dm", user.id, body.body, listing_id=listing_id)
 
 

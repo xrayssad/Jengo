@@ -29,7 +29,7 @@ def details(place_id: str) -> dict | None:
             params={
                 "place_id": pid,
                 "fields": "formatted_address,geometry,address_component,name",
-                "language": "sw",
+                "language": "en",
                 "key": GOOGLE_KEY,
             },
             timeout=8.0,
@@ -59,7 +59,7 @@ def _google(query: str) -> list[dict]:
             params={
                 "input": query,
                 "components": "country:tz",
-                "language": "sw",
+                "language": "en",
                 "key": GOOGLE_KEY,
             },
             timeout=8.0,

@@ -15,7 +15,7 @@ export default function MessagesPage() {
   const load = () => {
     fetchInbox()
       .then((res) => setItems(res.items || []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Ujumbe haujafunguka"));
+      .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"));
   };
 
   useEffect(() => {
@@ -33,25 +33,25 @@ export default function MessagesPage() {
     <AuthGate>
       <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
         <header className="px-5 pt-6 max-w-md mx-auto">
-          <p className="text-sm" style={{ color: "#8B5E3C" }}>Mazungumzo</p>
-          <h1 className="font-heading text-[34px] leading-none" style={{ color: "#2E1A0F" }}>Ujumbe</h1>
-          <p className="text-sm mt-2" style={{ color: "#5C4033" }}>Ujumbe wa moja kwa moja na mazungumzo ya maombi</p>
+          <p className="text-sm" style={{ color: "#8B5E3C" }}>Inbox</p>
+          <h1 className="font-heading text-[34px] leading-none" style={{ color: "#2E1A0F" }}>Messages</h1>
+          <p className="text-sm mt-2" style={{ color: "#5C4033" }}>Direct messages and request chats</p>
         </header>
         <div className="max-w-md mx-auto px-5 pt-5 space-y-3">
           {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
           {items.length === 0 && !error && (
             <div className="text-center py-16">
               <Send size={28} color="#D2A679" className="mx-auto mb-3" />
-              <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna ujumbe</p>
-              <p className="text-sm mt-1" style={{ color: "#5C4033" }}>Fungua tangazo, kisha tuma ujumbe wa moja kwa moja.</p>
+              <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No messages</p>
+              <p className="text-sm mt-1" style={{ color: "#5C4033" }}>Open a listing, then send a direct message.</p>
             </div>
           )}
           {items.map((c) => (
             <Link key={c.thread_key || c.id} href={c.href || "/messages"} className="sheet block p-4 rounded-[24px]">
               <p className="text-xs font-semibold" style={{ color: "#8B5E3C" }}>
-                {c.kind === "booking" ? "Ombi" : "Ujumbe wa moja kwa moja"}
+                {c.kind === "booking" ? "Request" : "Direct message"}
               </p>
-              <h2 className="font-heading mt-1" style={{ color: "#2E1A0F" }}>{c.title || "Ujumbe"}</h2>
+              <h2 className="font-heading mt-1" style={{ color: "#2E1A0F" }}>{c.title || "Message"}</h2>
               <p className="text-sm truncate mt-1" style={{ color: "#5C4033" }}>{c.body}</p>
             </Link>
           ))}

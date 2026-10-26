@@ -14,7 +14,7 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
     const room = 6 - urls.length;
     const batch = Array.from(files).slice(0, room);
     if (!batch.length) {
-      setError("Picha sita zinatosha.");
+      setError("Six photos is enough.");
       return;
     }
     setBusy(true);
@@ -27,7 +27,7 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
       }
       onChange([...urls, ...uploaded]);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Imeshindikana kupakia picha");
+      setError(err instanceof Error ? err.message : "Could not upload the photo");
     } finally {
       setBusy(false);
       if (inputRef.current) inputRef.current.value = "";
@@ -45,7 +45,7 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
               onClick={() => onChange(urls.filter((u) => u !== url))}
               className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center"
               style={{ backgroundColor: "#2E1A0F" }}
-              aria-label="Ondoa picha"
+              aria-label="Remove photo"
             >
               <X size={12} color="#FFF6ED" />
             </button>
@@ -60,7 +60,7 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
             style={{ height: 92, borderRadius: 16, border: "1px dashed #8B5E3C", color: "#8B5E3C" }}
           >
             {busy ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
-            <span className="text-[11px]">{busy ? "Inapakia" : "Ongeza picha"}</span>
+            <span className="text-[11px]">{busy ? "Uploading" : "Add photo"}</span>
           </button>
         )}
       </div>

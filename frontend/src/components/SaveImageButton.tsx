@@ -18,7 +18,7 @@ export default function SaveImageButton({ id, title, url }: { id: string; title:
   };
 
   return (
-    <button type="button" aria-label="Hifadhi picha" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={press}>
+    <button type="button" aria-label="Save photo" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={press}>
       <Download size={22} color="#2E1A0F" fill={on ? "#2E1A0F" : "none"} />
     </button>
   );

@@ -21,33 +21,33 @@ import {
 type Tab = "muhtasari" | "watumiaji" | "matangazo" | "maombi";
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "muhtasari", label: "Muhtasari" },
-  { id: "watumiaji", label: "Watumiaji" },
-  { id: "matangazo", label: "Matangazo" },
-  { id: "maombi", label: "Maombi" },
+  { id: "muhtasari", label: "Overview" },
+  { id: "watumiaji", label: "Users" },
+  { id: "matangazo", label: "Listings" },
+  { id: "maombi", label: "Requests" },
 ];
 
 const LISTING_STATUS: Record<string, string> = {
-  active: "Wazi",
-  hidden: "Imechukuliwa",
-  pending: "Wazi",
-  rejected: "Imekataliwa",
+  active: "Live",
+  hidden: "Hidden",
+  pending: "Live",
+  rejected: "Rejected",
 };
 
 const BOOKING_STATUS: Record<string, string> = {
-  pending: "Inasubiri",
-  accepted: "Imekubaliwa",
-  rejected: "Imekataliwa",
-  moved_in: "Amehamia",
+  pending: "Pending",
+  accepted: "Accepted",
+  rejected: "Rejected",
+  moved_in: "Moved in",
 };
 
 const USER_STATUS: Record<string, string> = {
-  active: "Wazi",
-  suspended: "Imesimamishwa",
+  active: "Active",
+  suspended: "Suspended",
 };
 
 function deskError(err: unknown) {
-  return err instanceof Error ? err.message : "Imeshindikana kupakia";
+  return err instanceof Error ? err.message : "Could not load";
 }
 
 function AdminDesk() {
@@ -93,10 +93,10 @@ function AdminDesk() {
 
   const counts = useMemo(
     () => [
-      { label: "Watumiaji", value: stats ? String(stats.users) : "—" },
-      { label: "Matangazo", value: stats ? String(stats.listings) : "—" },
-      { label: "Maombi", value: stats ? String(stats.bookings) : "—" },
-      { label: "Kamisheni", value: stats ? `TZS ${formatPrice(stats.commission)}` : "—" },
+      { label: "Users", value: stats ? String(stats.users) : "—" },
+      { label: "Listings", value: stats ? String(stats.listings) : "—" },
+      { label: "Requests", value: stats ? String(stats.bookings) : "—" },
+      { label: "Commission", value: stats ? `TZS ${formatPrice(stats.commission)}` : "—" },
     ],
     [stats],
   );
@@ -122,7 +122,7 @@ function AdminDesk() {
         const next = await setAdminListingStatus(item.id, item.status === "hidden" ? "active" : "hidden");
         setListings((cur) => cur.map((row) => (row.id === item.id ? next : row)));
       },
-      item.status === "hidden" ? "Tangazo limerudishwa Discover." : "Tangazo limefichwa kutoka Discover.",
+      item.status === "hidden" ? "Listing is back on Discover." : "Listing hidden from Discover.",
     );
 
   const toggleUser = (row: AdminUser) =>
@@ -132,7 +132,7 @@ function AdminDesk() {
         const next = await setAdminUserStatus(row.id, row.status === "suspended" ? "active" : "suspended");
         setUsers((cur) => cur.map((u) => (u.id === row.id ? next : u)));
       },
-      row.status === "suspended" ? "Akaunti imefunguliwa." : "Akaunti imesimamishwa.",
+      row.status === "suspended" ? "Account reopened." : "Account suspended.",
     );
 
   return (
@@ -140,11 +140,11 @@ function AdminDesk() {
       <header className="sticky top-0 z-20 glass" style={{ borderBottom: "1px solid rgba(46,26,15,0.1)" }}>
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-end justify-between gap-4">
           <div>
-            <p className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Dawati</p>
-            <p className="text-sm mt-1" style={{ color: "#5C4033" }}>Watumiaji, matangazo, maombi</p>
+            <p className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Desk</p>
+            <p className="text-sm mt-1" style={{ color: "#5C4033" }}>Users, listings, requests</p>
           </div>
           <Link href="/home" className="text-sm font-semibold pb-0.5" style={{ color: "#8B5E3C" }}>
-            Rudi soko
+            Back to market
           </Link>
         </div>
         <div className="max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto no-scrollbar">
@@ -170,15 +170,15 @@ function AdminDesk() {
 
       <section className="max-w-5xl mx-auto px-4 py-6">
         <div className="min-h-[70vh] px-1 py-2 sm:px-0">
-          {loading && <p style={{ color: "#5C4033" }}>Inapakia dawati...</p>}
+          {loading && <p style={{ color: "#5C4033" }}>Loading desk...</p>}
           {error && <p className="text-sm font-semibold mb-4" style={{ color: "#A6452E" }}>{error}</p>}
           {notice && <p className="text-sm font-semibold mb-4" style={{ color: "#5E7F4F" }}>{notice}</p>}
 
           {!loading && tab === "muhtasari" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Hali ya soko</h1>
+              <h1 className="font-heading text-3xl mb-1">Market status</h1>
               <p className="text-sm mb-6" style={{ color: "#5C4033" }}>
-                Namba hizi zinatoka akaunti zilizothibitishwa, matangazo yote, maombi, na kamisheni iliyorekodiwa baada ya kuhamia.
+                These numbers come from verified accounts, all listings, requests, and commission recorded after move-in.
               </p>
               <div
                 className="grid grid-cols-2 md:grid-cols-4"
@@ -200,22 +200,22 @@ function AdminDesk() {
 
           {!loading && tab === "watumiaji" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Watumiaji</h1>
+              <h1 className="font-heading text-3xl mb-1">Users</h1>
               <p className="text-sm mb-5" style={{ color: "#5C4033" }}>
-                Unaweza kusimamisha akaunti ili isinge. Role haibadiliki hapa.
+                You can suspend an account so it cannot sign in. Role does not change here.
               </p>
               {users.length === 0 ? (
-                <p>Hakuna watumiaji. Watakaosajili wataonekana hapa.</p>
+                <p>No users yet. New sign-ups will appear here.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead>
                       <tr style={{ borderBottom: "2px solid #2E1A0F" }}>
                         <th className="py-2 font-semibold">Username</th>
-                        <th className="py-2 font-semibold">Barua pepe</th>
+                        <th className="py-2 font-semibold">Email</th>
                         <th className="py-2 font-semibold">Role</th>
-                        <th className="py-2 font-semibold">Hali</th>
-                        <th className="py-2 font-semibold">Hatua</th>
+                        <th className="py-2 font-semibold">Status</th>
+                        <th className="py-2 font-semibold">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -227,7 +227,7 @@ function AdminDesk() {
                           <td className="py-3 pr-3">{USER_STATUS[row.status || "active"] || row.status}</td>
                           <td className="py-3">
                             {row.role === "admin" ? (
-                              <span style={{ color: "#5C4033" }}>Imehifadhiwa</span>
+                              <span style={{ color: "#5C4033" }}>Protected</span>
                             ) : (
                               <button
                                 type="button"
@@ -235,7 +235,7 @@ function AdminDesk() {
                                 onClick={() => toggleUser(row)}
                                 className="font-semibold underline-offset-2 hover:underline disabled:opacity-60"
                               >
-                                {row.status === "suspended" ? "Fungua" : "Simamisha"}
+                                {row.status === "suspended" ? "Reopen" : "Suspend"}
                               </button>
                             )}
                           </td>
@@ -250,22 +250,22 @@ function AdminDesk() {
 
           {!loading && tab === "matangazo" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Matangazo</h1>
+              <h1 className="font-heading text-3xl mb-1">Listings</h1>
               <p className="text-sm mb-5" style={{ color: "#5C4033" }}>
-                Ficha ili liondoke Discover. Rudisha ili lionekane tena. Halina idhini kabla ya kuchapishwa.
+                Hide to remove it from Discover. Restore to show it again. No approval is required before publishing.
               </p>
               {listings.length === 0 ? (
-                <p>Hakuna matangazo. Yaliyowekwa na watumiaji yataonekana hapa, kila kategoria.</p>
+                <p>No listings yet. User posts will appear here, every category.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead>
                       <tr style={{ borderBottom: "2px solid #2E1A0F" }}>
-                        <th className="py-2 font-semibold">Kichwa</th>
-                        <th className="py-2 font-semibold">Kategoria</th>
-                        <th className="py-2 font-semibold">Bei</th>
-                        <th className="py-2 font-semibold">Hali</th>
-                        <th className="py-2 font-semibold">Hatua</th>
+                        <th className="py-2 font-semibold">Title</th>
+                        <th className="py-2 font-semibold">Category</th>
+                        <th className="py-2 font-semibold">Price</th>
+                        <th className="py-2 font-semibold">Status</th>
+                        <th className="py-2 font-semibold">Action</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -282,7 +282,7 @@ function AdminDesk() {
                               onClick={() => hideListing(item)}
                               className="font-semibold underline-offset-2 hover:underline disabled:opacity-60"
                             >
-                              {item.status === "hidden" ? "Rudisha" : "Ficha"}
+                              {item.status === "hidden" ? "Restore" : "Hide"}
                             </button>
                           </td>
                         </tr>
@@ -296,20 +296,20 @@ function AdminDesk() {
 
           {!loading && tab === "maombi" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Maombi</h1>
+              <h1 className="font-heading text-3xl mb-1">Requests</h1>
               <p className="text-sm mb-5" style={{ color: "#5C4033" }}>
-                Hali ya kila ombi. Kamisheni inaonekana baada ya kuhamia; malipo hayafanyiki hapa.
+                Status of each request. Commission appears after move-in; payment is not taken here.
               </p>
               {bookings.length === 0 ? (
-                <p>Hakuna maombi. Yaliyotumwa kwenye matangazo yataonekana hapa.</p>
+                <p>No requests yet. Those sent on listings will appear here.</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead>
                       <tr style={{ borderBottom: "2px solid #2E1A0F" }}>
-                        <th className="py-2 font-semibold">Tangazo</th>
-                        <th className="py-2 font-semibold">Hali</th>
-                        <th className="py-2 font-semibold">Kamisheni</th>
+                        <th className="py-2 font-semibold">Listing</th>
+                        <th className="py-2 font-semibold">Status</th>
+                        <th className="py-2 font-semibold">Commission</th>
                       </tr>
                     </thead>
                     <tbody>

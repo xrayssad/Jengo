@@ -25,7 +25,7 @@ function VerifyForm() {
     e.preventDefault();
     setError("");
     if (!/^\d{6}$/.test(code.trim())) {
-      setError("Weka namba ya tarakimu 6 tuliyotuma");
+      setError("Enter the 6-digit code we sent");
       return;
     }
     setBusy(true);
@@ -33,7 +33,7 @@ function VerifyForm() {
       const user = await verifyOtp({ email: email.trim() }, code.trim());
       window.location.href = afterAuthPath(user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Namba si sahihi");
+      setError(err instanceof Error ? err.message : "Code is incorrect");
     } finally {
       setBusy(false);
     }
@@ -45,37 +45,37 @@ function VerifyForm() {
     setInfo("");
     try {
       await resendOtp({ email: email.trim() });
-      setInfo("Namba mpya imetumwa. Angalia barua pepe.");
+      setInfo("A new code was sent. Check your email.");
       setWait(60);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Imeshindikana kutuma");
+      setError(err instanceof Error ? err.message : "Could not send");
     }
   };
 
   return (
     <main className="min-h-screen w-full overflow-x-hidden flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
       <div className="sheet w-full max-w-sm min-w-0 p-6 rounded-[28px] fade-up">
-        <p className="text-sm" style={{ color: "#8B5E3C" }}>Thibitisho</p>
+        <p className="text-sm" style={{ color: "#8B5E3C" }}>Verification</p>
         <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "#2E1A0F" }}>
-          Thibitisha barua pepe
+          Verify email
         </h1>
         <p className="text-sm mb-6" style={{ color: "#5C4033" }}>
-          Weka namba ya tarakimu 6 tuliyotuma kwenye barua pepe.
+          Enter the 6-digit code we sent to your email.
         </p>
         <form onSubmit={submit} className="space-y-4">
-          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-chocolate w-full px-4 py-3.5 text-sm" placeholder="Barua pepe" />
+          <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-chocolate w-full px-4 py-3.5 text-sm" placeholder="Email" />
           <OtpBoxes value={code} onChange={setCode} length={6} />
           {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
           {info && <p className="text-sm font-semibold" style={{ color: "#5E7F4F" }}>{info}</p>}
           <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
-            {busy ? "Inathibitisha..." : "Thibitisha"}
+            {busy ? "Verifying..." : "Verify"}
           </button>
         </form>
         <button type="button" onClick={resend} disabled={wait > 0} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
-          {wait > 0 ? `Tuma tena baada ya ${wait}s` : "Tuma namba tena"}
+          {wait > 0 ? `Resend in ${wait}s` : "Resend code"}
         </button>
         <p className="text-center text-sm mt-6">
-          <Link href="/login" className="font-bold" style={{ color: "#8B5E3C" }}>Rudi kuingia</Link>
+          <Link href="/login" className="font-bold" style={{ color: "#8B5E3C" }}>Back to log in</Link>
         </p>
       </div>
     </main>

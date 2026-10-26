@@ -7,10 +7,10 @@ import { Eye, EyeOff, Mail, Lock } from "lucide-react";
 import { afterAuthPath, login as apiLogin, resendOtp, startGoogle } from "@/lib/api";
 
 const slides = [
-  { image: "/real/room.jpg", title: "Chumba & Nyumba" },
-  { image: "/real/warehouse.jpg", title: "Store & Godown" },
+  { image: "/real/room.jpg", title: "Houses / Rooms" },
+  { image: "/real/warehouse.jpg", title: "Godown / Store" },
   { image: "/real/apartment.jpg", title: "Apartment & Airbnb" },
-  { image: "/real/shop.jpg", title: "Frame za Maduka" },
+  { image: "/real/shop.jpg", title: "Shop frames" },
 ];
 
 export default function LoginPage() {
@@ -37,12 +37,12 @@ export default function LoginPage() {
       const user = await apiLogin(email.trim(), password);
       window.location.href = afterAuthPath(user);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Barua pepe, simu au nenosiri si sahihi";
-      if (msg.toLowerCase().includes("haijathibitishwa")) {
+      const msg = err instanceof Error ? err.message : "Email, phone or password is incorrect";
+      if (msg.toLowerCase().includes("haijathibitishwa") || msg.toLowerCase().includes("not verified")) {
         setUnverified(true);
-        setError("Akaunti haijathibitishwa. Tuma namba ili uithibitishe.");
+        setError("Account not verified. Resend the code to confirm it.");
       } else {
-        setError("Simu, barua pepe au nenosiri si sahihi");
+        setError("Phone, email or password is incorrect");
       }
     } finally {
       setBusy(false);
@@ -54,7 +54,7 @@ export default function LoginPage() {
     try {
       await startGoogle(`${window.location.origin}/auth/callback`);
     } catch (err) {
-      setGoogleMsg(err instanceof Error ? err.message : "Google haijaunganishwa kwenye Supabase. Washa provider ya Google, au ingia kwa barua pepe.");
+      setGoogleMsg(err instanceof Error ? err.message : "Google is not connected in Supabase. Turn on the Google provider, or log in with email.");
     }
   };
 
@@ -71,18 +71,18 @@ export default function LoginPage() {
       <div className="px-5 -mt-14 relative z-10 pb-12">
         <div className="sheet max-w-sm mx-auto p-6 rounded-[28px] fade-up">
           <p className="text-sm" style={{ color: "#8B5E3C" }}>Jengo</p>
-          <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "#2E1A0F" }}>Karibu tena</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Ingia kwa simu, barua pepe au Google.</p>
+          <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "#2E1A0F" }}>Welcome back</h1>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Log in with phone, email or Google.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Simu au barua pepe</label>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Phone or email</label>
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
-                <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="0712 345 678 au barua pepe" inputMode="email" autoComplete="username" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
+                <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="0712 345 678 or email" inputMode="email" autoComplete="username" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
               </div>
             </div>
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Nenosiri</label>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Password</label>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
                 <input type={show ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} className="input-chocolate w-full pl-10 pr-12 py-3.5 text-sm" />
@@ -100,14 +100,14 @@ export default function LoginPage() {
                 onClick={async () => {
                   try {
                     if (!email.includes("@")) {
-                      setError("OTP inatumwa kwenye barua pepe tu. Ingia kwa barua pepe ili uthibitishe.");
+                      setError("OTP is sent to email only. Log in with email to verify.");
                       return;
                     }
                     await resendOtp({ email: email.trim() });
                     window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
                   } catch (err) {
-                    const msg = err instanceof Error ? err.message : "Imeshindikana kutuma";
-                    if (msg.toLowerCase().includes("60") || msg.toLowerCase().includes("baadaye")) {
+                    const msg = err instanceof Error ? err.message : "Could not send";
+                    if (msg.toLowerCase().includes("60") || msg.toLowerCase().includes("baadaye") || msg.toLowerCase().includes("later")) {
                       window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
                       return;
                     }
@@ -115,19 +115,19 @@ export default function LoginPage() {
                   }
                 }}
               >
-                Tuma namba tena
+                Resend code
               </button>
             )}
             <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
-              {busy ? "Inaingia..." : "Ingia"}
+              {busy ? "Logging in..." : "Log in"}
             </button>
           </form>
           <button type="button" onClick={google} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
-            Ingia na Google
+            Continue with Google
           </button>
           {googleMsg && <p className="text-sm mt-3 font-semibold" style={{ color: "#A6452E" }}>{googleMsg}</p>}
           <p className="text-center text-sm mt-6" style={{ color: "#5C4033" }}>
-            <Link href="/register" className="font-bold" style={{ color: "#8B5E3C" }}>Jisajili</Link>
+            <Link href="/register" className="font-bold" style={{ color: "#8B5E3C" }}>Sign up</Link>
           </p>
         </div>
       </div>

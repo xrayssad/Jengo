@@ -12,23 +12,23 @@ export default function MnadaPage() {
             <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Mnada</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Si katika Jengo sasa</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Auction</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Not in Jengo now</p>
           </div>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 py-16 text-center">
         <Gavel size={40} color="#D2A679" className="mx-auto mb-3 opacity-60" />
-        <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Huduma hii haijaanza</p>
+        <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>This service has not started</p>
         <p className="text-sm mt-1 mb-4" style={{ color: "#5C4033" }}>
-          Jengo sasa ni chumba, nyumba, apartment, store na frame.
+          Jengo is rooms, houses, apartments, stores and shop frames.
         </p>
         <Link
           href="/home"
           className="btn-primary inline-block px-6 py-3 rounded-full text-sm font-semibold"
         >
-          Rudi Home
+          Back to Home
         </Link>
       </div>
     </main>

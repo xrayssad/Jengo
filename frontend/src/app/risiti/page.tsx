@@ -64,7 +64,7 @@ export default function RisitiPage() {
       await setBookingStatus(id, "moved_in");
       setRows((cur) => cur.map((r) => (r.id === id ? { ...r, status: "moved_in" } : r)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Imeshindikana kuthibitisha.");
+      setError(err instanceof Error ? err.message : "Could not confirm.");
     } finally {
       setBusyId(null);
     }
@@ -77,7 +77,7 @@ export default function RisitiPage() {
       await createReview({ booking_id: id, rating: rating[id] || 5, comment: comment[id] || "" });
       setRows((cur) => cur.map((r) => (r.id === id ? { ...r, reviewed: true } : r)));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Imeshindikana kuweka tathmini.");
+      setError(err instanceof Error ? err.message : "Could not save the review.");
     } finally {
       setBusyId(null);
     }
@@ -91,19 +91,19 @@ export default function RisitiPage() {
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Risiti</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Maombi yaliyokubaliwa. Pesa hazikatwi hapa.</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Receipts</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Accepted requests. Money is not taken here.</p>
           </div>
         </div>
       </header>
       <div className="max-w-md mx-auto px-4 pt-5 space-y-4">
-        {loading && <p className="text-center py-10" style={{ color: "#5C4033" }}>Inapakia...</p>}
+        {loading && <p className="text-center py-10" style={{ color: "#5C4033" }}>Loading...</p>}
         {error && <p className="text-sm text-center py-2 font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
-        {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "#2E1A0F" }}>Hakuna risiti. Kubali ombi kwanza.</p>}
+        {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "#2E1A0F" }}>No receipts. Accept a request first.</p>}
         {rows.map((r) => (
           <div key={r.id} className="sheet rounded-[28px] p-5">
             <p className="text-sm" style={{ color: "#8B5E3C" }}>
-              {r.status === "moved_in" ? "Imehamia" : "Imekubaliwa"}
+              {r.status === "moved_in" ? "Moved in" : "Accepted"}
             </p>
             <h2 className="font-heading mt-1" style={{ color: "#2E1A0F" }}>{r.title}</h2>
             <p className="text-sm mt-1" style={{ color: "#5C4033" }}>{r.location}</p>
@@ -111,11 +111,11 @@ export default function RisitiPage() {
               TZS {r.price ? formatPrice(r.price) : "—"}
               <span className="text-sm font-normal" style={{ color: "#5C4033" }}> {periodLabel(r.period || "")}</span>
             </p>
-            <p className="text-xs mt-2" style={{ color: "#8B5E3C" }}>Nambari: {r.id.slice(0, 8)}</p>
+            <p className="text-xs mt-2" style={{ color: "#8B5E3C" }}>Number: {r.id.slice(0, 8)}</p>
             {r.status === "accepted" && (
               <>
                 <Link href={`/bookings/${r.id}/chat`} className="btn-primary w-full mt-4 inline-flex items-center justify-center py-2.5 rounded-full text-sm font-semibold">
-                  Andika ujumbe
+                  Write a message
                 </Link>
                 <button
                   type="button"
@@ -124,19 +124,19 @@ export default function RisitiPage() {
                   className="btn-secondary w-full mt-2 py-2.5 rounded-full text-sm font-semibold"
                   style={{ opacity: busyId === r.id ? 0.7 : 1 }}
                 >
-                  Nimehamia
+                  I moved in
                 </button>
               </>
             )}
             {r.status === "moved_in" && (
               <div className="mt-3 space-y-2">
-                <p className="text-sm font-semibold" style={{ color: "#5E7F4F" }}>Imehamia</p>
-                <p className="text-sm" style={{ color: "#5C4033" }}>10% imerekodiwa, haijakatwa.</p>
+                <p className="text-sm font-semibold" style={{ color: "#5E7F4F" }}>Moved in</p>
+                <p className="text-sm" style={{ color: "#5C4033" }}>10% is recorded, not deducted.</p>
                 {r.reviewed ? (
-                  <p className="text-sm font-semibold" style={{ color: "#8B5E3C" }}>Tathmini imewasilishwa</p>
+                  <p className="text-sm font-semibold" style={{ color: "#8B5E3C" }}>Review submitted</p>
                 ) : (
                   <div className="pt-2">
-                    <p className="text-xs font-semibold mb-2" style={{ color: "#2E1A0F" }}>Tathmini</p>
+                    <p className="text-xs font-semibold mb-2" style={{ color: "#2E1A0F" }}>Review</p>
                     <div className="flex gap-2 mb-2">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button
@@ -157,7 +157,7 @@ export default function RisitiPage() {
                     <input
                       value={comment[r.id] || ""}
                       onChange={(e) => setComment((cur) => ({ ...cur, [r.id]: e.target.value }))}
-                      placeholder="Maelezo (si lazima)"
+                      placeholder="Notes (optional)"
                       className="input-chocolate w-full px-3 py-2.5 text-sm"
                     />
                     <button
@@ -166,7 +166,7 @@ export default function RisitiPage() {
                       onClick={() => submitReview(r.id)}
                       className="btn-secondary w-full mt-2 py-2.5 rounded-[14px] text-sm font-semibold"
                     >
-                      Tuma tathmini
+                      Send review
                     </button>
                   </div>
                 )}

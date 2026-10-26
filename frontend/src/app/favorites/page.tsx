@@ -29,8 +29,8 @@ export default function FavoritesPage() {
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Vipendwa</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Uliyohifadhi kwa bookmark</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Favorites</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Saved with a bookmark</p>
           </div>
         </div>
       </header>
@@ -38,8 +38,8 @@ export default function FavoritesPage() {
         {items.length === 0 && (
           <div className="text-center py-16">
             <Bookmark size={28} color="#D2A679" className="mx-auto mb-3" />
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna vipendwa bado</p>
-            <p className="text-sm mt-2 px-4" style={{ color: "#5C4033" }}>Bofya bookmark kwenye tangazo ili lionekane hapa.</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No favorites yet</p>
+            <p className="text-sm mt-2 px-4" style={{ color: "#5C4033" }}>Tap the bookmark on a listing to see it here.</p>
           </div>
         )}
         {items.map((item) => (

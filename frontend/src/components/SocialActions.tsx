@@ -14,11 +14,11 @@ export default function SocialActions({ item }: { item: Listing }) {
       <Link
         href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
         className="flex items-center gap-1.5"
-        aria-label="Ujumbe wa moja kwa moja"
+        aria-label="Direct message"
         onClick={(e) => e.stopPropagation()}
       >
         <Send size={19} color="#2E1A0F" strokeWidth={1.8} />
-        <span className="text-xs" style={{ color: "#8B5E3C" }}>Ujumbe</span>
+        <span className="text-xs" style={{ color: "#8B5E3C" }}>Message</span>
       </Link>
     </div>
   );

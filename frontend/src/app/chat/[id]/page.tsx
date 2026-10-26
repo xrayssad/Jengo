@@ -12,7 +12,7 @@ async function Body({
 }) {
   const { id } = await params;
   const q = await searchParams;
-  return <ChatClient id={id} title={q.title || "Tangazo"} peer={q.peer} />;
+  return <ChatClient id={id} title={q.title || "Listing"} peer={q.peer} />;
 }
 
 export default function Page({

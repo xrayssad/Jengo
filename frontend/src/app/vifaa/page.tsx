@@ -33,8 +33,8 @@ export default function VifaaPage() {
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Vifaa vya Ujenzi</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Simenti, chuma, tofali, mchanga</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Building materials</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Cement, steel, bricks, sand</p>
           </div>
         </div>
       </header>
@@ -47,9 +47,9 @@ export default function VifaaPage() {
         )}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna vifaa bado</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No materials yet</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">
-              Weka Tangazo
+              Post a listing
             </Link>
           </div>
         )}

@@ -1,5 +1,5 @@
 "use client";
 import ListingFeed from "@/components/ListingFeed";
 export default function Page() {
-  return <ListingFeed title="Apartment & Airbnb" subtitle="Usiku, siku, wiki au mwezi" category="apartment_airbnb" />;
+  return <ListingFeed title="Apartment & Airbnb" subtitle="Night, day, week or month" category="apartment_airbnb" />;
 }

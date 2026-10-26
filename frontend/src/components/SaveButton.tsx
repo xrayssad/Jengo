@@ -33,7 +33,7 @@ export default function SaveButton({
         e.stopPropagation();
       }}
       onClick={press}
-      aria-label={on ? "Ondoa kwenye Vipendwa" : "Hifadhi kwenye Vipendwa"}
+      aria-label={on ? "Remove from Saved" : "Save listing"}
       className={className || "flex items-center gap-1"}
       style={style}
     >

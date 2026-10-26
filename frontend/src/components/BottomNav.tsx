@@ -7,9 +7,9 @@ import { useInboxLive } from "./MqttInbox";
 
 const items = [
   { href: "/home", label: "Home", icon: Home },
-  { href: "/discover", label: "Tazama", icon: Compass },
+  { href: "/discover", label: "Browse", icon: Compass },
   { href: "/messages", label: "Chat", icon: MessageCircle },
-  { href: "/profile", label: "Profili", icon: User },
+  { href: "/profile", label: "Profile", icon: User },
 ];
 
 export default function BottomNav() {
@@ -57,7 +57,7 @@ export default function BottomNav() {
         <div className="flex items-center justify-center min-w-0">
           <Link
             href="/weka-tangazo"
-            aria-label="Weka tangazo"
+            aria-label="Post a listing"
             className="w-10 h-10 rounded-full flex items-center justify-center"
             style={{ backgroundColor: "#2E1A0F", boxShadow: "0 8px 18px rgba(46,26,15,0.28)" }}
           >

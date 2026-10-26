@@ -7,12 +7,12 @@ import ListingCard from "@/components/ListingCard";
 import { fetchListings, shopCategories, type Listing } from "@/lib/api";
 
 const chips = [
-  { id: "", label: "Vyote" },
-  { id: "chumba_nyumba", label: "Nyumba/Chumba" },
-  { id: "store_godown", label: "Godown/Store" },
-  { id: "apartment_airbnb", label: "Airbnb" },
-  { id: "maduka", label: "Maduka" },
-  { id: "vifaa", label: "Vifaa" },
+  { id: "", label: "All" },
+  { id: "chumba_nyumba", label: "Houses / Rooms" },
+  { id: "store_godown", label: "Godown / Store" },
+  { id: "apartment_airbnb", label: "Apartment & Airbnb" },
+  { id: "maduka", label: "Shop frames" },
+  { id: "vifaa", label: "Building materials" },
 ];
 
 const shop = new Set(shopCategories);
@@ -52,11 +52,11 @@ export default function DiscoverPage() {
     <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-5 pt-5 pb-3 glass">
         <div className="max-w-md mx-auto">
-          <p className="text-sm" style={{ color: "#8B5E3C" }}>Tazama</p>
+          <p className="text-sm" style={{ color: "#8B5E3C" }}>Browse</p>
           <h1 className="font-heading text-[34px] leading-[1.05]" style={{ color: "#2E1A0F" }}>Discover</h1>
           <div className="mt-4 flex items-center gap-2 px-4 py-3 sheet rounded-full">
             <Search size={16} color="#8B5E3C" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tafuta jina au eneo" className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#2E1A0F" }} />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or area" className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#2E1A0F" }} />
           </div>
           <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
             {chips.map((c) => (
@@ -77,8 +77,8 @@ export default function DiscoverPage() {
         {loading && <div className="flex justify-center py-16"><Loader2 className="animate-spin" color="#8B5E3C" /></div>}
         {!loading && shown.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna tangazo</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Weka tangazo</Link>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No listings</p>
+            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}
         {shown.map((item) => (

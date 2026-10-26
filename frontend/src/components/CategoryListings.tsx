@@ -34,7 +34,7 @@ export default function CategoryListings({
         const res = await fetchListings({ category, status: "active" });
         if (!cancelled) setItems(res.items || []);
       } catch {
-        if (!cancelled) setError("Imeshindikana kupakia. Hakikisha API inaendesha.");
+        if (!cancelled) setError("Could not load listings. Check that the API is running.");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -55,7 +55,7 @@ export default function CategoryListings({
             <div>
               <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>{title}</h1>
               <p className="text-sm" style={{ color: "#5C4033" }}>
-                {loading ? "Inapakia..." : `${items.length} yanapatikana`}
+                {loading ? "Loading..." : `${items.length} available`}
               </p>
             </div>
           </div>
@@ -75,10 +75,10 @@ export default function CategoryListings({
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16">
             <Icon size={40} color="#D2A679" className="mx-auto mb-3 opacity-60" />
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna matangazo bado</p>
-            <p className="text-sm mt-1 mb-4" style={{ color: "#5C4033" }}>Wewe wa kwanza kuweka.</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No listings yet</p>
+            <p className="text-sm mt-1 mb-4" style={{ color: "#5C4033" }}>Be the first to post.</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block px-6 py-3 rounded-full text-sm font-semibold">
-              Weka Tangazo
+              Post a listing
             </Link>
           </div>
         )}

@@ -68,7 +68,7 @@ export default function PlacePicker({ value, onChange }: { value: PlaceValue; on
         value={value.location}
         onChange={(e) => onChange({ ...value, location: e.target.value, lat: null, lng: null })}
         onFocus={() => hits.length && setOpen(true)}
-        placeholder="Andika mtaa au eneo"
+        placeholder="Type a street or area"
         className="input-chocolate w-full px-4 py-3.5 text-sm"
         autoComplete="off"
       />

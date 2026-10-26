@@ -11,44 +11,44 @@ import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
 import PhotoPicker from "@/components/PhotoPicker";
 
 const categories = [
-  { id: "chumba_nyumba", label: "Nyumba / Chumba" },
+  { id: "chumba_nyumba", label: "Houses / Rooms" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
   { id: "store_godown", label: "Godown / Store" },
-  { id: "frame", label: "Frame za Maduka" },
-  { id: "vifaa", label: "Vifaa" },
+  { id: "frame", label: "Shop frames" },
+  { id: "vifaa", label: "Building materials" },
 ];
 
 const units = [
-  { id: "mfuko", label: "Mfuko" },
-  { id: "tani", label: "Tani" },
-  { id: "kipande", label: "Kipande" },
-  { id: "dei", label: "Dei" },
+  { id: "mfuko", label: "bag" },
+  { id: "tani", label: "tonne" },
+  { id: "kipande", label: "piece" },
+  { id: "dei", label: "day" },
 ];
 
 const periods: Record<string, { id: string; label: string }[]> = {
   chumba_nyumba: [
-    { id: "mwezi", label: "Mwezi" },
-    { id: "miezi_3", label: "Miezi 3" },
-    { id: "miezi_6", label: "Miezi 6" },
-    { id: "mwaka", label: "Mwaka" },
+    { id: "mwezi", label: "Month" },
+    { id: "miezi_3", label: "3 months" },
+    { id: "miezi_6", label: "6 months" },
+    { id: "mwaka", label: "Year" },
   ],
   apartment_airbnb: [
-    { id: "usiku", label: "Usiku" },
-    { id: "siku", label: "Siku" },
-    { id: "wiki", label: "Wiki" },
-    { id: "mwezi", label: "Mwezi" },
+    { id: "usiku", label: "Night" },
+    { id: "siku", label: "Day" },
+    { id: "wiki", label: "Week" },
+    { id: "mwezi", label: "Month" },
   ],
   store_godown: [
-    { id: "mwezi", label: "Mwezi" },
-    { id: "miezi_3", label: "Miezi 3" },
-    { id: "miezi_6", label: "Miezi 6" },
-    { id: "mwaka", label: "Mwaka" },
+    { id: "mwezi", label: "Month" },
+    { id: "miezi_3", label: "3 months" },
+    { id: "miezi_6", label: "6 months" },
+    { id: "mwaka", label: "Year" },
   ],
   frame: [
-    { id: "mwezi", label: "Mwezi" },
-    { id: "miezi_3", label: "Miezi 3" },
-    { id: "miezi_6", label: "Miezi 6" },
-    { id: "mwaka", label: "Mwaka" },
+    { id: "mwezi", label: "Month" },
+    { id: "miezi_3", label: "3 months" },
+    { id: "miezi_6", label: "6 months" },
+    { id: "mwaka", label: "Year" },
   ],
 };
 
@@ -81,11 +81,11 @@ export default function WekaTangazoPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim().length < 3 || !price || !place.location.trim()) {
-      show("error", "Jaza sehemu", "Kichwa, bei na eneo vinahitajika.");
+      show("error", "Fill in the fields", "Title, price and location are required.");
       return;
     }
     if (category === "vifaa" && (stock === "" || Number.isNaN(Number(stock)) || Number(stock) < 0)) {
-      show("error", "Jaza stock", "Idadi iliyopo inahitajika.");
+      show("error", "Enter stock", "Available quantity is required.");
       return;
     }
     setLoading(true);
@@ -96,7 +96,7 @@ export default function WekaTangazoPage() {
       const created = await createListing({
         category,
         title: title.trim(),
-        description: contact.length ? `${desc}${desc ? "\n\n" : ""}Simu: ${contact.join(", ")}` : desc,
+        description: contact.length ? `${desc}${desc ? "\n\n" : ""}Phone: ${contact.join(", ")}` : desc,
         price: Number(price),
         period: isVifaa ? "" : period,
         location: place.location.trim(),
@@ -110,7 +110,7 @@ export default function WekaTangazoPage() {
       if (created?.id) rememberListing(String(created.id));
       setDone(true);
     } catch (err) {
-      show("error", "Imeshindikana", err instanceof Error ? err.message : "Jaribu tena.");
+      show("error", "Could not publish", err instanceof Error ? err.message : "Try again.");
     } finally {
       setLoading(false);
     }
@@ -121,13 +121,13 @@ export default function WekaTangazoPage() {
       <AuthGate>
       <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
         <div className="sheet max-w-sm w-full text-center p-6 rounded-[28px]">
-          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Tangazo limewekwa</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Linaonekana kwenye Discover sasa.</p>
+          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Listing posted</h1>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>It is live on Discover now.</p>
           <button type="button" onClick={() => router.push("/discover")} className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-sm">
-            Angalia Discover
+            View Discover
           </button>
           <button type="button" onClick={() => router.push("/home")} className="btn-secondary w-full mt-3 py-3.5 rounded-[16px] font-semibold text-sm">
-            Rudi Home
+            Back to Home
           </button>
         </div>
       </main>
@@ -142,7 +142,7 @@ export default function WekaTangazoPage() {
         <button type="button" onClick={() => router.push("/home")} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
           <ArrowLeft size={18} color="#2E1A0F" />
         </button>
-        <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
+        <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Post a listing</h1>
       </header>
 
       <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5">
@@ -168,8 +168,8 @@ export default function WekaTangazoPage() {
           ))}
         </div>
 
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kichwa" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-        <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Bei" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Price" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
 
         {category === "vifaa" ? (
           <>
@@ -180,7 +180,7 @@ export default function WekaTangazoPage() {
                 </button>
               ))}
             </div>
-            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Stock / idadi" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Stock / quantity" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
           </>
         ) : (
           <div className="flex flex-wrap gap-2">
@@ -193,22 +193,22 @@ export default function WekaTangazoPage() {
         )}
 
         <div>
-          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Picha</p>
+          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Photos</p>
           <PhotoPicker urls={photos} onChange={setPhotos} />
         </div>
         <div>
-          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Eneo</p>
+          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Location</p>
           <PlacePicker value={place} onChange={setPlace} />
         </div>
         <div>
-          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Namba za simu za mawasiliano</p>
+          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Contact phone numbers</p>
           <div className="space-y-2">
             {phones.map((p, i) => (
               <div key={i} className="flex gap-2">
                 <input
                   value={p}
                   onChange={(e) => setPhones((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
-                  placeholder={i === 0 ? "Mfano: 0712 345 678" : "Namba nyingine"}
+                  placeholder={i === 0 ? "Example: 0712 345 678" : "Another number"}
                   inputMode="tel"
                   className="input-chocolate w-full px-4 py-3.5 text-sm"
                 />
@@ -219,7 +219,7 @@ export default function WekaTangazoPage() {
                     className="text-sm px-3"
                     style={{ color: "#8B5E3C" }}
                   >
-                    Ondoa
+                    Remove
                   </button>
                 )}
               </div>
@@ -232,15 +232,15 @@ export default function WekaTangazoPage() {
               className="text-sm mt-2"
               style={{ color: "#8B5E3C" }}
             >
-              + Ongeza namba
+              + Add number
             </button>
           )}
         </div>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Description" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
 
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
           {loading ? <Loader2 size={18} className="animate-spin" /> : null}
-          {loading ? "Inachapisha..." : "Chapisha Tangazo"}
+          {loading ? "Publishing..." : "Publish listing"}
         </button>
       </div>
       </form>

@@ -4,10 +4,10 @@ import { ArrowLeft, CreditCard, Smartphone, Building2 } from "lucide-react";
 import Link from "next/link";
 
 const methods = [
-  { icon: Smartphone, title: "M-Pesa / Mixx", desc: "Malipo kwa simu" },
+  { icon: Smartphone, title: "M-Pesa / Mixx", desc: "Pay by phone" },
   { icon: Smartphone, title: "Tigo Pesa / Airtel Money", desc: "Mobile money" },
-  { icon: Building2, title: "Benki", desc: "Uhamisho wa benki" },
-  { icon: CreditCard, title: "Kadi", desc: "Visa / Mastercard (baadaye)" },
+  { icon: Building2, title: "Bank", desc: "Bank transfer" },
+  { icon: CreditCard, title: "Card", desc: "Visa / Mastercard (later)" },
 ];
 
 export default function PaymentsPage() {
@@ -19,15 +19,15 @@ export default function PaymentsPage() {
             <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Malipo</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Njia na historia</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Payments</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Methods and history</p>
           </div>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-5 space-y-6">
         <div>
-          <h2 className="font-heading text-xl mb-3" style={{ color: "#2E1A0F" }}>Njia za malipo</h2>
+          <h2 className="font-heading text-xl mb-3" style={{ color: "#2E1A0F" }}>Payment methods</h2>
           <div className="space-y-2">
             {methods.map((m) => {
               const Icon = m.icon;
@@ -50,17 +50,17 @@ export default function PaymentsPage() {
         </div>
 
         <div>
-          <h2 className="font-heading text-xl mb-3" style={{ color: "#2E1A0F" }}>Historia</h2>
+          <h2 className="font-heading text-xl mb-3" style={{ color: "#2E1A0F" }}>History</h2>
           <div className="p-6 sheet rounded-[24px] text-center">
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna malipo bado</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No payments yet</p>
             <p className="text-sm mt-1" style={{ color: "#5C4033" }}>
-              Malipo halisi yataunganishwa baadaye.
+              Live payments will be connected later.
             </p>
           </div>
         </div>
 
         <p className="text-center text-[11px]" style={{ color: "#8B5E3C" }}>
-          Malipo halisi yataunganishwa na backend (Selcom / ClickPesa)
+          Live payments will connect to the backend (Selcom / ClickPesa)
         </p>
       </div>
     </main>

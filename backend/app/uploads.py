@@ -34,13 +34,13 @@ def _sniff(kind: str, data: bytes) -> str:
 def save_listing_photo(user_id: str, file: UploadFile) -> str:
     data = file.file.read()
     if not data:
-        raise HTTPException(status_code=400, detail="Picha tupu")
+        raise HTTPException(status_code=400, detail="Empty photo")
     if len(data) > MAX_BYTES:
-        raise HTTPException(status_code=400, detail="Picha ni kubwa. Chagua chini ya 6MB")
+        raise HTTPException(status_code=400, detail="Photo is too large. Choose one under 6MB")
     kind = _sniff((file.content_type or "").split(";")[0].strip().lower(), data)
     ext = ALLOWED.get(kind)
     if not ext:
-        raise HTTPException(status_code=400, detail="Tumia picha ya JPEG, PNG au WebP")
+        raise HTTPException(status_code=400, detail="Use a JPEG, PNG or WebP photo")
     _ensure_bucket()
     path = f"{user_id}/{uuid4().hex}{ext}"
     try:
@@ -59,11 +59,11 @@ def save_listing_photo(user_id: str, file: UploadFile) -> str:
                 file_options={"content-type": kind, "upsert": "false"},
             )
         else:
-            raise HTTPException(status_code=400, detail="Imeshindikana kupakia picha")
+            raise HTTPException(status_code=400, detail="Could not upload the photo")
     public = db().storage.from_(BUCKET).get_public_url(path)
     url = public if isinstance(public, str) else (public.get("publicUrl") if isinstance(public, dict) else "")
     if not url:
-        raise HTTPException(status_code=400, detail="Imeshindikana kupakia picha")
+        raise HTTPException(status_code=400, detail="Could not upload the photo")
     return url
 
 

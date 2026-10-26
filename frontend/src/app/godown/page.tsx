@@ -1,5 +1,5 @@
 "use client";
 import ListingFeed from "@/components/ListingFeed";
 export default function Page() {
-  return <ListingFeed title="Godown / Store" subtitle="Hifadhi na store, si frame za maduka" category="store_godown" />;
+  return <ListingFeed title="Godown / Store" subtitle="Storage space, not shop frames" category="store_godown" />;
 }

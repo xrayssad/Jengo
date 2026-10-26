@@ -24,7 +24,7 @@ export default function UsernamePage() {
     setError("");
     const value = username.trim();
     if (!/^[A-Za-z0-9_]{3,20}$/.test(value)) {
-      setError("Username: herufi 3–20, herufi, namba au _");
+      setError("Username: 3–20 characters, letters, numbers or _");
       return;
     }
     setBusy(true);
@@ -32,7 +32,7 @@ export default function UsernamePage() {
       await setUsername(value);
       window.location.href = "/home";
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Imeshindikana kuhifadhi username");
+      setError(err instanceof Error ? err.message : "Could not save username");
     } finally {
       setBusy(false);
     }
@@ -41,10 +41,10 @@ export default function UsernamePage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "#FFF6ED" }}>
       <div className="sheet w-full max-w-sm p-6 rounded-[28px] fade-up">
-        <p className="text-sm" style={{ color: "#8B5E3C" }}>Akaunti ya Google</p>
-        <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "#2E1A0F" }}>Chagua username</h1>
+        <p className="text-sm" style={{ color: "#8B5E3C" }}>Google account</p>
+        <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "#2E1A0F" }}>Choose a username</h1>
         <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
-          Akaunti ya Google iko tayari. Weka username mara moja, kisha utaenda nyumbani.
+          Your Google account is ready. Set a username once, then go home.
         </p>
         <form onSubmit={submit} className="space-y-4">
           <input
@@ -56,7 +56,7 @@ export default function UsernamePage() {
           />
           {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
           <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
-            {busy ? "Inahifadhi..." : "Endelea"}
+            {busy ? "Saving..." : "Continue"}
           </button>
         </form>
       </div>

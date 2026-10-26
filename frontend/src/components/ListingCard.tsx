@@ -38,7 +38,7 @@ export default function ListingCard({ item, eager }: { item: Listing; eager?: bo
             className="absolute top-3 right-3 text-[11px] px-2 py-1"
             style={{ backgroundColor: "rgba(46,26,15,0.72)", color: "#C4A35A" }}
           >
-            {photos.length} picha
+            {photos.length} photos
           </span>
         )}
         <div className="photo-dock">

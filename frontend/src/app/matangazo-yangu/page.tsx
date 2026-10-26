@@ -39,8 +39,8 @@ export default function Page() {
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Matangazo yangu</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Uliyoweka</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>My listings</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Posted by you</p>
           </div>
         </div>
       </header>
@@ -48,8 +48,8 @@ export default function Page() {
         {loading && <div className="flex justify-center py-16"><Loader2 className="animate-spin" color="#8B5E3C" /></div>}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading" style={{ color: "#2E1A0F" }}>Bado hujaweka tangazo</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Weka Tangazo</Link>
+            <p className="font-heading" style={{ color: "#2E1A0F" }}>You have not posted a listing yet</p>
+            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}
         {items.map((item) => (

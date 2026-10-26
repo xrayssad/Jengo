@@ -18,7 +18,7 @@ const sourceSans = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: "Jengo",
-  description: "Chumba, nyumba, apartment, store na frame",
+  description: "Rooms, houses, apartments, stores and shop frames",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="sw" className={`${playfair.variable} ${sourceSans.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${sourceSans.variable}`}>
       <body className="antialiased" suppressHydrationWarning>
         <AppShell>{children}</AppShell>
       </body>

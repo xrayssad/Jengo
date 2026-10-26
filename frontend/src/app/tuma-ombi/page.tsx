@@ -12,7 +12,7 @@ import AuthGate from "@/components/AuthGate";
 function TumaOmbiForm() {
   const search = useSearchParams();
   const listingId = search.get("listing") || "";
-  const title = search.get("title") || "Tangazo";
+  const title = search.get("title") || "Listing";
   const hintCat = search.get("category") || "";
   const backHref = listingId ? `/tangazo/${listingId}` : "/home";
 
@@ -53,19 +53,19 @@ function TumaOmbiForm() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!listingId) {
-      showAlert("error", "Hitilafu", "Tangazo halijulikani. Rudi undani wa tangazo.");
+      showAlert("error", "Error", "This listing is unknown. Go back to the listing.");
       return;
     }
     const quantity = Number(qty);
     if (isVifaa && (qty.trim() === "" || Number.isNaN(quantity) || quantity <= 0)) {
-      showAlert("error", "Jaza kiasi", "Weka kiasi unachotaka.");
+      showAlert("error", "Enter quantity", "Enter the quantity you want.");
       return;
     }
     setLoading(true);
     try {
       await createBooking({
         listing_id: listingId,
-        message: message.trim() || "Nina nia ya tangazo hili.",
+        message: message.trim() || "I am interested in this listing.",
         ...(isVifaa ? { quantity } : {}),
       });
       rememberBooking({ listing_id: listingId, title, message: message.trim(), created_at: new Date().toISOString() });
@@ -73,8 +73,8 @@ function TumaOmbiForm() {
     } catch (err) {
       showAlert(
         "error",
-        "Imeshindikana",
-        err instanceof Error ? err.message : "Jaribu tena baadaye."
+        "Could not send",
+        err instanceof Error ? err.message : "Try again later."
       );
     } finally {
       setLoading(false);
@@ -91,22 +91,22 @@ function TumaOmbiForm() {
           >
             <CheckCircle2 size={32} color="#FFF6ED" />
           </div>
-          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Ombi limetumwa</h1>
+          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Request sent</h1>
           <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
-            Ombi lako kuhusu «{title}» limepokelewa.
+            Your request about “{title}” was received.
           </p>
           <div className="space-y-3">
             <Link
               href={backHref}
               className="btn-primary block w-full py-3.5 rounded-full font-semibold text-sm"
             >
-              Rudi tangazo
+              Back to listing
             </Link>
             <Link
               href="/home"
               className="btn-secondary block w-full py-3 rounded-full font-semibold text-sm"
             >
-              Rudi Home
+              Back to Home
             </Link>
           </div>
         </div>
@@ -124,7 +124,7 @@ function TumaOmbiForm() {
           <ArrowLeft size={18} color="#2E1A0F" />
         </Link>
         <div>
-          <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Tuma Ombi</h1>
+          <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Send request</h1>
           <p className="text-xs truncate max-w-[220px]" style={{ color: "#8B5E3C" }}>{title}</p>
         </div>
       </header>
@@ -132,12 +132,12 @@ function TumaOmbiForm() {
       <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-6">
       <div className="sheet rounded-[28px] p-5 space-y-5">
         <p className="text-sm" style={{ color: "#5C4033" }}>
-          Andika ujumbe mfupi kwa mwenye tangazo.
+          Write a short message to the owner.
         </p>
         {isVifaa && (
           <label className="block">
             <span className="text-sm font-semibold" style={{ color: "#2E1A0F" }}>
-              Kiasi{unit ? ` (${unitLabel(unit)})` : ""}
+              Quantity{unit ? ` (${unitLabel(unit)})` : ""}
             </span>
             <input
               value={qty}
@@ -154,7 +154,7 @@ function TumaOmbiForm() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           rows={5}
-          placeholder="Mfano: Habari, naomba kujua kama bado kinapatikana..."
+          placeholder="Example: Hello, is this still available?"
           className="input-chocolate w-full px-4 py-3.5 text-sm resize-none"
         />
         <button
@@ -164,7 +164,7 @@ function TumaOmbiForm() {
           style={{ opacity: loading ? 0.7 : 1 }}
         >
           {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-          {loading ? "Inatuma..." : "Tuma Ombi"}
+          {loading ? "Sending..." : "Send request"}
         </button>
       </div>
       </form>

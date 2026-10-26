@@ -12,8 +12,8 @@ export default function SavedPage() {
             <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Picha zilizohifadhiwa</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Picha za tangazo</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Saved photos</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Listing photos</p>
           </div>
         </div>
       </header>
@@ -21,9 +21,9 @@ export default function SavedPage() {
       <div className="max-w-md mx-auto px-4 pt-4">
         <div className="text-center py-20">
           <Bookmark size={48} color="#D2A679" className="mx-auto mb-4 opacity-50" />
-          <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna picha bado</p>
+          <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No photos yet</p>
           <p className="text-sm mt-1" style={{ color: "#5C4033" }}>
-            Upload ya picha itakuja baadaye.
+            Saved listing photos will appear here.
           </p>
         </div>
       </div>

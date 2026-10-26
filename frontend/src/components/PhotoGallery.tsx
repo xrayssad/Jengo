@@ -61,7 +61,7 @@ export default function PhotoGallery({
                 setI(n);
                 setOpen(true);
               }}
-              aria-label={`Tazama picha ${n + 1}`}
+              aria-label={`View photo ${n + 1}`}
             >
               <img src={src} alt="" className="w-full h-full object-cover" />
             </button>
@@ -82,7 +82,7 @@ export default function PhotoGallery({
                     borderRadius: 99,
                     backgroundColor: n === i ? "#C4A35A" : "rgba(255,246,237,0.55)",
                   }}
-                  aria-label={`Picha ${n + 1}`}
+                  aria-label={`Photo ${n + 1}`}
                 />
               ))}
           </div>
@@ -103,7 +103,7 @@ export default function PhotoGallery({
               onClick={() => setOpen(false)}
               className="w-10 h-10 flex items-center justify-center"
               style={{ border: "1px solid #C4A35A" }}
-              aria-label="Funga"
+              aria-label="Close"
             >
               <X size={18} color="#C4A35A" />
             </button>
@@ -119,12 +119,12 @@ export default function PhotoGallery({
                 disabled={i === 0}
                 className="w-11 h-11 flex items-center justify-center"
                 style={{ border: "1px solid #C4A35A", opacity: i === 0 ? 0.35 : 1 }}
-                aria-label="Picha iliyotangulia"
+                aria-label="Previous photo"
               >
                 <ChevronLeft size={20} color="#C4A35A" />
               </button>
               <p className="text-sm" style={{ color: "#D2A679" }}>
-                Piga ili uridhike
+                Look until you are sure
               </p>
               <button
                 type="button"
@@ -132,7 +132,7 @@ export default function PhotoGallery({
                 disabled={i === photos.length - 1}
                 className="w-11 h-11 flex items-center justify-center"
                 style={{ border: "1px solid #C4A35A", opacity: i === photos.length - 1 ? 0.35 : 1 }}
-                aria-label="Picha inayofuata"
+                aria-label="Next photo"
               >
                 <ChevronRight size={20} color="#C4A35A" />
               </button>

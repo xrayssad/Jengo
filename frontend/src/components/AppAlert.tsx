@@ -54,7 +54,7 @@ export default function AppAlert({ open, kind = "info", title, message, onClose 
             className="w-full py-3 rounded-[14px] font-semibold text-sm"
             style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}
           >
-            Sawa
+            OK
           </button>
         </div>
       </div>

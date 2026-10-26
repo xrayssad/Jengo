@@ -17,10 +17,10 @@ function readParams() {
 function googleOffMessage(raw: string) {
   const text = raw.toLowerCase();
   if (text.includes("provider") || text.includes("validation_failed") || text.includes("not enabled")) {
-    return "Google haijaunganishwa kwenye Supabase. Ingia kwa barua pepe, au washa Google provider.";
+    return "Google is not connected in Supabase. Log in with email, or turn on the Google provider.";
   }
   if (text.includes("exchange external code") || text.includes("invalid_client") || text.includes("unauthorized")) {
-    return "Google imeshindwa kuthibitisha Client ID au Secret. Angalia Google Cloud na Supabase, kisha jaribu tena. Hii si OTP.";
+    return "Google could not verify the Client ID or Secret. Check Google Cloud and Supabase, then try again. This is not OTP.";
   }
   return raw;
 }
@@ -28,12 +28,12 @@ function googleOffMessage(raw: string) {
 function errorTitle(raw: string) {
   const text = raw.toLowerCase();
   if (text.includes("google") || text.includes("exchange") || text.includes("oauth") || text.includes("client")) {
-    return "Kuingia na Google";
+    return "Google sign-in";
   }
-  if (text.includes("kiungo") || text.includes("thibitisho") || text.includes("token")) {
-    return "Thibitisho";
+  if (text.includes("kiungo") || text.includes("thibitisho") || text.includes("token") || text.includes("link") || text.includes("verif")) {
+    return "Verification";
   }
-  return "Kuingia";
+  return "Sign in";
 }
 
 async function finishSession(accessToken: string) {
@@ -60,18 +60,18 @@ export default function AuthCallbackPage() {
         .auth.exchangeCodeForSession(code)
         .then(({ data, error: exchangeError }) => {
           if (exchangeError || !data.session?.access_token) {
-            throw new Error(exchangeError?.message || "Kipindi hakikubaliki");
+            throw new Error(exchangeError?.message || "Session is invalid");
           }
           return finishSession(data.session.access_token);
         })
         .catch((caught) => {
-          setError(googleOffMessage(caught instanceof Error ? caught.message : "Kipindi hakikubaliki"));
+          setError(googleOffMessage(caught instanceof Error ? caught.message : "Session is invalid"));
         });
       return;
     }
     if (token) {
       finishSession(token).catch((caught) => {
-        setError(caught instanceof Error ? caught.message : "Kipindi hakikubaliki");
+        setError(caught instanceof Error ? caught.message : "Session is invalid");
       });
       return;
     }
@@ -81,26 +81,26 @@ export default function AuthCallbackPage() {
           window.location.href = afterAuthPath(user);
         })
         .catch((caught) => {
-          setError(caught instanceof Error ? caught.message : "Kiungo kimeisha au si sahihi");
+          setError(caught instanceof Error ? caught.message : "Link expired or is invalid");
         });
       return;
     }
-    setError("Thibitisho halijakamilika. Fungua kiungo kutoka barua pepe, au ingia kwa barua pepe.");
+    setError("Verification did not finish. Open the link from your email, or log in with email.");
   }, []);
 
   return (
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "#FFF6ED" }}>
       <div className="text-center max-w-sm">
         <h1 className="font-heading text-2xl mb-3" style={{ color: "#2E1A0F" }}>
-          {error ? errorTitle(error) : "Inakamilisha..."}
+          {error ? errorTitle(error) : "Finishing..."}
         </h1>
         {error ? (
           <>
             <p className="text-sm mb-6" style={{ color: "#A6452E" }}>{error}</p>
-            <Link href="/login" className="btn-primary inline-block px-6 py-3 rounded-[16px] text-sm font-semibold">Rudi kuingia</Link>
+            <Link href="/login" className="btn-primary inline-block px-6 py-3 rounded-[16px] text-sm font-semibold">Back to log in</Link>
           </>
         ) : (
-          <p className="text-sm" style={{ color: "#5C4033" }}>Subiri kidogo.</p>
+          <p className="text-sm" style={{ color: "#5C4033" }}>Just a moment.</p>
         )}
       </div>
     </main>
