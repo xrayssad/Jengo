@@ -39,11 +39,11 @@ export default function UsernamePage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "var(--paper)" }}>
       <div className="sheet w-full max-w-sm p-6 rounded-[28px] fade-up">
-        <p className="text-sm" style={{ color: "#8B5E3C" }}>Google account</p>
-        <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "#2E1A0F" }}>Choose a username</h1>
-        <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
+        <p className="text-sm" style={{ color: "var(--mocha)" }}>Google account</p>
+        <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "var(--ink)" }}>Choose a username</h1>
+        <p className="text-sm mb-8" style={{ color: "var(--muted)" }}>
           Your Google account is ready. Set a username once, then go home.
         </p>
         <form onSubmit={submit} className="space-y-4">
@@ -54,7 +54,7 @@ export default function UsernamePage() {
             placeholder="jengo_duka"
             className="input-chocolate w-full px-4 py-3.5 text-sm"
           />
-          {error && <p className="text-sm font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
+          {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
           <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
             {busy ? "Saving..." : "Continue"}
           </button>

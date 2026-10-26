@@ -37,7 +37,7 @@ export default function SaveButton({
       className={className || "flex items-center gap-1"}
       style={style}
     >
-      <Bookmark size={size} color="#2E1A0F" fill={on ? "#2E1A0F" : "none"} />
+      <Bookmark size={size} color="var(--ink)" fill={on ? "var(--ink)" : "none"} />
     </button>
   );
 }

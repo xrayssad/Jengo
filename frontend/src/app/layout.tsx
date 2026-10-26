@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import AppShell from "@/components/AppShell";
+import ThemeProvider from "@/components/ThemeProvider";
+import { THEME_BOOT } from "@/lib/theme";
 import "./globals.css";
 
 const playfair = Cormorant_Garamond({
@@ -27,9 +30,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${playfair.variable} ${sourceSans.variable}`}>
+    <html lang="en" className={`${playfair.variable} ${sourceSans.variable}`} suppressHydrationWarning>
       <body className="antialiased" suppressHydrationWarning>
-        <AppShell>{children}</AppShell>
+        <Script id="jengo-theme" strategy="beforeInteractive">
+          {THEME_BOOT}
+        </Script>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );

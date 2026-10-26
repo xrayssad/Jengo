@@ -23,15 +23,15 @@ export default function BottomNav() {
     return (
       <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-0.5 h-full min-w-0">
         <span className="relative">
-          <Icon size={20} color={active ? "#2E1A0F" : "#8B5E3C"} strokeWidth={active ? 2.2 : 1.7} />
+          <Icon size={20} color={active ? "var(--ink)" : "var(--mocha)"} strokeWidth={active ? 2.2 : 1.7} />
           {item.href === "/messages" && chatUnread && (
             <span
               className="absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: "#A6452E", boxShadow: "0 0 0 2px rgba(255,246,237,0.95)" }}
+              style={{ backgroundColor: "var(--error)", boxShadow: "0 0 0 2px rgba(var(--surface-rgb),0.95)" }}
             />
           )}
         </span>
-        <span className="text-[10px] leading-none" style={{ color: active ? "#2E1A0F" : "#8B5E3C" }}>{item.label}</span>
+        <span className="text-[10px] leading-none" style={{ color: active ? "var(--ink)" : "var(--mocha)" }}>{item.label}</span>
       </Link>
     );
   };
@@ -59,9 +59,9 @@ export default function BottomNav() {
             href="/weka-tangazo"
             aria-label="Post a listing"
             className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "#2E1A0F", boxShadow: "0 8px 18px rgba(46,26,15,0.28)" }}
+            style={{ backgroundColor: "var(--ink)", boxShadow: "0 8px 18px rgba(var(--veil-rgb),0.28)" }}
           >
-            <Plus size={20} color="#FFF6ED" strokeWidth={2.4} />
+            <Plus size={20} color="var(--paper)" strokeWidth={2.4} />
           </Link>
         </div>
         {link(items[2])}

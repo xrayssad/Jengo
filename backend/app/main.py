@@ -184,7 +184,7 @@ def _signup_options(redirect_to: str | None) -> dict:
     return {"email_redirect_to": _safe_redirect(redirect_to)}
 
 
-OTP_RE = re.compile(r"^\d{6}$")
+OTP_RE = re.compile(rf"^\d{{{phone_auth.OTP_LEN}}}$")
 PHONE_KEEP_RE = re.compile(r"[^\d+]")
 
 
@@ -347,7 +347,7 @@ def _continue_unconfirmed_signup(user, email: str, password: str, username: str,
         _confirm_phone_user(user.id, phone)
         return
     if not email or not _issue_otp(user.id, email):
-        raise HTTPException(status_code=400, detail="Could not send the 6-digit code to your email")
+        raise HTTPException(status_code=400, detail="Could not send the 8-digit code to your email")
     limiter.touch(f"resend-otp:{email}")
 
 
@@ -647,7 +647,7 @@ def _register_email(email: str, password: str, username: str, full_name: str):
     if not user:
         raise HTTPException(status_code=400, detail="Could not create the account")
     if not _issue_otp(user.id, email):
-        raise HTTPException(status_code=400, detail="Could not send the 6-digit code to your email")
+        raise HTTPException(status_code=400, detail="Could not send the 8-digit code to your email")
     limiter.touch(f"resend-otp:{email}")
     return {"ok": True, "email": email, "needs_verify": True}
 
@@ -705,7 +705,7 @@ def verify(request: Request, body: VerifyIn):
     kind, ident = phone_auth.parse_ident(body.email)
     code = body.code.strip()
     if not OTP_RE.fullmatch(code):
-        raise HTTPException(status_code=400, detail="Enter the 6-digit code we sent")
+        raise HTTPException(status_code=400, detail="Enter the 8-digit code we sent")
     if kind != "email":
         raise HTTPException(status_code=400, detail="Enter your email")
     user = _find_account(ident)
@@ -752,7 +752,7 @@ def resend(request: Request, body: ResendIn):
     )
     user = existing or _auth_user_by_email(ident)
     if not user or not _issue_otp(user.id, ident):
-        raise HTTPException(status_code=400, detail="Could not send the 6-digit code to your email")
+        raise HTTPException(status_code=400, detail="Could not send the 8-digit code to your email")
     return {"ok": True}
 
 

@@ -38,16 +38,16 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
     <div>
       <div className="grid grid-cols-3 gap-2">
         {urls.map((url) => (
-          <div key={url} className="relative overflow-hidden" style={{ height: 92, borderRadius: 16, border: "1px solid #8B5E3C" }}>
+          <div key={url} className="relative overflow-hidden" style={{ height: 92, borderRadius: 16, border: "1px solid var(--mocha)" }}>
             <img src={url} alt="" className="w-full h-full object-cover" />
             <button
               type="button"
               onClick={() => onChange(urls.filter((u) => u !== url))}
               className="absolute top-1 right-1 w-6 h-6 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: "#2E1A0F" }}
+              style={{ backgroundColor: "var(--ink)" }}
               aria-label="Remove photo"
             >
-              <X size={12} color="#FFF6ED" />
+              <X size={12} color="var(--paper)" />
             </button>
           </div>
         ))}
@@ -57,14 +57,14 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
             onClick={() => inputRef.current?.click()}
             disabled={busy}
             className="flex flex-col items-center justify-center gap-1"
-            style={{ height: 92, borderRadius: 16, border: "1px dashed #8B5E3C", color: "#8B5E3C" }}
+            style={{ height: 92, borderRadius: 16, border: "1px dashed var(--mocha)", color: "var(--mocha)" }}
           >
             {busy ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
             <span className="text-[11px]">{busy ? "Uploading" : "Add photo"}</span>
           </button>
         )}
       </div>
-      {error && <p className="text-xs mt-2" style={{ color: "#A6452E" }}>{error}</p>}
+      {error && <p className="text-xs mt-2" style={{ color: "var(--error)" }}>{error}</p>}
       <input ref={inputRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => add(e.target.files)} />
     </div>
   );

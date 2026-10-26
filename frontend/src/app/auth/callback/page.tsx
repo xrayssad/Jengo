@@ -89,18 +89,18 @@ export default function AuthCallbackPage() {
   }, []);
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "var(--paper)" }}>
       <div className="text-center max-w-sm">
-        <h1 className="font-heading text-2xl mb-3" style={{ color: "#2E1A0F" }}>
+        <h1 className="font-heading text-2xl mb-3" style={{ color: "var(--ink)" }}>
           {error ? errorTitle(error) : "Finishing..."}
         </h1>
         {error ? (
           <>
-            <p className="text-sm mb-6" style={{ color: "#A6452E" }}>{error}</p>
+            <p className="text-sm mb-6" style={{ color: "var(--error)" }}>{error}</p>
             <Link href="/login" className="btn-primary inline-block px-6 py-3 rounded-[16px] text-sm font-semibold">Back to log in</Link>
           </>
         ) : (
-          <p className="text-sm" style={{ color: "#5C4033" }}>Just a moment.</p>
+          <p className="text-sm" style={{ color: "var(--muted)" }}>Just a moment.</p>
         )}
       </div>
     </main>

@@ -8,5 +8,5 @@ export default function LegacyMessagePage() {
   useEffect(() => {
     router.replace("/messages");
   }, [router]);
-  return <main className="min-h-screen" style={{ backgroundColor: "#FFF6ED" }} />;
+  return <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }} />;
 }

@@ -23,7 +23,7 @@ export default function AdminLink() {
 
   if (!show) return null;
   return (
-    <Link href="/admin" className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "#8B5E3C" }}>
+    <Link href="/admin" className="text-[10px] font-bold tracking-[0.18em] uppercase" style={{ color: "var(--mocha)" }}>
       Admin
     </Link>
   );

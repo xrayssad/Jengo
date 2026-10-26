@@ -49,14 +49,14 @@ export default function DiscoverPage() {
   }, [items, q, cat]);
 
   return (
-    <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
       <header className="sticky top-0 z-20 px-5 pt-5 pb-3 glass">
         <div className="max-w-md mx-auto">
-          <p className="text-sm" style={{ color: "#8B5E3C" }}>Browse</p>
-          <h1 className="font-heading text-[34px] leading-[1.05]" style={{ color: "#2E1A0F" }}>Discover</h1>
+          <p className="text-sm" style={{ color: "var(--mocha)" }}>Browse</p>
+          <h1 className="font-heading text-[34px] leading-[1.05]" style={{ color: "var(--ink)" }}>Discover</h1>
           <div className="mt-4 flex items-center gap-2 px-4 py-3 sheet rounded-full">
-            <Search size={16} color="#8B5E3C" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or area" className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#2E1A0F" }} />
+            <Search size={16} color="var(--mocha)" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or area" className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--ink)" }} />
           </div>
           <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
             {chips.map((c) => (
@@ -65,7 +65,7 @@ export default function DiscoverPage() {
                 type="button"
                 onClick={() => setCat(c.id)}
                 className={`px-3.5 py-1.5 text-sm shrink-0 ${cat === c.id ? "rounded-full" : "chip"}`}
-                style={cat === c.id ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}
+                style={cat === c.id ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}
               >
                 {c.label}
               </button>
@@ -74,10 +74,10 @@ export default function DiscoverPage() {
         </div>
       </header>
       <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-        {loading && <div className="flex justify-center py-16"><Loader2 className="animate-spin" color="#8B5E3C" /></div>}
+        {loading && <div className="flex justify-center py-16"><Loader2 className="animate-spin" color="var(--mocha)" /></div>}
         {!loading && shown.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No listings</p>
+            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No listings</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}

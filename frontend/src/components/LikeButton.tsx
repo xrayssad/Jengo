@@ -57,8 +57,8 @@ export default function LikeButton({ id, count }: { id: string; count?: number }
 
   return (
     <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={press} className="flex items-center gap-1.5" aria-label="Like">
-      <Heart size={22} color={on ? "#A6452E" : "#2E1A0F"} fill={on ? "#A6452E" : "none"} />
-      <span className="text-sm font-semibold" style={{ color: "#2E1A0F" }}>{n}</span>
+      <Heart size={22} color={on ? "var(--error)" : "var(--ink)"} fill={on ? "var(--error)" : "none"} />
+      <span className="text-sm font-semibold" style={{ color: "var(--ink)" }}>{n}</span>
     </button>
   );
 }

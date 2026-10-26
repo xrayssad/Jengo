@@ -73,14 +73,14 @@ export default function PlacePicker({ value, onChange }: { value: PlaceValue; on
         autoComplete="off"
       />
       {open && hits.length > 0 && (
-        <div className="absolute z-20 left-0 right-0 mt-1 overflow-hidden" style={{ backgroundColor: "#FFF6ED", border: "1px solid #8B5E3C" }}>
+        <div className="absolute z-20 left-0 right-0 mt-1 overflow-hidden" style={{ backgroundColor: "var(--paper)", border: "1px solid var(--mocha)" }}>
           {hits.map((h) => (
             <button
               key={`${h.label}-${h.place_id || h.lat}`}
               type="button"
               onClick={() => pick(h)}
               className="block w-full text-left px-4 py-2.5 text-sm"
-              style={{ color: "#2E1A0F", borderBottom: "1px solid rgba(139,94,60,0.18)" }}
+              style={{ color: "var(--ink)", borderBottom: "1px solid rgba(var(--mocha-rgb),0.18)" }}
             >
               {h.label}
             </button>
@@ -88,7 +88,7 @@ export default function PlacePicker({ value, onChange }: { value: PlaceValue; on
         </div>
       )}
       {value.lat != null && value.lng != null && (
-        <div className="mt-3 overflow-hidden" style={{ border: "1px solid #8B5E3C", borderRadius: 18 }}>
+        <div className="mt-3 overflow-hidden" style={{ border: "1px solid var(--mocha)", borderRadius: 18 }}>
           <MapPreview lat={value.lat} lng={value.lng} />
         </div>
       )}

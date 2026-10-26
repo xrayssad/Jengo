@@ -119,10 +119,10 @@ export default function WekaTangazoPage() {
   if (done) {
     return (
       <AuthGate>
-      <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
+      <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--paper)" }}>
         <div className="sheet max-w-sm w-full text-center p-6 rounded-[28px]">
-          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Listing posted</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>It is live on Discover now.</p>
+          <h1 className="font-heading text-3xl mb-2" style={{ color: "var(--ink)" }}>Listing posted</h1>
+          <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>It is live on Discover now.</p>
           <button type="button" onClick={() => router.push("/discover")} className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-sm">
             View Discover
           </button>
@@ -137,12 +137,12 @@ export default function WekaTangazoPage() {
 
   return (
     <AuthGate>
-    <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3 glass">
         <button type="button" onClick={() => router.push("/home")} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
-          <ArrowLeft size={18} color="#2E1A0F" />
+          <ArrowLeft size={18} color="var(--ink)" />
         </button>
-        <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Post a listing</h1>
+        <h1 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Post a listing</h1>
       </header>
 
       <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5">
@@ -158,9 +158,9 @@ export default function WekaTangazoPage() {
               }}
               className="p-3 rounded-[18px] text-sm"
               style={{
-                backgroundColor: category === c.id ? "#2E1A0F" : "rgba(255,246,237,0.7)",
-                color: category === c.id ? "#FFF6ED" : "#2E1A0F",
-                border: "1px solid rgba(210,166,121,0.45)",
+                backgroundColor: category === c.id ? "var(--ink)" : "rgba(var(--paper-rgb),0.7)",
+                color: category === c.id ? "var(--paper)" : "var(--ink)",
+                border: "1px solid rgba(var(--caramel-rgb),0.45)",
               }}
             >
               {c.label}
@@ -175,7 +175,7 @@ export default function WekaTangazoPage() {
           <>
             <div className="flex flex-wrap gap-2">
               {units.map((u) => (
-                <button key={u.id} type="button" onClick={() => setUnit(u.id)} className={`px-3 py-2 text-xs ${unit === u.id ? "rounded-full" : "chip"}`} style={unit === u.id ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}>
+                <button key={u.id} type="button" onClick={() => setUnit(u.id)} className={`px-3 py-2 text-xs ${unit === u.id ? "rounded-full" : "chip"}`} style={unit === u.id ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}>
                   {u.label}
                 </button>
               ))}
@@ -185,7 +185,7 @@ export default function WekaTangazoPage() {
         ) : (
           <div className="flex flex-wrap gap-2">
             {periods[category].map((p) => (
-              <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`px-3 py-2 text-xs ${period === p.id ? "rounded-full" : "chip"}`} style={period === p.id ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}>
+              <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`px-3 py-2 text-xs ${period === p.id ? "rounded-full" : "chip"}`} style={period === p.id ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}>
                 {p.label}
               </button>
             ))}
@@ -193,15 +193,15 @@ export default function WekaTangazoPage() {
         )}
 
         <div>
-          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Photos</p>
+          <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Photos</p>
           <PhotoPicker urls={photos} onChange={setPhotos} />
         </div>
         <div>
-          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Location</p>
+          <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Location</p>
           <PlacePicker value={place} onChange={setPlace} />
         </div>
         <div>
-          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Contact phone numbers</p>
+          <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Contact phone numbers</p>
           <div className="space-y-2">
             {phones.map((p, i) => (
               <div key={i} className="flex gap-2">
@@ -217,7 +217,7 @@ export default function WekaTangazoPage() {
                     type="button"
                     onClick={() => setPhones((cur) => cur.filter((_, j) => j !== i))}
                     className="text-sm px-3"
-                    style={{ color: "#8B5E3C" }}
+                    style={{ color: "var(--mocha)" }}
                   >
                     Remove
                   </button>
@@ -230,7 +230,7 @@ export default function WekaTangazoPage() {
               type="button"
               onClick={() => setPhones((cur) => [...cur, ""])}
               className="text-sm mt-2"
-              style={{ color: "#8B5E3C" }}
+              style={{ color: "var(--mocha)" }}
             >
               + Add number
             </button>

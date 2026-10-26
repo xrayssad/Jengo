@@ -136,14 +136,14 @@ function AdminDesk() {
     );
 
   return (
-    <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FFF6ED", color: "#2E1A0F" }}>
-      <header className="sticky top-0 z-20 glass" style={{ borderBottom: "1px solid rgba(46,26,15,0.1)" }}>
+    <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--paper)", color: "var(--ink)" }}>
+      <header className="sticky top-0 z-20 glass" style={{ borderBottom: "1px solid rgba(var(--ink-rgb),0.1)" }}>
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-end justify-between gap-4">
           <div>
-            <p className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Desk</p>
-            <p className="text-sm mt-1" style={{ color: "#5C4033" }}>Users, listings, requests</p>
+            <p className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Desk</p>
+            <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>Users, listings, requests</p>
           </div>
-          <Link href="/home" className="text-sm font-semibold pb-0.5" style={{ color: "#8B5E3C" }}>
+          <Link href="/home" className="text-sm font-semibold pb-0.5" style={{ color: "var(--mocha)" }}>
             Back to market
           </Link>
         </div>
@@ -157,8 +157,8 @@ function AdminDesk() {
                 onClick={() => setTab(item.id)}
                 className="px-3 py-2.5 text-sm font-semibold"
                 style={{
-                  color: on ? "#2E1A0F" : "#5C4033",
-                  borderBottom: on ? "2px solid #2E1A0F" : "2px solid transparent",
+                  color: on ? "var(--ink)" : "var(--muted)",
+                  borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
                 }}
               >
                 {item.label}
@@ -170,27 +170,27 @@ function AdminDesk() {
 
       <section className="max-w-5xl mx-auto px-4 py-6">
         <div className="min-h-[70vh] px-1 py-2 sm:px-0">
-          {loading && <p style={{ color: "#5C4033" }}>Loading desk...</p>}
-          {error && <p className="text-sm font-semibold mb-4" style={{ color: "#A6452E" }}>{error}</p>}
-          {notice && <p className="text-sm font-semibold mb-4" style={{ color: "#5E7F4F" }}>{notice}</p>}
+          {loading && <p style={{ color: "var(--muted)" }}>Loading desk...</p>}
+          {error && <p className="text-sm font-semibold mb-4" style={{ color: "var(--error)" }}>{error}</p>}
+          {notice && <p className="text-sm font-semibold mb-4" style={{ color: "var(--success)" }}>{notice}</p>}
 
           {!loading && tab === "muhtasari" && (
             <div>
               <h1 className="font-heading text-3xl mb-1">Market status</h1>
-              <p className="text-sm mb-6" style={{ color: "#5C4033" }}>
+              <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
                 These numbers come from verified accounts, all listings, requests, and commission recorded after move-in.
               </p>
               <div
                 className="grid grid-cols-2 md:grid-cols-4"
-                style={{ borderTop: "2px solid #2E1A0F", borderBottom: "2px solid #2E1A0F" }}
+                style={{ borderTop: "2px solid var(--ink)", borderBottom: "2px solid var(--ink)" }}
               >
                 {counts.map((item, i) => (
                   <div
                     key={item.label}
                     className="py-4 pr-4"
-                    style={{ borderLeft: i === 0 ? "none" : "1px solid rgba(46,26,15,0.18)", paddingLeft: i === 0 ? 0 : 16 }}
+                    style={{ borderLeft: i === 0 ? "none" : "1px solid rgba(var(--ink-rgb),0.18)", paddingLeft: i === 0 ? 0 : 16 }}
                   >
-                    <p className="text-sm" style={{ color: "#5C4033" }}>{item.label}</p>
+                    <p className="text-sm" style={{ color: "var(--muted)" }}>{item.label}</p>
                     <p className="font-heading text-2xl mt-1 break-words">{item.value}</p>
                   </div>
                 ))}
@@ -201,7 +201,7 @@ function AdminDesk() {
           {!loading && tab === "watumiaji" && (
             <div>
               <h1 className="font-heading text-3xl mb-1">Users</h1>
-              <p className="text-sm mb-5" style={{ color: "#5C4033" }}>
+              <p className="text-sm mb-5" style={{ color: "var(--muted)" }}>
                 You can suspend an account so it cannot sign in. Role does not change here.
               </p>
               {users.length === 0 ? (
@@ -210,7 +210,7 @@ function AdminDesk() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead>
-                      <tr style={{ borderBottom: "2px solid #2E1A0F" }}>
+                      <tr style={{ borderBottom: "2px solid var(--ink)" }}>
                         <th className="py-2 font-semibold">Username</th>
                         <th className="py-2 font-semibold">Email</th>
                         <th className="py-2 font-semibold">Role</th>
@@ -220,14 +220,14 @@ function AdminDesk() {
                     </thead>
                     <tbody>
                       {users.map((row) => (
-                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(46,26,15,0.12)" }}>
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(var(--ink-rgb),0.12)" }}>
                           <td className="py-3 pr-3">{row.username || "—"}</td>
                           <td className="py-3 pr-3">{row.email || "—"}</td>
                           <td className="py-3 pr-3">{row.role === "admin" ? "admin" : "user"}</td>
                           <td className="py-3 pr-3">{USER_STATUS[row.status || "active"] || row.status}</td>
                           <td className="py-3">
                             {row.role === "admin" ? (
-                              <span style={{ color: "#5C4033" }}>Protected</span>
+                              <span style={{ color: "var(--muted)" }}>Protected</span>
                             ) : (
                               <button
                                 type="button"
@@ -251,7 +251,7 @@ function AdminDesk() {
           {!loading && tab === "matangazo" && (
             <div>
               <h1 className="font-heading text-3xl mb-1">Listings</h1>
-              <p className="text-sm mb-5" style={{ color: "#5C4033" }}>
+              <p className="text-sm mb-5" style={{ color: "var(--muted)" }}>
                 Hide to remove it from Discover. Restore to show it again. No approval is required before publishing.
               </p>
               {listings.length === 0 ? (
@@ -260,7 +260,7 @@ function AdminDesk() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead>
-                      <tr style={{ borderBottom: "2px solid #2E1A0F" }}>
+                      <tr style={{ borderBottom: "2px solid var(--ink)" }}>
                         <th className="py-2 font-semibold">Title</th>
                         <th className="py-2 font-semibold">Category</th>
                         <th className="py-2 font-semibold">Price</th>
@@ -270,7 +270,7 @@ function AdminDesk() {
                     </thead>
                     <tbody>
                       {listings.map((item) => (
-                        <tr key={item.id} style={{ borderBottom: "1px solid rgba(46,26,15,0.12)" }}>
+                        <tr key={item.id} style={{ borderBottom: "1px solid rgba(var(--ink-rgb),0.12)" }}>
                           <td className="py-3 pr-3">{item.title}</td>
                           <td className="py-3 pr-3">{catLabel[item.category || ""] || item.category || "—"}</td>
                           <td className="py-3 pr-3">TZS {formatPrice(item.price)}</td>
@@ -297,7 +297,7 @@ function AdminDesk() {
           {!loading && tab === "maombi" && (
             <div>
               <h1 className="font-heading text-3xl mb-1">Requests</h1>
-              <p className="text-sm mb-5" style={{ color: "#5C4033" }}>
+              <p className="text-sm mb-5" style={{ color: "var(--muted)" }}>
                 Status of each request. Commission appears after move-in; payment is not taken here.
               </p>
               {bookings.length === 0 ? (
@@ -306,7 +306,7 @@ function AdminDesk() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
                     <thead>
-                      <tr style={{ borderBottom: "2px solid #2E1A0F" }}>
+                      <tr style={{ borderBottom: "2px solid var(--ink)" }}>
                         <th className="py-2 font-semibold">Listing</th>
                         <th className="py-2 font-semibold">Status</th>
                         <th className="py-2 font-semibold">Commission</th>
@@ -314,7 +314,7 @@ function AdminDesk() {
                     </thead>
                     <tbody>
                       {bookings.map((row) => (
-                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(46,26,15,0.12)" }}>
+                        <tr key={row.id} style={{ borderBottom: "1px solid rgba(var(--ink-rgb),0.12)" }}>
                           <td className="py-3 pr-3">{row.listing_title || row.listing_id}</td>
                           <td className="py-3 pr-3">{BOOKING_STATUS[row.status || "pending"] || row.status}</td>
                           <td className="py-3">

@@ -80,32 +80,32 @@ export default function PhotoGallery({
                     width: n === i ? 18 : 7,
                     height: 7,
                     borderRadius: 99,
-                    backgroundColor: n === i ? "#C4A35A" : "rgba(255,246,237,0.55)",
+                    backgroundColor: n === i ? "var(--gold)" : "rgba(var(--paper-rgb),0.55)",
                   }}
                   aria-label={`Photo ${n + 1}`}
                 />
               ))}
           </div>
-          <p className="text-sm px-2.5 py-1" style={{ color: "#FFF6ED", backgroundColor: "rgba(46,26,15,0.55)" }}>
+          <p className="text-sm px-2.5 py-1" style={{ color: "var(--foam)", backgroundColor: "rgba(var(--veil-rgb),0.55)" }}>
             {i + 1} / {photos.length}
           </p>
         </div>
       </div>
 
       {open && (
-        <div className="fixed inset-0 z-[60] flex flex-col" style={{ backgroundColor: "#2E1A0F" }}>
+        <div className="fixed inset-0 z-[60] flex flex-col" style={{ backgroundColor: "var(--ink)" }}>
           <div className="flex items-center justify-between px-4 py-3" style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}>
-            <p className="text-sm" style={{ color: "#C4A35A" }}>
+            <p className="text-sm" style={{ color: "var(--gold)" }}>
               {i + 1} / {photos.length}
             </p>
             <button
               type="button"
               onClick={() => setOpen(false)}
               className="w-10 h-10 flex items-center justify-center"
-              style={{ border: "1px solid #C4A35A" }}
+              style={{ border: "1px solid var(--gold)" }}
               aria-label="Close"
             >
-              <X size={18} color="#C4A35A" />
+              <X size={18} color="var(--gold)" />
             </button>
           </div>
           <div className="flex-1 flex items-center justify-center px-3 min-h-0">
@@ -118,12 +118,12 @@ export default function PhotoGallery({
                 onClick={() => setI((n) => Math.max(0, n - 1))}
                 disabled={i === 0}
                 className="w-11 h-11 flex items-center justify-center"
-                style={{ border: "1px solid #C4A35A", opacity: i === 0 ? 0.35 : 1 }}
+                style={{ border: "1px solid var(--gold)", opacity: i === 0 ? 0.35 : 1 }}
                 aria-label="Previous photo"
               >
-                <ChevronLeft size={20} color="#C4A35A" />
+                <ChevronLeft size={20} color="var(--gold)" />
               </button>
-              <p className="text-sm" style={{ color: "#D2A679" }}>
+              <p className="text-sm" style={{ color: "var(--caramel)" }}>
                 Look until you are sure
               </p>
               <button
@@ -131,10 +131,10 @@ export default function PhotoGallery({
                 onClick={() => setI((n) => Math.min(photos.length - 1, n + 1))}
                 disabled={i === photos.length - 1}
                 className="w-11 h-11 flex items-center justify-center"
-                style={{ border: "1px solid #C4A35A", opacity: i === photos.length - 1 ? 0.35 : 1 }}
+                style={{ border: "1px solid var(--gold)", opacity: i === photos.length - 1 ? 0.35 : 1 }}
                 aria-label="Next photo"
               >
-                <ChevronRight size={20} color="#C4A35A" />
+                <ChevronRight size={20} color="var(--gold)" />
               </button>
             </div>
           )}

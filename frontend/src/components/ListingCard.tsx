@@ -19,7 +19,7 @@ export default function ListingCard({ item, eager }: { item: Listing; eager?: bo
     <article className="estate-card">
       <Link href={`/tangazo/${item.id}`} className="block relative">
         {photos[0] ? (
-          <div className="w-full overflow-hidden" style={{ height: "min(72vw, 520px)", minHeight: 360, backgroundColor: "#3D2415" }}>
+          <div className="w-full overflow-hidden" style={{ height: "min(72vw, 520px)", minHeight: 360, backgroundColor: "var(--ink-2)" }}>
             <img
               src={photos[0]}
               alt=""
@@ -29,27 +29,27 @@ export default function ListingCard({ item, eager }: { item: Listing; eager?: bo
             />
           </div>
         ) : (
-          <div className="w-full flex items-center justify-center" style={{ height: "min(72vw, 520px)", minHeight: 360, background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
-            <span className="font-heading text-xl" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>
+          <div className="w-full flex items-center justify-center" style={{ height: "min(72vw, 520px)", minHeight: 360, background: "linear-gradient(165deg, var(--ink-2), var(--ink))" }}>
+            <span className="font-heading text-xl" style={{ color: "var(--caramel)" }}>{catLabel[item.category || ""] || "Jengo"}</span>
           </div>
         )}
         {photos.length > 1 && (
           <span
             className="absolute top-3 right-3 text-[11px] px-2 py-1"
-            style={{ backgroundColor: "rgba(46,26,15,0.72)", color: "#C4A35A" }}
+            style={{ backgroundColor: "rgba(var(--veil-rgb),0.72)", color: "var(--gold)" }}
           >
             {photos.length} photos
           </span>
         )}
         <div className="photo-dock">
-          <p className="font-heading text-[28px] leading-none" style={{ color: "#2E1A0F" }}>
+          <p className="font-heading text-[28px] leading-none" style={{ color: "var(--ink)" }}>
             TZS {formatPrice(item.price)}
-            <span className="text-sm font-normal ml-1" style={{ color: "#5C4033" }}>{rate}</span>
+            <span className="text-sm font-normal ml-1" style={{ color: "var(--muted)" }}>{rate}</span>
           </p>
-          <h2 className="font-heading text-lg leading-snug mt-1.5" style={{ color: "#2E1A0F" }}>{item.title}</h2>
+          <h2 className="font-heading text-lg leading-snug mt-1.5" style={{ color: "var(--ink)" }}>{item.title}</h2>
           {place ? (
-            <p className="flex items-center gap-1 mt-1 text-sm" style={{ color: "#5C4033" }}>
-              <MapPin size={13} color="#8B5E3C" />
+            <p className="flex items-center gap-1 mt-1 text-sm" style={{ color: "var(--muted)" }}>
+              <MapPin size={13} color="var(--mocha)" />
               {place}
             </p>
           ) : null}

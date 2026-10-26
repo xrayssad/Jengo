@@ -1,11 +1,12 @@
 "use client";
 
 import { useRef } from "react";
+import { OTP_LEN } from "@/lib/theme";
 
 export default function OtpBoxes({
   value,
   onChange,
-  length = 6,
+  length = OTP_LEN,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -13,6 +14,7 @@ export default function OtpBoxes({
 }) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const digits = value.replace(/\D/g, "").slice(0, length).split("");
+  const cols = length > 6 ? 4 : length;
 
   const fill = (raw: string, start = 0) => {
     const chars = raw.replace(/\D/g, "").slice(0, length - start);
@@ -30,13 +32,7 @@ export default function OtpBoxes({
   return (
     <div
       className="otp-row"
-      style={{
-        display: "grid",
-        gridTemplateColumns: `repeat(${length}, minmax(0, 1fr))`,
-        gap: 8,
-        width: "100%",
-        minWidth: 0,
-      }}
+      style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}
     >
       {Array.from({ length }).map((_, i) => (
         <input
@@ -65,25 +61,6 @@ export default function OtpBoxes({
             fill(e.clipboardData.getData("text"), 0);
           }}
           className="otp-box"
-          style={{
-            boxSizing: "border-box",
-            width: "100%",
-            height: 48,
-            minWidth: 0,
-            maxWidth: "100%",
-            padding: 0,
-            margin: 0,
-            textAlign: "center",
-            fontSize: "1.125rem",
-            fontWeight: 700,
-            lineHeight: "48px",
-            borderRadius: 14,
-            border: "1px solid rgba(210, 166, 121, 0.55)",
-            backgroundColor: "rgba(255, 246, 237, 0.92)",
-            color: "#2E1A0F",
-            outline: "none",
-            appearance: "none",
-          }}
         />
       ))}
     </div>

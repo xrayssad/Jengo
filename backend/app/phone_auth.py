@@ -7,7 +7,7 @@ import time
 
 import httpx
 
-OTP_LEN = 6
+OTP_LEN = 8
 OTP_TTL = 600
 PHONE_KEEP_RE = re.compile(r"[^\d+]")
 

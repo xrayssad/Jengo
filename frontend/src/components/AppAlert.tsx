@@ -13,10 +13,10 @@ type Props = {
 };
 
 const styles: Record<AlertKind, { bg: string; icon: typeof CheckCircle2; color: string }> = {
-  success: { bg: "linear-gradient(145deg, #5E7F4F, #3D5C34)", icon: CheckCircle2, color: "#FFF6ED" },
-  error: { bg: "linear-gradient(145deg, #A6452E, #7A2E1C)", icon: AlertTriangle, color: "#FFF6ED" },
-  warning: { bg: "linear-gradient(145deg, #8B5E3C, #5C3D28)", icon: AlertTriangle, color: "#FFF6ED" },
-  info: { bg: "linear-gradient(145deg, #3D2415, #2E1A0F)", icon: Info, color: "#FFF6ED" },
+  success: { bg: "linear-gradient(145deg, var(--success), #3D5C34)", icon: CheckCircle2, color: "var(--foam)" },
+  error: { bg: "linear-gradient(145deg, var(--error), #7A2E1C)", icon: AlertTriangle, color: "var(--foam)" },
+  warning: { bg: "linear-gradient(145deg, var(--mocha), #5C3D28)", icon: AlertTriangle, color: "var(--foam)" },
+  info: { bg: "linear-gradient(145deg, var(--stamp), #3D2415)", icon: Info, color: "var(--foam)" },
 };
 
 export default function AppAlert({ open, kind = "info", title, message, onClose }: Props) {
@@ -32,7 +32,7 @@ export default function AppAlert({ open, kind = "info", title, message, onClose 
     >
       <div
         className="w-full max-w-sm rounded-[22px] overflow-hidden shadow-xl"
-        style={{ backgroundColor: "#FFF6ED", border: "1px solid rgba(210,166,121,0.45)" }}
+        style={{ backgroundColor: "var(--paper)", border: "1px solid rgba(var(--caramel-rgb),0.45)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 pt-5 pb-4 flex gap-3 items-start" style={{ background: s.bg }}>
@@ -52,7 +52,7 @@ export default function AppAlert({ open, kind = "info", title, message, onClose 
             type="button"
             onClick={onClose}
             className="w-full py-3 rounded-[14px] font-semibold text-sm"
-            style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}
+            style={{ backgroundColor: "var(--ink)", color: "var(--paper)" }}
           >
             OK
           </button>

@@ -17,8 +17,8 @@ export default function SocialActions({ item }: { item: Listing }) {
         aria-label="Direct message"
         onClick={(e) => e.stopPropagation()}
       >
-        <Send size={19} color="#2E1A0F" strokeWidth={1.8} />
-        <span className="text-xs" style={{ color: "#8B5E3C" }}>Message</span>
+        <Send size={19} color="var(--ink)" strokeWidth={1.8} />
+        <span className="text-xs" style={{ color: "var(--mocha)" }}>Message</span>
       </Link>
     </div>
   );

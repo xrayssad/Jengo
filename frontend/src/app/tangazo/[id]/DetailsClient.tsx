@@ -48,12 +48,12 @@ export default function DetailsClient({ id }: { id: string }) {
     : [];
 
   return (
-    <main className="min-h-screen pb-28" style={{ backgroundColor: "#FFF6ED" }}>
-      {loading && <div className="flex justify-center py-24"><Loader2 size={28} color="#8B5E3C" className="animate-spin" /></div>}
+    <main className="min-h-screen pb-28" style={{ backgroundColor: "var(--paper)" }}>
+      {loading && <div className="flex justify-center py-24"><Loader2 size={28} color="var(--mocha)" className="animate-spin" /></div>}
       {!loading && error && (
         <div className="text-center py-16 px-5">
-          <p className="font-heading mb-2" style={{ color: "#A6452E" }}>{error}</p>
-          <Link href="/discover" className="text-sm font-semibold" style={{ color: "#8B5E3C" }}>Back to Discover</Link>
+          <p className="font-heading mb-2" style={{ color: "var(--error)" }}>{error}</p>
+          <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Back to Discover</Link>
         </div>
       )}
       {!loading && item && (
@@ -62,8 +62,8 @@ export default function DetailsClient({ id }: { id: string }) {
             <PhotoGallery
               images={item.images}
               fallback={
-                <div className="w-full flex items-center justify-center" style={{ height: "78vh", minHeight: 420, background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
-                  <span className="font-heading text-2xl" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>
+                <div className="w-full flex items-center justify-center" style={{ height: "78vh", minHeight: 420, background: "linear-gradient(165deg, var(--ink-2), var(--ink))" }}>
+                  <span className="font-heading text-2xl" style={{ color: "var(--caramel)" }}>{catLabel[item.category || ""] || "Jengo"}</span>
                 </div>
               }
             />
@@ -72,7 +72,7 @@ export default function DetailsClient({ id }: { id: string }) {
               onClick={() => router.back()}
               className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full flex items-center justify-center icon-glass"
             >
-              <ArrowLeft size={18} color="#2E1A0F" />
+              <ArrowLeft size={18} color="var(--ink)" />
             </button>
             <div className="absolute top-4 right-4 z-20">
               <SaveButton
@@ -83,14 +83,14 @@ export default function DetailsClient({ id }: { id: string }) {
           </div>
           <div className="max-w-md mx-auto px-4 -mt-14 relative z-10">
             <div className="sheet rounded-[28px] p-5">
-              <h1 className="font-heading text-[32px] leading-[1.05]" style={{ color: "#2E1A0F" }}>{item.title}</h1>
-              <p className="flex items-center gap-1.5 mt-2 text-sm" style={{ color: "#5C4033" }}>
-                <MapPin size={14} color="#8B5E3C" />
+              <h1 className="font-heading text-[32px] leading-[1.05]" style={{ color: "var(--ink)" }}>{item.title}</h1>
+              <p className="flex items-center gap-1.5 mt-2 text-sm" style={{ color: "var(--muted)" }}>
+                <MapPin size={14} color="var(--mocha)" />
                 {[item.location, item.city].filter(Boolean).join(", ") || "—"}
               </p>
-              <p className="mt-3 font-heading text-3xl leading-none" style={{ color: "#2E1A0F" }}>
+              <p className="mt-3 font-heading text-3xl leading-none" style={{ color: "var(--ink)" }}>
                 TZS {formatPrice(item.price)}
-                <span className="text-sm font-normal ml-1" style={{ color: "#5C4033" }}>
+                <span className="text-sm font-normal ml-1" style={{ color: "var(--muted)" }}>
                   {item.category === "vifaa"
                     ? (listingUnit(item) ? ` / ${unitLabel(listingUnit(item))}` : "")
                     : periodLabel(item.period)}
@@ -99,8 +99,8 @@ export default function DetailsClient({ id }: { id: string }) {
               <div className="flex gap-2 mt-4">
                 {specs.map((spec) => (
                   <div key={spec.label} className="spec-pill flex-1">
-                    <p className="text-[11px]" style={{ color: "#8B5E3C" }}>{spec.label}</p>
-                    <p className="text-sm mt-0.5" style={{ color: "#2E1A0F" }}>{spec.value}</p>
+                    <p className="text-[11px]" style={{ color: "var(--mocha)" }}>{spec.label}</p>
+                    <p className="text-sm mt-0.5" style={{ color: "var(--ink)" }}>{spec.value}</p>
                   </div>
                 ))}
               </div>
@@ -110,19 +110,19 @@ export default function DetailsClient({ id }: { id: string }) {
             </div>
             {listingPhones(item).length > 0 && (
               <div className="sheet rounded-[28px] p-5 mt-4">
-                <p className="text-sm" style={{ color: "#8B5E3C" }}>Contact</p>
+                <p className="text-sm" style={{ color: "var(--mocha)" }}>Contact</p>
                 <div className="mt-3 space-y-2">
                   {listingPhones(item).map((n) => (
                     <div key={n} className="flex items-center justify-between gap-3">
-                      <p className="flex items-center gap-2 text-sm" style={{ color: "#2E1A0F" }}>
-                        <Phone size={14} color="#8B5E3C" />
+                      <p className="flex items-center gap-2 text-sm" style={{ color: "var(--ink)" }}>
+                        <Phone size={14} color="var(--mocha)" />
                         {n}
                       </p>
                       <div className="flex gap-2 shrink-0">
-                        <a href={phoneTelHref(n)} className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
+                        <a href={phoneTelHref(n)} className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--paper)" }}>
                           Call
                         </a>
-                        <a href={phoneWaHref(n)} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 rounded-full" style={{ border: "1px solid #C4A35A", color: "#2E1A0F" }}>
+                        <a href={phoneWaHref(n)} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 rounded-full" style={{ border: "1px solid var(--gold)", color: "var(--ink)" }}>
                           WhatsApp
                         </a>
                       </div>
@@ -132,8 +132,8 @@ export default function DetailsClient({ id }: { id: string }) {
               </div>
             )}
             <div className="sheet rounded-[28px] p-5 mt-4">
-              <p className="text-sm" style={{ color: "#8B5E3C" }}>Description</p>
-              <p className="text-sm leading-relaxed mt-2 whitespace-pre-wrap" style={{ color: "#5C4033" }}>
+              <p className="text-sm" style={{ color: "var(--mocha)" }}>Description</p>
+              <p className="text-sm leading-relaxed mt-2 whitespace-pre-wrap" style={{ color: "var(--muted)" }}>
                 {(listingPhones(item).length
                   ? item.description?.replace(/\n*(?:Simu|Phone):\s*.+$/m, "").trim()
                   : item.description?.trim()) || "No extra description."}

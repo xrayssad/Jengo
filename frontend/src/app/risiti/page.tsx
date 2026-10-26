@@ -84,34 +84,34 @@ export default function RisitiPage() {
   };
 
   return (
-    <main className="min-h-screen pb-24 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen pb-24 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 glass">
         <div className="max-w-md mx-auto flex items-center gap-3">
           <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
-            <ArrowLeft size={18} color="#2E1A0F" />
+            <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Receipts</h1>
-            <p className="text-sm" style={{ color: "#5C4033" }}>Accepted requests. Money is not taken here.</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Receipts</h1>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Accepted requests. Money is not taken here.</p>
           </div>
         </div>
       </header>
       <div className="max-w-md mx-auto px-4 pt-5 space-y-4">
-        {loading && <p className="text-center py-10" style={{ color: "#5C4033" }}>Loading...</p>}
-        {error && <p className="text-sm text-center py-2 font-semibold" style={{ color: "#A6452E" }}>{error}</p>}
-        {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "#2E1A0F" }}>No receipts. Accept a request first.</p>}
+        {loading && <p className="text-center py-10" style={{ color: "var(--muted)" }}>Loading...</p>}
+        {error && <p className="text-sm text-center py-2 font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
+        {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "var(--ink)" }}>No receipts. Accept a request first.</p>}
         {rows.map((r) => (
           <div key={r.id} className="sheet rounded-[28px] p-5">
-            <p className="text-sm" style={{ color: "#8B5E3C" }}>
+            <p className="text-sm" style={{ color: "var(--mocha)" }}>
               {r.status === "moved_in" ? "Moved in" : "Accepted"}
             </p>
-            <h2 className="font-heading mt-1" style={{ color: "#2E1A0F" }}>{r.title}</h2>
-            <p className="text-sm mt-1" style={{ color: "#5C4033" }}>{r.location}</p>
-            <p className="text-lg font-heading mt-2" style={{ color: "#2E1A0F" }}>
+            <h2 className="font-heading mt-1" style={{ color: "var(--ink)" }}>{r.title}</h2>
+            <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>{r.location}</p>
+            <p className="text-lg font-heading mt-2" style={{ color: "var(--ink)" }}>
               TZS {r.price ? formatPrice(r.price) : "—"}
-              <span className="text-sm font-normal" style={{ color: "#5C4033" }}> {periodLabel(r.period || "")}</span>
+              <span className="text-sm font-normal" style={{ color: "var(--muted)" }}> {periodLabel(r.period || "")}</span>
             </p>
-            <p className="text-xs mt-2" style={{ color: "#8B5E3C" }}>Number: {r.id.slice(0, 8)}</p>
+            <p className="text-xs mt-2" style={{ color: "var(--mocha)" }}>Number: {r.id.slice(0, 8)}</p>
             {r.status === "accepted" && (
               <>
                 <Link href={`/bookings/${r.id}/chat`} className="btn-primary w-full mt-4 inline-flex items-center justify-center py-2.5 rounded-full text-sm font-semibold">
@@ -130,13 +130,13 @@ export default function RisitiPage() {
             )}
             {r.status === "moved_in" && (
               <div className="mt-3 space-y-2">
-                <p className="text-sm font-semibold" style={{ color: "#5E7F4F" }}>Moved in</p>
-                <p className="text-sm" style={{ color: "#5C4033" }}>10% is recorded, not deducted.</p>
+                <p className="text-sm font-semibold" style={{ color: "var(--success)" }}>Moved in</p>
+                <p className="text-sm" style={{ color: "var(--muted)" }}>10% is recorded, not deducted.</p>
                 {r.reviewed ? (
-                  <p className="text-sm font-semibold" style={{ color: "#8B5E3C" }}>Review submitted</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Review submitted</p>
                 ) : (
                   <div className="pt-2">
-                    <p className="text-xs font-semibold mb-2" style={{ color: "#2E1A0F" }}>Review</p>
+                    <p className="text-xs font-semibold mb-2" style={{ color: "var(--ink)" }}>Review</p>
                     <div className="flex gap-2 mb-2">
                       {[1, 2, 3, 4, 5].map((n) => (
                         <button
@@ -145,9 +145,9 @@ export default function RisitiPage() {
                           onClick={() => setRating((cur) => ({ ...cur, [r.id]: n }))}
                           className="w-9 h-9 rounded-full text-sm font-semibold"
                           style={{
-                            backgroundColor: (rating[r.id] || 5) >= n ? "#2E1A0F" : "rgba(255,246,237,0.7)",
-                            color: (rating[r.id] || 5) >= n ? "#FFF6ED" : "#2E1A0F",
-                            border: "1px solid rgba(210,166,121,0.45)",
+                            backgroundColor: (rating[r.id] || 5) >= n ? "var(--ink)" : "rgba(var(--paper-rgb),0.7)",
+                            color: (rating[r.id] || 5) >= n ? "var(--paper)" : "var(--ink)",
+                            border: "1px solid rgba(var(--caramel-rgb),0.45)",
                           }}
                         >
                           {n}

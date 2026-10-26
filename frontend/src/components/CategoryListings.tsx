@@ -45,16 +45,16 @@ export default function CategoryListings({
   }, [category]);
 
   return (
-    <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
+    <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 glass">
         <div className="max-w-md mx-auto">
           <div className="flex items-center gap-3">
             <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
-              <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
+              <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
             </Link>
             <div>
-              <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>{title}</h1>
-              <p className="text-sm" style={{ color: "#5C4033" }}>
+              <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>{title}</h1>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>
                 {loading ? "Loading..." : `${items.length} available`}
               </p>
             </div>
@@ -66,17 +66,17 @@ export default function CategoryListings({
       <div className="max-w-md mx-auto px-4 py-5 space-y-5">
         {loading && (
           <div className="flex justify-center py-16">
-            <Loader2 size={32} color="#8B5E3C" className="animate-spin" />
+            <Loader2 size={32} color="var(--mocha)" className="animate-spin" />
           </div>
         )}
         {!loading && error && (
-          <p className="text-center text-sm py-10" style={{ color: "#A6452E" }}>{error}</p>
+          <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
         )}
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16">
-            <Icon size={40} color="#D2A679" className="mx-auto mb-3 opacity-60" />
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>No listings yet</p>
-            <p className="text-sm mt-1 mb-4" style={{ color: "#5C4033" }}>Be the first to post.</p>
+            <Icon size={40} color="var(--caramel)" className="mx-auto mb-3 opacity-60" />
+            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No listings yet</p>
+            <p className="text-sm mt-1 mb-4" style={{ color: "var(--muted)" }}>Be the first to post.</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block px-6 py-3 rounded-full text-sm font-semibold">
               Post a listing
             </Link>

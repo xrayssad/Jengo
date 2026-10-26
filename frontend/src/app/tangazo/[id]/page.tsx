@@ -14,7 +14,7 @@ export default function TangazoDetailsPage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <Suspense fallback={<main className="min-h-screen" style={{ backgroundColor: "#FFF6ED" }} />}>
+    <Suspense fallback={<main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }} />}>
       <Body params={params} />
     </Suspense>
   );

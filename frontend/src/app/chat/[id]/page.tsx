@@ -23,7 +23,7 @@ export default function Page({
   searchParams: Promise<{ title?: string; peer?: string }>;
 }) {
   return (
-    <Suspense fallback={<main className="min-h-screen" style={{ backgroundColor: "#FFF6ED" }} />}>
+    <Suspense fallback={<main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }} />}>
       <Body params={params} searchParams={searchParams} />
     </Suspense>
   );

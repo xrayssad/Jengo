@@ -45,7 +45,7 @@ export default function AuthGate({
   }, [admin, router]);
 
   if (!ok) {
-    return <main className="min-h-screen" style={{ backgroundColor: "#FFF6ED" }} />;
+    return <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }} />;
   }
   return <>{children}</>;
 }

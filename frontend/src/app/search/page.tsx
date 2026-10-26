@@ -64,15 +64,15 @@ function SearchInner() {
   }, [debounced, category]);
 
   return (
-    <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 pt-4 pb-3 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
+    <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
+      <header className="sticky top-0 z-20 px-4 pt-4 pb-3 glass" style={{ borderBottom: "1px solid rgba(var(--caramel-rgb),0.35)" }}>
         <div className="max-w-md mx-auto">
           <div className="flex items-center gap-3 mb-3">
             <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass shrink-0">
-              <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
+              <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
             </Link>
             <div className="relative flex-1">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10" color="#8B5E3C" strokeWidth={2} />
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10" color="var(--mocha)" strokeWidth={2} />
               <input
                 type="text"
                 value={query}
@@ -83,7 +83,7 @@ function SearchInner() {
               />
               {query && (
                 <button type="button" onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X size={16} color="#8B5E3C" />
+                  <X size={16} color="var(--mocha)" />
                 </button>
               )}
             </div>
@@ -97,7 +97,7 @@ function SearchInner() {
                   type="button"
                   onClick={() => setCategory(f.id)}
                   className={`px-4 py-1.5 text-sm whitespace-nowrap ${active ? "rounded-full" : "chip"}`}
-                  style={active ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}
+                  style={active ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}
                 >
                   {f.label}
                 </button>
@@ -108,24 +108,24 @@ function SearchInner() {
       </header>
 
       <div className="max-w-md mx-auto px-4 py-4">
-        <p className="text-xs mb-4" style={{ color: "#5C4033" }}>
+        <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
           {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
         </p>
 
         {loading && (
           <div className="flex justify-center py-16">
-            <Loader2 size={32} color="#8B5E3C" className="animate-spin" />
+            <Loader2 size={32} color="var(--mocha)" className="animate-spin" />
           </div>
         )}
 
         {!loading && error && (
-          <p className="text-center text-sm py-10" style={{ color: "#A6452E" }}>{error}</p>
+          <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
         )}
 
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16">
-            <Search size={40} color="#D2A679" className="mx-auto mb-4 opacity-60" />
-            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>
+            <Search size={40} color="var(--caramel)" className="mx-auto mb-4 opacity-60" />
+            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>
               {query || category ? "No listings match this city or street" : "No listings yet"}
             </p>
             {!query && !category && (
@@ -155,8 +155,8 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "#FFF6ED" }}>
-          <Loader2 size={28} color="#8B5E3C" className="animate-spin" />
+        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--paper)" }}>
+          <Loader2 size={28} color="var(--mocha)" className="animate-spin" />
         </div>
       }
     >

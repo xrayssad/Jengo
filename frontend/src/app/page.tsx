@@ -63,13 +63,13 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="px-6 md:px-16 py-20 md:py-28" style={{ backgroundColor: "#FFF6ED" }}>
+      <section className="px-6 md:px-16 py-20 md:py-28" style={{ backgroundColor: "var(--paper)" }}>
         <div className="max-w-2xl mx-auto text-center">
           <div className="gold-rule w-12 mx-auto mb-8" />
-          <p className="font-heading text-[32px] md:text-[44px] leading-[1.15]" style={{ color: "#2E1A0F" }}>
+          <p className="font-heading text-[32px] md:text-[44px] leading-[1.15]" style={{ color: "var(--ink)" }}>
             Rooms, apartments, shops and materials — in one place.
           </p>
-          <p className="mt-6 text-[15px] md:text-base leading-relaxed" style={{ color: "#5C4033" }}>
+          <p className="mt-6 text-[15px] md:text-base leading-relaxed" style={{ color: "var(--muted)" }}>
             Jengo connects you with owners, quietly. See photos and prices, then send a request.
           </p>
         </div>
