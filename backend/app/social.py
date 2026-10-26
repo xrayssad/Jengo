@@ -92,7 +92,26 @@ def add_message(thread_key: str, kind: str, sender_id: str, body: str, booking_i
     res = db().table("jengo_messages").insert(row).execute()
     if not res.data:
         raise HTTPException(status_code=400, detail="Ujumbe haujahifadhiwa")
-    return public_message(res.data[0], sender_id)
+    msg = public_message(res.data[0], sender_id)
+    _notify_thread(thread_key, booking_id, sender_id, msg.get("id"))
+    return msg
+
+
+def _notify_thread(thread_key: str, booking_id=None, sender_id=None, message_id=""):
+    from app import mqtt_bus
+
+    ids: list[str] = []
+    if thread_key.startswith("listing_dm:"):
+        ids = [p for p in thread_key.split(":")[2:] if p]
+    elif booking_id:
+        try:
+            buyer, seller = booking_parties(booking_row(booking_id))
+            ids = [buyer, seller]
+        except Exception:
+            ids = []
+    sender = str(sender_id or "")
+    ids = [i for i in ids if i and str(i) != sender]
+    mqtt_bus.notify_users(ids, {"thread_key": thread_key, "id": message_id or ""})
 
 
 def inbox_for(user_id: str) -> list[dict]:

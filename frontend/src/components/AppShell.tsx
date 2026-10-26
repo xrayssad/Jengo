@@ -4,6 +4,7 @@ import { Suspense, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { getAuthUser } from "@/lib/api";
 import BottomNav from "./BottomNav";
+import MqttInbox from "./MqttInbox";
 
 function skipUsernameGate(path: string) {
   return (
@@ -36,7 +37,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   }, [path]);
 
   return (
-    <>
+    <MqttInbox>
       {children}
       {show && (
         <>
@@ -44,7 +45,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <BottomNav />
         </>
       )}
-    </>
+    </MqttInbox>
   );
 }
 

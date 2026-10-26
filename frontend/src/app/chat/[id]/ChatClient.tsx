@@ -13,13 +13,26 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
   const [text, setText] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const load = () => {
     fetchListingDm(id, peer)
       .then((res) => {
         setItems(res.items || []);
         if (res.title) setHeading(res.title);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Ujumbe haujafunguka"));
+  };
+
+  useEffect(() => {
+    load();
+    const onPing = () => load();
+    window.addEventListener("jengo-chat", onPing);
+    const t = window.setInterval(() => {
+      if (!window.__jengoMqtt) load();
+    }, 12000);
+    return () => {
+      window.removeEventListener("jengo-chat", onPing);
+      window.clearInterval(t);
+    };
   }, [id, peer]);
 
   const submit = async (e: React.FormEvent) => {

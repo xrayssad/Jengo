@@ -302,6 +302,8 @@ export async function createListing(body: {
   likes_count?: number;
   unit?: string;
   stock?: number;
+  lat?: number | null;
+  lng?: number | null;
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",
@@ -451,5 +453,51 @@ export async function sendListingDm(listingId: string, body: string, peer?: stri
     method: "POST",
     body: JSON.stringify({ body, peer_id: peer || "" }),
   });
+}
+
+export type PlaceHit = {
+  label: string;
+  city?: string;
+  lat?: number | null;
+  lng?: number | null;
+  place_id?: string;
+};
+
+export async function suggestPlaces(q: string) {
+  const sp = new URLSearchParams({ q });
+  return request<{ items: PlaceHit[] }>(`/places?${sp}`);
+}
+
+export async function placeDetails(placeId: string) {
+  const sp = new URLSearchParams({ place_id: placeId });
+  return request<PlaceHit>(`/places/details?${sp}`);
+}
+
+export async function fetchMqttSession() {
+  return request<{ url: string; topic: string; client_id: string }>("/realtime/mqtt");
+}
+
+export async function uploadPhoto(file: File) {
+  const headers: Record<string, string> = {};
+  const token = getToken();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const body = new FormData();
+  body.append("file", file);
+  const res = await fetch(`${API_URL}/uploads`, { method: "POST", headers, body });
+  const text = await res.text();
+  let data: unknown = null;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    data = { detail: text };
+  }
+  if (!res.ok) {
+    const detail =
+      typeof data === "object" && data && "detail" in data
+        ? String((data as { detail: unknown }).detail)
+        : `Hitilafu ${res.status}`;
+    throw new Error(detail);
+  }
+  return data as { url: string };
 }
 

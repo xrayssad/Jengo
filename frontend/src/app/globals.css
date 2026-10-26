@@ -129,7 +129,7 @@ h1, h2, h3, .font-heading {
   background: rgba(255, 246, 237, 0.84);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  border: 1px solid rgba(210, 166, 121, 0.4);
+  border: 1.5px solid #3D2415;
   border-radius: 28px;
   box-shadow: 0 14px 34px rgba(46, 26, 15, 0.14);
 }

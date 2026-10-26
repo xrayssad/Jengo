@@ -5,15 +5,28 @@ import Link from "next/link";
 import { Send } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { fetchInbox, type ChatMessage } from "@/lib/api";
+import { useInboxLive } from "@/components/MqttInbox";
 
 export default function MessagesPage() {
   const [items, setItems] = useState<ChatMessage[]>([]);
   const [error, setError] = useState("");
+  const inbox = useInboxLive();
 
-  useEffect(() => {
+  const load = () => {
     fetchInbox()
       .then((res) => setItems(res.items || []))
       .catch((err) => setError(err instanceof Error ? err.message : "Ujumbe haujafunguka"));
+  };
+
+  useEffect(() => {
+    load();
+    inbox.clear();
+    const onPing = () => {
+      load();
+      inbox.clear();
+    };
+    window.addEventListener("jengo-chat", onPing);
+    return () => window.removeEventListener("jengo-chat", onPing);
   }, []);
 
   return (

@@ -3,11 +3,12 @@ import re
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app import social
+from app import mqtt_bus, places, social
+from app.uploads import save_listing_photo
 from app.security import (
     LOGIN_ERROR,
     USERNAME_RE,
@@ -55,10 +56,12 @@ class ListingIn(BaseModel):
     price: float
     period: str = ""
     location: str
-    city: str = "Dar es Salaam"
+    city: str = ""
     images: list[str] = Field(default_factory=list)
     unit: str | None = None
     stock: float | None = None
+    lat: float | None = None
+    lng: float | None = None
 
 
 class BookingIn(BaseModel):
@@ -839,7 +842,7 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         "price": body.price,
         "period": period,
         "location": body.location.strip()[:200],
-        "city": (body.city or "Dar es Salaam").strip()[:80],
+        "city": (body.city or "").strip()[:80],
         "images": body.images[:6],
         "status": "active",
         "verified": False,
@@ -852,6 +855,10 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
             extras["unit"] = unit
         if body.stock is not None:
             extras["stock"] = body.stock
+    if body.lat is not None:
+        extras["lat"] = body.lat
+    if body.lng is not None:
+        extras["lng"] = body.lng
     res = _save_row("listings", extras, row)
     if not res.data:
         raise HTTPException(status_code=400, detail="Imeshindwa kuhifadhi")
@@ -1068,6 +1075,29 @@ def list_reviews(listing_id: str | None = None, booking_id: str | None = None):
             if rev:
                 items.append({**rev, "listing_id": row.get("listing_id"), "user_id": row.get("user_id")})
         return {"items": items}
+
+
+@app.post("/uploads")
+def upload_photo(user=Depends(current_user), file: UploadFile = File(...)):
+    return {"url": save_listing_photo(user.id, file)}
+
+
+@app.get("/places")
+def place_suggest(q: str = "", user=Depends(current_user)):
+    return {"items": places.suggest(q)}
+
+
+@app.get("/places/details")
+def place_details(place_id: str = "", user=Depends(current_user)):
+    row = places.details(place_id)
+    if not row:
+        raise HTTPException(status_code=404, detail="Eneo halipatikani")
+    return row
+
+
+@app.get("/realtime/mqtt")
+def mqtt_session(user=Depends(current_user)):
+    return mqtt_bus.session_for(user.id)
 
 
 @app.get("/inbox")

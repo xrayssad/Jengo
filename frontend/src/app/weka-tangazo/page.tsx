@@ -7,6 +7,8 @@ import { createListing } from "@/lib/api";
 import { rememberListing } from "@/lib/mine";
 import AppAlert, { type AlertKind } from "@/components/AppAlert";
 import AuthGate from "@/components/AuthGate";
+import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
+import PhotoPicker from "@/components/PhotoPicker";
 
 const categories = [
   { id: "chumba_nyumba", label: "Chumba & Nyumba" },
@@ -58,9 +60,8 @@ export default function WekaTangazoPage() {
   const [period, setPeriod] = useState("mwezi");
   const [unit, setUnit] = useState("mfuko");
   const [stock, setStock] = useState("");
-  const [location, setLocation] = useState("");
-  const [city, setCity] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
+  const [place, setPlace] = useState<PlaceValue>({ location: "", city: "", lat: null, lng: null });
+  const [photos, setPhotos] = useState<string[]>([]);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -78,7 +79,7 @@ export default function WekaTangazoPage() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim().length < 3 || !price || !location.trim()) {
+    if (title.trim().length < 3 || !price || !place.location.trim()) {
       show("error", "Jaza sehemu", "Kichwa, bei na eneo vinahitajika.");
       return;
     }
@@ -95,9 +96,11 @@ export default function WekaTangazoPage() {
         description: description.trim(),
         price: Number(price),
         period: isVifaa ? "" : period,
-        location: location.trim(),
-        city: city.trim() || "Dar es Salaam",
-        images: imageUrl.trim() ? [imageUrl.trim()] : [],
+        location: place.location.trim(),
+        city: place.city.trim(),
+        images: photos.slice(0, 6),
+        lat: place.lat,
+        lng: place.lng,
         ...(isVifaa ? { unit, stock: Number(stock) } : {}),
       });
       if (created?.id) rememberListing(String(created.id));
@@ -185,9 +188,14 @@ export default function WekaTangazoPage() {
           </div>
         )}
 
-        <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Eneo, mfano Kinondoni" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-        <input value={city} onChange={(e) => setCity(e.target.value)} placeholder="Mji" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="Link ya picha https://...jpg" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+        <div>
+          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Picha</p>
+          <PhotoPicker urls={photos} onChange={setPhotos} />
+        </div>
+        <div>
+          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Eneo</p>
+          <PlacePicker value={place} onChange={setPlace} />
+        </div>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
 
         <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>

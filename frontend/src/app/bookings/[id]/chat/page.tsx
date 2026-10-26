@@ -14,10 +14,23 @@ function Thread() {
   const [text, setText] = useState("");
   const [error, setError] = useState("");
 
-  useEffect(() => {
+  const load = () => {
     fetchBookingMessages(id)
       .then((res) => setItems(res.items || []))
       .catch((err) => setError(err instanceof Error ? err.message : "Ujumbe haujafunguka"));
+  };
+
+  useEffect(() => {
+    load();
+    const onPing = () => load();
+    window.addEventListener("jengo-chat", onPing);
+    const t = window.setInterval(() => {
+      if (!window.__jengoMqtt) load();
+    }, 12000);
+    return () => {
+      window.removeEventListener("jengo-chat", onPing);
+      window.clearInterval(t);
+    };
   }, [id]);
 
   const submit = async (e: React.FormEvent) => {
