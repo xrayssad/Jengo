@@ -5,7 +5,7 @@ import { MapPin } from "lucide-react";
 import { catLabel, formatPrice, listingUnit, periodLabel, unitLabel, type Listing } from "@/lib/api";
 import SocialActions from "./SocialActions";
 
-export default function ListingCard({ item }: { item: Listing }) {
+export default function ListingCard({ item, eager }: { item: Listing; eager?: boolean }) {
   const place = [item.location, item.city].filter(Boolean).join(", ");
   const rate =
     item.category === "vifaa"
@@ -18,7 +18,13 @@ export default function ListingCard({ item }: { item: Listing }) {
     <article className="estate-card">
       <Link href={`/tangazo/${item.id}`} className="block relative">
         {item.images?.[0] ? (
-          <img src={item.images[0]} alt="" className="w-full h-[280px] object-cover" />
+          <img
+            src={item.images[0]}
+            alt=""
+            className="w-full h-[280px] object-cover"
+            loading={eager ? "eager" : "lazy"}
+            decoding="async"
+          />
         ) : (
           <div className="w-full h-[280px] flex items-center justify-center" style={{ background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
             <span className="font-heading text-xl" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>

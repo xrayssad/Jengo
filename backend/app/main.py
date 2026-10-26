@@ -770,21 +770,16 @@ def list_listings(
     q: str | None = None,
     sort: str = "new",
     mine: bool = False,
+    limit: int = 40,
 ):
-    user = None
-    header = request.headers.get("authorization")
-    if header:
-        try:
-            user = current_user(header)
-        except HTTPException:
-            user = None
+    cap = max(1, min(int(limit or 40), 100))
     if mine:
-        if not user:
-            raise HTTPException(status_code=401, detail="Ingia kwanza")
+        user = current_user(request.headers.get("authorization"))
         query = db().table("listings").select("*").eq("owner_id", user.id)
     else:
         if status and status != "active":
-            if not user or not is_admin(user.id):
+            user = current_user(request.headers.get("authorization"))
+            if not is_admin(user.id):
                 raise HTTPException(status_code=403, detail="Admin tu")
         query = db().table("listings").select("*")
         if status:
@@ -794,9 +789,8 @@ def list_listings(
     if q:
         query = query.ilike("title", "%" + q + "%")
     column = "likes_count" if sort == "likes" else "created_at"
-    res = query.order(column, desc=True).limit(100).execute()
+    res = query.order(column, desc=True).limit(cap).execute()
     items = [decorate_listing(x) for x in (res.data or [])]
-    social.attach_comment_counts(items)
     return {"items": items}
 
 

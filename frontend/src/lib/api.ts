@@ -271,6 +271,7 @@ export async function fetchListings(params?: {
   sort?: string;
   status?: string;
   mine?: boolean;
+  limit?: number;
 }): Promise<{ items: Listing[] }> {
   const sp = new URLSearchParams();
   if (params?.category) sp.set("category", params.category);
@@ -278,8 +279,31 @@ export async function fetchListings(params?: {
   if (params?.mine) sp.set("mine", "true");
   else sp.set("status", params?.status || "active");
   if (params?.sort) sp.set("sort", params.sort);
+  sp.set("limit", String(params?.limit || 40));
   const data = await request<{ items?: Listing[] }>(`/listings?${sp}`);
   return { items: data.items || [] };
+}
+
+const HOME_LISTINGS_KEY = "jengo_home_listings";
+
+export function readHomeListingsCache(): Listing[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = sessionStorage.getItem(HOME_LISTINGS_KEY);
+    const items = raw ? (JSON.parse(raw) as Listing[]) : [];
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
+export function writeHomeListingsCache(items: Listing[]) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(HOME_LISTINGS_KEY, JSON.stringify(items.slice(0, 8)));
+  } catch {
+    /* quota */
+  }
 }
 
 export async function fetchListing(id: string): Promise<Listing> {

@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import ListingCard from "@/components/ListingCard";
-import { clearAuth, fetchListings, type Listing } from "@/lib/api";
+import { clearAuth, fetchListings, readHomeListingsCache, writeHomeListingsCache, type Listing } from "@/lib/api";
 
 const chips = [
   { href: "/nyumba", label: "Nyumba" },
@@ -32,9 +32,20 @@ const sideLinks = [
   { label: "Mipangilio", href: "/settings", icon: Settings },
 ];
 
+function CardSkeleton() {
+  return (
+    <div className="estate-card">
+      <div className="w-full h-[280px]" style={{ background: "linear-gradient(165deg, #E8D5C4, #F5E6D3)" }} />
+    </div>
+  );
+}
+
+const primed = typeof window === "undefined" ? null : fetchListings({ status: "active", limit: 8 });
+
 export default function HomePage() {
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState<Listing[]>([]);
+  const [waiting, setWaiting] = useState(true);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -42,7 +53,19 @@ export default function HomePage() {
   }, [open]);
 
   useEffect(() => {
-    fetchListings({ status: "active" }).then((res) => setItems((res.items || []).slice(0, 8))).catch(() => {});
+    const cached = readHomeListingsCache();
+    if (cached.length) {
+      setItems(cached);
+      setWaiting(false);
+    }
+    (primed || fetchListings({ status: "active", limit: 8 }))
+      .then((res) => {
+        const next = (res.items || []).slice(0, 8);
+        setItems(next);
+        writeHomeListingsCache(next);
+      })
+      .catch(() => {})
+      .finally(() => setWaiting(false));
   }, []);
 
   return (
@@ -133,8 +156,14 @@ export default function HomePage() {
           <Link href="/discover" className="text-sm" style={{ color: "#8B5E3C" }}>Discover</Link>
         </div>
         <div className="space-y-5">
-          {items.map((item) => (
-            <ListingCard key={item.id} item={item} />
+          {waiting && items.length === 0 && (
+            <>
+              <CardSkeleton />
+              <CardSkeleton />
+            </>
+          )}
+          {items.map((item, i) => (
+            <ListingCard key={item.id} item={item} eager={i === 0} />
           ))}
         </div>
       </div>
