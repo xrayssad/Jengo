@@ -9,9 +9,9 @@ import ListingCard from "@/components/ListingCard";
 
 const filters = [
   { id: "", label: "Zote" },
-  { id: "chumba_nyumba", label: "Chumba & Nyumba" },
+  { id: "chumba_nyumba", label: "Nyumba / Chumba" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "store_godown", label: "Store & Godown" },
+  { id: "store_godown", label: "Godown / Store" },
   { id: "frame", label: "Frame za Maduka" },
 ];
 

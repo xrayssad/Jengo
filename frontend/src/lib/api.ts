@@ -17,6 +17,8 @@ export type Listing = {
   unit?: string | null;
   stock?: number | null;
   owner_id?: string;
+  phones?: string[];
+  phone?: string;
 };
 
 const TOKEN_KEY = "jengo_token";
@@ -328,6 +330,7 @@ export async function createListing(body: {
   stock?: number;
   lat?: number | null;
   lng?: number | null;
+  phones?: string[];
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",
@@ -355,14 +358,45 @@ export function periodLabel(period?: string) {
 }
 
 export const catLabel: Record<string, string> = {
-  chumba_nyumba: "Chumba & Nyumba",
+  chumba_nyumba: "Nyumba / Chumba",
   apartment_airbnb: "Apartment & Airbnb",
-  store_godown: "Store & Godown",
+  store_godown: "Godown / Store",
   frame: "Frame za Maduka",
   vifaa: "Vifaa vya Ujenzi",
 };
 
-export const shopCategories = ["store_godown", "frame"];
+export const shopCategories = ["frame"];
+
+export function listingPhones(item: { phones?: string[]; phone?: string; description?: string } | null | undefined): string[] {
+  if (!item) return [];
+  const raw = item.phones?.length ? item.phones : item.phone ? [item.phone] : [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const push = (n: string) => {
+    const s = String(n || "").trim();
+    if (!s || seen.has(s)) return;
+    seen.add(s);
+    out.push(s);
+  };
+  for (const n of raw) push(n);
+  if (!out.length && item.description) {
+    const m = item.description.match(/Simu:\s*(.+)$/m);
+    if (m) for (const n of m[1].split(",")) push(n);
+  }
+  return out;
+}
+
+export function phoneTelHref(n: string) {
+  const trimmed = n.trim();
+  if (trimmed.startsWith("+")) return `tel:${trimmed}`;
+  return `tel:${trimmed.replace(/\D/g, "")}`;
+}
+
+export function phoneWaHref(n: string) {
+  let d = n.replace(/\D/g, "");
+  if (d.startsWith("0") && d.length === 10) d = `255${d.slice(1)}`;
+  return `https://wa.me/${d}`;
+}
 
 const RENTAL_PERIODS = new Set(["mwezi", "miezi_3", "miezi_6", "mwaka", "usiku", "siku", "wiki"]);
 
@@ -500,7 +534,7 @@ export async function placeDetails(placeId: string) {
 }
 
 export async function fetchMqttSession() {
-  return request<{ url: string; topic: string; client_id: string }>("/realtime/mqtt");
+  return request<{ url: string; topic: string; client_id: string; listing_prefix?: string }>("/realtime/mqtt");
 }
 
 export async function uploadPhoto(file: File) {

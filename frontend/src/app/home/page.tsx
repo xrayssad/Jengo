@@ -9,10 +9,12 @@ import {
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import ListingCard from "@/components/ListingCard";
+import { InboxLink } from "@/components/MqttInbox";
 import { clearAuth, fetchListings, readHomeListingsCache, writeHomeListingsCache, type Listing } from "@/lib/api";
 
 const chips = [
-  { href: "/nyumba", label: "Nyumba" },
+  { href: "/nyumba", label: "Nyumba/Chumba" },
+  { href: "/godown", label: "Godown/Store" },
   { href: "/airbnb", label: "Airbnb" },
   { href: "/maduka", label: "Maduka" },
   { href: "/vifaa", label: "Vifaa" },
@@ -68,6 +70,20 @@ export default function HomePage() {
       .finally(() => setWaiting(false));
   }, []);
 
+  useEffect(() => {
+    const onLike = (e: Event) => {
+      const d = ((e as CustomEvent).detail || {}) as { listing_id?: string; likes_count?: number };
+      if (!d.listing_id || typeof d.likes_count !== "number") return;
+      setItems((cur) => {
+        const next = cur.map((item) => (item.id === d.listing_id ? { ...item, likes_count: d.likes_count } : item));
+        writeHomeListingsCache(next);
+        return next;
+      });
+    };
+    window.addEventListener("jengo-like", onLike);
+    return () => window.removeEventListener("jengo-like", onLike);
+  }, []);
+
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-30 px-5 py-3 glass">
@@ -79,9 +95,7 @@ export default function HomePage() {
             <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Jengo</h1>
             <AdminLink />
           </div>
-          <Link href="/messages" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass" aria-label="Ujumbe">
-            <Send size={16} color="#2E1A0F" />
-          </Link>
+          <InboxLink className="w-10 h-10 rounded-full flex items-center justify-center icon-glass" />
         </div>
       </header>
 
@@ -126,7 +140,7 @@ export default function HomePage() {
 
         <Link href="/search" className="flex items-center gap-3 px-4 py-3 mb-4 sheet rounded-full">
           <Search size={16} color="#8B5E3C" />
-          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta chumba, apartment, store...</span>
+          <span className="text-sm" style={{ color: "#8B5E3C" }}>Tafuta nyumba, chumba, godown, store...</span>
         </Link>
 
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">

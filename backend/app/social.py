@@ -111,7 +111,10 @@ def _notify_thread(thread_key: str, booking_id=None, sender_id=None, message_id=
             ids = []
     sender = str(sender_id or "")
     ids = [i for i in ids if i and str(i) != sender]
-    mqtt_bus.notify_users(ids, {"thread_key": thread_key, "id": message_id or ""})
+    mqtt_bus.notify_users(
+        ids,
+        {"type": "chat", "thread_key": thread_key, "id": message_id or ""},
+    )
 
 
 def inbox_for(user_id: str) -> list[dict]:

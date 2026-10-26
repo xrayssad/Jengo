@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
-import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabel, type Listing } from "@/lib/api";
+import { ArrowLeft, MapPin, Loader2, Phone } from "lucide-react";
+import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabel, listingPhones, phoneTelHref, phoneWaHref, type Listing } from "@/lib/api";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -108,10 +108,35 @@ export default function DetailsClient({ id }: { id: string }) {
                 <SocialActions item={item} />
               </div>
             </div>
+            {listingPhones(item).length > 0 && (
+              <div className="sheet rounded-[28px] p-5 mt-4">
+                <p className="text-sm" style={{ color: "#8B5E3C" }}>Mawasiliano</p>
+                <div className="mt-3 space-y-2">
+                  {listingPhones(item).map((n) => (
+                    <div key={n} className="flex items-center justify-between gap-3">
+                      <p className="flex items-center gap-2 text-sm" style={{ color: "#2E1A0F" }}>
+                        <Phone size={14} color="#8B5E3C" />
+                        {n}
+                      </p>
+                      <div className="flex gap-2 shrink-0">
+                        <a href={phoneTelHref(n)} className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
+                          Piga
+                        </a>
+                        <a href={phoneWaHref(n)} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 rounded-full" style={{ border: "1px solid #C4A35A", color: "#2E1A0F" }}>
+                          WhatsApp
+                        </a>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <div className="sheet rounded-[28px] p-5 mt-4">
               <p className="text-sm" style={{ color: "#8B5E3C" }}>Maelezo</p>
               <p className="text-sm leading-relaxed mt-2 whitespace-pre-wrap" style={{ color: "#5C4033" }}>
-                {item.description?.trim() || "Hakuna maelezo ya ziada."}
+                {(listingPhones(item).length
+                  ? item.description?.replace(/\n*Simu:\s*.+$/m, "").trim()
+                  : item.description?.trim()) || "Hakuna maelezo ya ziada."}
               </p>
             </div>
           </div>

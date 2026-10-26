@@ -17,11 +17,21 @@ def topic_for(user_id: str) -> str:
     return f"jengo/{NS}/user/{user_id}"
 
 
-def session_for(user_id: str) -> dict:
+def listing_topic(listing_id: str) -> str:
+    return f"jengo/{NS}/listing/{listing_id}"
+
+
+def listing_prefix() -> str:
+    return f"jengo/{NS}/listing/"
+
+
+def session_for(user_id: str | None = None) -> dict:
+    uid = str(user_id or "").strip()
     return {
         "url": MQTT_WS_URL,
-        "topic": topic_for(user_id),
-        "client_id": f"jengo-{str(user_id)[:8]}-{uuid4().hex[:6]}",
+        "topic": topic_for(uid) if uid else "",
+        "listing_prefix": listing_prefix(),
+        "client_id": f"jengo-{uid[:8] if uid else 'anon'}-{uuid4().hex[:6]}",
     }
 
 
@@ -32,6 +42,11 @@ def notify_users(user_ids: list[str], payload: dict):
             continue
         seen.add(uid)
         _publish(topic_for(uid), payload)
+
+
+def notify_listing(listing_id: str, payload: dict):
+    if listing_id:
+        _publish(listing_topic(str(listing_id)), payload)
 
 
 def _get_client():

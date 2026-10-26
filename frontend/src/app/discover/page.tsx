@@ -8,7 +8,8 @@ import { fetchListings, shopCategories, type Listing } from "@/lib/api";
 
 const chips = [
   { id: "", label: "Vyote" },
-  { id: "chumba_nyumba", label: "Nyumba" },
+  { id: "chumba_nyumba", label: "Nyumba/Chumba" },
+  { id: "store_godown", label: "Godown/Store" },
   { id: "apartment_airbnb", label: "Airbnb" },
   { id: "maduka", label: "Maduka" },
   { id: "vifaa", label: "Vifaa" },

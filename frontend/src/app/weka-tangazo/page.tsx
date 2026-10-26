@@ -11,9 +11,9 @@ import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
 import PhotoPicker from "@/components/PhotoPicker";
 
 const categories = [
-  { id: "chumba_nyumba", label: "Chumba & Nyumba" },
+  { id: "chumba_nyumba", label: "Nyumba / Chumba" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "store_godown", label: "Store & Godown" },
+  { id: "store_godown", label: "Godown / Store" },
   { id: "frame", label: "Frame za Maduka" },
   { id: "vifaa", label: "Vifaa" },
 ];
@@ -62,6 +62,7 @@ export default function WekaTangazoPage() {
   const [stock, setStock] = useState("");
   const [place, setPlace] = useState<PlaceValue>({ location: "", city: "", lat: null, lng: null });
   const [photos, setPhotos] = useState<string[]>([]);
+  const [phones, setPhones] = useState<string[]>([""]);
   const [description, setDescription] = useState("");
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
@@ -90,10 +91,12 @@ export default function WekaTangazoPage() {
     setLoading(true);
     try {
       const isVifaa = category === "vifaa";
+      const contact = phones.map((p) => p.trim()).filter(Boolean).slice(0, 3);
+      const desc = description.trim();
       const created = await createListing({
         category,
         title: title.trim(),
-        description: description.trim(),
+        description: contact.length ? `${desc}${desc ? "\n\n" : ""}Simu: ${contact.join(", ")}` : desc,
         price: Number(price),
         period: isVifaa ? "" : period,
         location: place.location.trim(),
@@ -101,6 +104,7 @@ export default function WekaTangazoPage() {
         images: photos.slice(0, 6),
         lat: place.lat,
         lng: place.lng,
+        phones: contact,
         ...(isVifaa ? { unit, stock: Number(stock) } : {}),
       });
       if (created?.id) rememberListing(String(created.id));
@@ -195,6 +199,42 @@ export default function WekaTangazoPage() {
         <div>
           <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Eneo</p>
           <PlacePicker value={place} onChange={setPlace} />
+        </div>
+        <div>
+          <p className="text-sm mb-2" style={{ color: "#5C4033" }}>Namba za simu za mawasiliano</p>
+          <div className="space-y-2">
+            {phones.map((p, i) => (
+              <div key={i} className="flex gap-2">
+                <input
+                  value={p}
+                  onChange={(e) => setPhones((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
+                  placeholder={i === 0 ? "Mfano: 0712 345 678" : "Namba nyingine"}
+                  inputMode="tel"
+                  className="input-chocolate w-full px-4 py-3.5 text-sm"
+                />
+                {i > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setPhones((cur) => cur.filter((_, j) => j !== i))}
+                    className="text-sm px-3"
+                    style={{ color: "#8B5E3C" }}
+                  >
+                    Ondoa
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+          {phones.length < 3 && (
+            <button
+              type="button"
+              onClick={() => setPhones((cur) => [...cur, ""])}
+              className="text-sm mt-2"
+              style={{ color: "#8B5E3C" }}
+            >
+              + Ongeza namba
+            </button>
+          )}
         </div>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
 

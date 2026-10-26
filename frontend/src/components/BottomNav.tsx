@@ -25,7 +25,10 @@ export default function BottomNav() {
         <span className="relative">
           <Icon size={20} color={active ? "#2E1A0F" : "#8B5E3C"} strokeWidth={active ? 2.2 : 1.7} />
           {item.href === "/messages" && chatUnread && (
-            <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: "#C4A35A" }} />
+            <span
+              className="absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full"
+              style={{ backgroundColor: "#A6452E", boxShadow: "0 0 0 2px rgba(255,246,237,0.95)" }}
+            />
           )}
         </span>
         <span className="text-[10px] leading-none" style={{ color: active ? "#2E1A0F" : "#8B5E3C" }}>{item.label}</span>

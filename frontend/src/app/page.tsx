@@ -2,9 +2,10 @@ import Link from "next/link";
 import NextImage from "next/image";
 
 const categories = [
-  { href: "/nyumba", title: "Nyumba", line: "Chumba na nyumba", img: "/real/room.jpg" },
+  { href: "/nyumba", title: "Nyumba/Chumba", line: "Makazi ya mwezi au mwaka", img: "/real/room.jpg" },
+  { href: "/godown", title: "Godown/Store", line: "Hifadhi na store, si maduka", img: "/real/shop.jpg" },
   { href: "/airbnb", title: "Airbnb", line: "Apartment kwa usiku", img: "/real/apartment.jpg" },
-  { href: "/maduka", title: "Maduka", line: "Store, godown na frame", img: "/real/shop.jpg" },
+  { href: "/maduka", title: "Maduka", line: "Frame za maduka", img: "/real/shop.jpg" },
   { href: "/vifaa", title: "Vifaa", line: "Simenti, chuma, tofali", img: "/real/materials.jpg" },
 ];
 

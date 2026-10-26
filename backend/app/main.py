@@ -62,6 +62,8 @@ class ListingIn(BaseModel):
     stock: float | None = None
     lat: float | None = None
     lng: float | None = None
+    phones: list[str] = Field(default_factory=list)
+    phone: str = ""
 
 
 class BookingIn(BaseModel):
@@ -179,6 +181,27 @@ def _signup_options(redirect_to: str | None) -> dict:
 
 
 OTP_RE = re.compile(r"^\d{6,8}$")
+PHONE_KEEP_RE = re.compile(r"[^\d+]")
+
+
+def _clean_phones(*groups) -> list[str]:
+    out: list[str] = []
+    seen: set[str] = set()
+    for group in groups:
+        items = group if isinstance(group, list) else [group]
+        for raw in items:
+            s = PHONE_KEEP_RE.sub("", str(raw or "").strip())
+            digits = re.sub(r"\D", "", s)
+            if len(digits) < 9 or len(digits) > 15:
+                continue
+            key = digits[-9:]
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(s[:20])
+            if len(out) >= 3:
+                return out
+    return out
 
 
 def _user_meta(user) -> dict:
@@ -830,9 +853,16 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
     period = "" if body.category == "vifaa" else body.period
     if body.category == "vifaa":
         period = unit or ""
+    phones = _clean_phones(body.phones, body.phone)
     desc = body.description.strip()[:2000]
+    meta: dict = {}
     if body.category == "vifaa" and (unit or body.stock is not None):
-        desc = with_meta(desc, {"unit": unit, "stock": body.stock})
+        meta["unit"] = unit
+        meta["stock"] = body.stock
+    if phones:
+        meta["phones"] = phones
+    if meta:
+        desc = with_meta(desc, meta)
     row = {
         "category": body.category,
         "title": body.title.strip()[:200],
@@ -857,6 +887,8 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         extras["lat"] = body.lat
     if body.lng is not None:
         extras["lng"] = body.lng
+    if phones:
+        extras["phones"] = phones
     res = _save_row("listings", extras, row)
     if not res.data:
         raise HTTPException(status_code=400, detail="Imeshindwa kuhifadhi")
@@ -877,7 +909,7 @@ def set_listing_status(listing_id: str, body: ListingStatusIn, user=Depends(curr
 
 @app.post("/listings/{listing_id}/like")
 def like_listing(listing_id: str, body: LikeIn, user=Depends(current_user)):
-    cur = db().table("listings").select("likes_count").eq("id", listing_id).limit(1).execute()
+    cur = db().table("listings").select("id,likes_count,owner_id").eq("id", listing_id).limit(1).execute()
     rows = cur.data or []
     if not rows:
         raise HTTPException(status_code=404, detail="Tangazo halipo")
@@ -885,6 +917,11 @@ def like_listing(listing_id: str, body: LikeIn, user=Depends(current_user)):
     if n < 0:
         n = 0
     db().table("listings").update({"likes_count": n}).eq("id", listing_id).execute()
+    ping = {"type": "like", "listing_id": listing_id, "likes_count": n, "on": body.on}
+    mqtt_bus.notify_listing(listing_id, ping)
+    owner = str(rows[0].get("owner_id") or "")
+    if owner and owner != user.id:
+        mqtt_bus.notify_users([owner], ping)
     return {"id": listing_id, "likes_count": n}
 
 
@@ -1094,8 +1131,13 @@ def place_details(place_id: str = "", user=Depends(current_user)):
 
 
 @app.get("/realtime/mqtt")
-def mqtt_session(user=Depends(current_user)):
-    return mqtt_bus.session_for(user.id)
+def mqtt_session(request: Request):
+    header = request.headers.get("authorization")
+    try:
+        user = current_user(header)
+        return mqtt_bus.session_for(user.id)
+    except HTTPException:
+        return mqtt_bus.session_for()
 
 
 @app.get("/inbox")

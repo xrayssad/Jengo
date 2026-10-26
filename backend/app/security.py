@@ -143,6 +143,14 @@ def with_meta(desc: str | None, extra: dict) -> str:
     return f"{clean}\n\n<!--jengo:{json.dumps(meta, separators=(',', ':'))}-->"
 
 
+def _as_phones(val) -> list[str]:
+    if isinstance(val, list):
+        return [str(x).strip() for x in val if str(x).strip()]
+    if isinstance(val, str) and val.strip():
+        return [p.strip() for p in val.replace(";", ",").split(",") if p.strip()]
+    return []
+
+
 def decorate_listing(row: dict | None) -> dict | None:
     if not row:
         return row
@@ -155,6 +163,10 @@ def decorate_listing(row: dict | None) -> dict | None:
         item["stock"] = meta.get("stock")
     if item.get("category") == "vifaa" and not item.get("unit") and item.get("period"):
         item["unit"] = item.get("period")
+    phones = _as_phones(item.get("phones")) or _as_phones(meta.get("phones"))
+    if not phones:
+        phones = _as_phones(item.get("phone")) or _as_phones(meta.get("phone"))
+    item["phones"] = phones
     return item
 
 

@@ -59,6 +59,16 @@ export default function ListingFeed({
     };
   }, [cats.join(",")]);
 
+  useEffect(() => {
+    const onLike = (e: Event) => {
+      const d = ((e as CustomEvent).detail || {}) as { listing_id?: string; likes_count?: number };
+      if (!d.listing_id || typeof d.likes_count !== "number") return;
+      setItems((cur) => cur.map((item) => (item.id === d.listing_id ? { ...item, likes_count: d.likes_count } : item)));
+    };
+    window.addEventListener("jengo-like", onLike);
+    return () => window.removeEventListener("jengo-like", onLike);
+  }, []);
+
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-5 py-4 glass">
