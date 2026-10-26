@@ -1,11 +1,21 @@
 "use client";
 
-import { useEffect, useState, type MouseEvent } from "react";
+import { useEffect, useState, type CSSProperties, type MouseEvent } from "react";
 import { Bookmark } from "lucide-react";
 import type { Listing } from "@/lib/api";
 import { isSaved, toggleSaved } from "@/lib/social";
 
-export default function SaveButton({ item }: { item: Listing }) {
+export default function SaveButton({
+  item,
+  className,
+  style,
+  size = 22,
+}: {
+  item: Listing;
+  className?: string;
+  style?: CSSProperties;
+  size?: number;
+}) {
   const [on, setOn] = useState(false);
   useEffect(() => setOn(isSaved(item.id)), [item.id]);
 
@@ -16,8 +26,18 @@ export default function SaveButton({ item }: { item: Listing }) {
   };
 
   return (
-    <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={press} aria-label="Favorites" className="flex items-center gap-1">
-      <Bookmark size={22} color="#2E1A0F" fill={on ? "#2E1A0F" : "none"} />
+    <button
+      type="button"
+      onMouseDown={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      onClick={press}
+      aria-label={on ? "Ondoa kwenye Vipendwa" : "Hifadhi kwenye Vipendwa"}
+      className={className || "flex items-center gap-1"}
+      style={style}
+    >
+      <Bookmark size={size} color="#2E1A0F" fill={on ? "#2E1A0F" : "none"} />
     </button>
   );
 }

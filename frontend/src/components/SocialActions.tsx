@@ -1,34 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { MessageSquare, Send } from "lucide-react";
+import { Send } from "lucide-react";
+import type { Listing } from "@/lib/api";
 import LikeButton from "./LikeButton";
+import SaveButton from "./SaveButton";
 
-export default function SocialActions({
-  listingId,
-  title,
-  likes,
-  comments,
-}: {
-  listingId: string;
-  title: string;
-  likes?: number;
-  comments?: number;
-}) {
+export default function SocialActions({ item }: { item: Listing }) {
   return (
     <div className="flex items-center gap-5">
-      <LikeButton id={listingId} count={likes} />
+      <LikeButton id={item.id} count={item.likes_count} />
+      <SaveButton item={item} />
       <Link
-        href={`/tangazo/${listingId}#maoni`}
-        className="flex items-center gap-1.5"
-        aria-label="Maoni"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <MessageSquare size={20} color="#2E1A0F" strokeWidth={1.8} />
-        <span className="text-sm font-semibold" style={{ color: "#2E1A0F" }}>{comments || 0}</span>
-      </Link>
-      <Link
-        href={`/chat/${listingId}?title=${encodeURIComponent(title)}`}
+        href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
         className="flex items-center gap-1.5"
         aria-label="Ujumbe wa moja kwa moja"
         onClick={(e) => e.stopPropagation()}

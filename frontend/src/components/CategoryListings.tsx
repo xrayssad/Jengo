@@ -5,7 +5,7 @@ import { ArrowLeft, MapPin, BadgeCheck, Loader2 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { fetchListings, formatPrice, periodLabel, type Listing } from "@/lib/api";
-import FavoriteButton from "@/components/FavoriteButton";
+import SaveButton from "@/components/SaveButton";
 
 type Props = {
   title: string;
@@ -133,8 +133,9 @@ export default function CategoryListings({
                     <BadgeCheck size={13} strokeWidth={2.2} /> Amethibitishwa
                   </div>
                 )}
-                <FavoriteButton
-                  id={item.id}
+                <SaveButton
+                  item={item}
+                  size={18}
                   className="absolute top-3 right-3 w-9 h-9 rounded-full flex items-center justify-center"
                   style={{
                     backgroundColor: "white",

@@ -6,9 +6,9 @@ const SAVED = "jengo_saved_posts";
 export type SavedPost = {
   id: string;
   title: string;
-  price: number;
-  period: string;
-  location: string;
+  price: number | string;
+  period?: string;
+  location?: string;
   city?: string;
   category?: string;
   description?: string;
@@ -60,6 +60,9 @@ export function toggleSaved(item: Listing): boolean {
         ...cur,
       ];
   localStorage.setItem(SAVED, JSON.stringify(next.slice(0, 200)));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("jengo-saved"));
+  }
   return !exists;
 }
 

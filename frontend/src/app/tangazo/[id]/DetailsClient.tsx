@@ -7,7 +7,6 @@ import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabel, type Listing } from "@/lib/api";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
-import CommentThread from "@/components/CommentThread";
 
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
@@ -62,7 +61,11 @@ export default function DetailsClient({ id }: { id: string }) {
               <ArrowLeft size={18} color="#2E1A0F" />
             </button>
             <div className="absolute top-4 right-4">
-              <SaveButton item={item} />
+              <SaveButton
+                item={item}
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: "rgba(255,246,237,0.92)", border: "1px solid rgba(46,26,15,0.15)" }}
+              />
             </div>
           </div>
           <div className="max-w-md mx-auto px-5 -mt-6 relative z-10">
@@ -84,15 +87,12 @@ export default function DetailsClient({ id }: { id: string }) {
                 <p className="text-sm mt-1" style={{ color: "#8B5E3C" }}>Stock: {item.stock}</p>
               )}
               <div className="mt-4">
-                <SocialActions listingId={item.id} title={item.title} likes={item.likes_count} comments={item.comments_count} />
+                <SocialActions item={item} />
               </div>
             </div>
             <p className="text-sm leading-relaxed mt-6 whitespace-pre-wrap" style={{ color: "#5C4033" }}>
               {item.description?.trim() || "Hakuna maelezo ya ziada."}
             </p>
-            <div className="mt-8">
-              <CommentThread listingId={item.id} />
-            </div>
           </div>
           <div className="fixed bottom-0 left-0 right-0 z-30 px-5 py-3" style={{ backgroundColor: "rgba(255,246,237,0.96)", borderTop: "1px solid rgba(210,166,121,0.35)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
             <div className="max-w-md mx-auto">

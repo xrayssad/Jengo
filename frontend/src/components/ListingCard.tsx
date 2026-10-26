@@ -29,12 +29,7 @@ export default function ListingCard({ item }: { item: Listing }) {
         </div>
       </Link>
       <div className="px-4 pb-4">
-        <SocialActions
-          listingId={item.id}
-          title={item.title}
-          likes={item.likes_count}
-          comments={item.comments_count}
-        />
+        <SocialActions item={item} />
       </div>
     </article>
   );

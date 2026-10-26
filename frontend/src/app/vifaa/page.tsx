@@ -5,9 +5,8 @@ import BottomNav from "@/components/BottomNav";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { fetchListings, formatPrice, listingUnit, unitLabel, type Listing } from "@/lib/api";
-import LikeButton from "@/components/LikeButton";
-import SaveButton from "@/components/SaveButton";
 import SaveImageButton from "@/components/SaveImageButton";
+import SocialActions from "@/components/SocialActions";
 
 export default function VifaaPage() {
   const [items, setItems] = useState<Listing[]>([]);
@@ -93,9 +92,8 @@ export default function VifaaPage() {
                   </p>
                 )}
               </Link>
-              <div className="flex items-center gap-5 mt-3">
-                <LikeButton id={item.id} count={item.likes_count} />
-                <SaveButton item={item} />
+              <div className="flex items-center justify-between gap-3 mt-3">
+                <SocialActions item={item} />
                 <SaveImageButton id={item.id} title={item.title} url={item.images?.[0]} />
               </div>
             </div>

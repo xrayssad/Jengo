@@ -17,7 +17,6 @@ export type Listing = {
   unit?: string | null;
   stock?: number | null;
   owner_id?: string;
-  comments_count?: number;
 };
 
 const TOKEN_KEY = "jengo_token";
@@ -427,18 +426,6 @@ export type ChatMessage = {
   href?: string;
 };
 
-export type ListingComment = {
-  id: string;
-  listing_id: string;
-  user_id: string;
-  parent_id?: string | null;
-  body: string;
-  likes_count: number;
-  created_at?: string;
-  author?: string;
-  liked?: boolean;
-};
-
 export async function fetchInbox() {
   return request<{ items: ChatMessage[] }>("/inbox");
 }
@@ -466,19 +453,3 @@ export async function sendListingDm(listingId: string, body: string, peer?: stri
   });
 }
 
-export async function fetchComments(listingId: string) {
-  return request<{ items: ListingComment[] }>(`/listings/${listingId}/comments`);
-}
-
-export async function postComment(listingId: string, body: string, parentId?: string) {
-  return request<ListingComment>(`/listings/${listingId}/comments`, {
-    method: "POST",
-    body: JSON.stringify({ body, parent_id: parentId || "" }),
-  });
-}
-
-export async function likeComment(commentId: string) {
-  return request<{ id: string; likes_count: number; liked: boolean }>(`/comments/${commentId}/like`, {
-    method: "POST",
-  });
-}
