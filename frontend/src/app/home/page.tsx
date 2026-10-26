@@ -62,36 +62,35 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="fixed inset-0 z-40 transition-opacity duration-300" style={{ backgroundColor: "rgba(46,26,15,0.4)", opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }} onClick={() => setOpen(false)} />
+      <div className="fixed inset-0 z-40 transition-opacity duration-300" style={{ backgroundColor: "rgba(46,26,15,0.55)", opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }} onClick={() => setOpen(false)} />
       <aside
-        className="fixed top-0 left-0 z-50 flex flex-col glass"
+        className="drawer-gold fixed top-0 left-0 z-50 flex flex-col"
         style={{
           height: "100dvh",
           width: "min(300px, 86vw)",
           transform: open ? "translateX(0)" : "translateX(-105%)",
           transition: "transform 0.3s ease",
           paddingTop: "env(safe-area-inset-top)",
-          borderRight: "1px solid rgba(210,166,121,0.35)",
         }}
       >
-        <div className="flex items-center justify-between px-4 py-4">
-          <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Jengo</p>
-          <button type="button" onClick={() => setOpen(false)} className="w-9 h-9 rounded-full flex items-center justify-center icon-glass">
-            <X size={16} color="#2E1A0F" />
+        <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: "1px solid #C4A35A" }}>
+          <p className="font-heading text-[28px] leading-none" style={{ color: "#C4A35A" }}>Jengo</p>
+          <button type="button" onClick={() => setOpen(false)} className="drawer-close w-9 h-9 flex items-center justify-center" aria-label="Funga">
+            <X size={16} color="#C4A35A" />
           </button>
         </div>
-        <nav className="flex-1 overflow-y-auto py-1">
+        <nav className="flex-1 overflow-y-auto py-3">
           {sideLinks.map((item) => {
             const Icon = item.icon;
             return (
-              <Link key={item.label} href={item.href} onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 my-0.5 px-3 py-3 rounded-2xl">
-                <Icon size={17} color="#8B5E3C" />
-                <span className="text-sm" style={{ color: "#2E1A0F" }}>{item.label}</span>
+              <Link key={item.label} href={item.href} onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 my-1 px-3 py-3">
+                <Icon size={17} color="#C4A35A" />
+                <span className="text-sm" style={{ color: "inherit" }}>{item.label}</span>
               </Link>
             );
           })}
-          <Link href="/login" onClick={() => { clearAuth(); setOpen(false); }} className="flex mx-3 mt-3 mb-6 px-3 py-3 rounded-2xl" style={{ border: "1px solid rgba(166,69,46,0.35)" }}>
-            <span className="text-sm" style={{ color: "#A6452E" }}>Tokaa</span>
+          <Link href="/login" onClick={() => { clearAuth(); setOpen(false); }} className="flex mx-3 mt-4 mb-6 px-3 py-3" style={{ border: "1px solid #C4A35A", color: "#C4A35A" }}>
+            <span className="text-sm">Tokaa</span>
           </Link>
         </nav>
       </aside>

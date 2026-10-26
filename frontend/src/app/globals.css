@@ -151,6 +151,47 @@ h1, h2, h3, .font-heading {
   -webkit-backdrop-filter: blur(20px);
 }
 
+.drawer-gold {
+  background: #2E1A0F;
+  color: #C4A35A;
+  border-right: 1px solid #C4A35A;
+  box-shadow: 24px 0 50px rgba(46, 26, 15, 0.45);
+}
+.drawer-gold::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: #C4A35A;
+}
+.drawer-gold a {
+  color: #F5E6D3;
+  border: 1px solid transparent;
+}
+.drawer-gold a:hover {
+  background: rgba(196, 163, 90, 0.14);
+  border-color: rgba(196, 163, 90, 0.45);
+  color: #C4A35A;
+}
+.drawer-close {
+  background: transparent;
+  border: 1px solid #C4A35A;
+}
+
+.gold-rule {
+  height: 1px;
+  background: #C4A35A;
+}
+
+.estate-tile img {
+  transition: transform 0.8s ease;
+}
+.estate-tile:hover img {
+  transform: scale(1.05);
+}
+
 .input-chocolate {
   background-color: rgba(255, 246, 237, 0.92);
   border: 1px solid rgba(210, 166, 121, 0.55);
