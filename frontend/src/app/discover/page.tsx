@@ -4,15 +4,17 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { Loader2, Search } from "lucide-react";
 import ListingCard from "@/components/ListingCard";
-import { fetchListings, type Listing } from "@/lib/api";
+import { fetchListings, shopCategories, type Listing } from "@/lib/api";
 
 const chips = [
   { id: "", label: "Vyote" },
   { id: "chumba_nyumba", label: "Nyumba" },
   { id: "apartment_airbnb", label: "Airbnb" },
-  { id: "store_godown", label: "Maduka" },
+  { id: "maduka", label: "Maduka" },
   { id: "vifaa", label: "Vifaa" },
 ];
+
+const shop = new Set(shopCategories);
 
 export default function DiscoverPage() {
   const [items, setItems] = useState<Listing[]>([]);
@@ -38,7 +40,8 @@ export default function DiscoverPage() {
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return items.filter((item) => {
-      if (cat && item.category !== cat) return false;
+      if (cat === "maduka" && !shop.has(item.category || "")) return false;
+      if (cat && cat !== "maduka" && item.category !== cat) return false;
       if (!needle) return true;
       return [item.title, item.location, item.city, item.category].filter(Boolean).join(" ").toLowerCase().includes(needle);
     });

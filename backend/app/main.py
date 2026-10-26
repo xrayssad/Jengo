@@ -785,7 +785,11 @@ def list_listings(
         if status:
             query = query.eq("status", status)
     if category:
-        query = query.eq("category", category)
+        cats = [c.strip() for c in category.split(",") if c.strip()]
+        if len(cats) == 1:
+            query = query.eq("category", cats[0])
+        elif cats:
+            query = query.in_("category", cats)
     if q:
         query = query.ilike("title", "%" + q + "%")
     column = "likes_count" if sort == "likes" else "created_at"

@@ -12,7 +12,7 @@ const filters = [
   { id: "chumba_nyumba", label: "Chumba & Nyumba" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
   { id: "store_godown", label: "Store & Godown" },
-  { id: "frame", label: "Frame" },
+  { id: "frame", label: "Frame za Maduka" },
 ];
 
 function SearchInner() {

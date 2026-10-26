@@ -7,6 +7,7 @@ import SocialActions from "./SocialActions";
 
 export default function ListingCard({ item, eager }: { item: Listing; eager?: boolean }) {
   const place = [item.location, item.city].filter(Boolean).join(", ");
+  const photos = (item.images || []).filter(Boolean);
   const rate =
     item.category === "vifaa"
       ? listingUnit(item)
@@ -17,18 +18,28 @@ export default function ListingCard({ item, eager }: { item: Listing; eager?: bo
   return (
     <article className="estate-card">
       <Link href={`/tangazo/${item.id}`} className="block relative">
-        {item.images?.[0] ? (
-          <img
-            src={item.images[0]}
-            alt=""
-            className="w-full h-[280px] object-cover"
-            loading={eager ? "eager" : "lazy"}
-            decoding="async"
-          />
+        {photos[0] ? (
+          <div className="w-full overflow-hidden" style={{ height: "min(72vw, 520px)", minHeight: 360, backgroundColor: "#3D2415" }}>
+            <img
+              src={photos[0]}
+              alt=""
+              className="w-full h-full object-cover"
+              loading={eager ? "eager" : "lazy"}
+              decoding="async"
+            />
+          </div>
         ) : (
-          <div className="w-full h-[280px] flex items-center justify-center" style={{ background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
+          <div className="w-full flex items-center justify-center" style={{ height: "min(72vw, 520px)", minHeight: 360, background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
             <span className="font-heading text-xl" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>
           </div>
+        )}
+        {photos.length > 1 && (
+          <span
+            className="absolute top-3 right-3 text-[11px] px-2 py-1"
+            style={{ backgroundColor: "rgba(46,26,15,0.72)", color: "#C4A35A" }}
+          >
+            {photos.length} picha
+          </span>
         )}
         <div className="photo-dock">
           <p className="font-heading text-[28px] leading-none" style={{ color: "#2E1A0F" }}>

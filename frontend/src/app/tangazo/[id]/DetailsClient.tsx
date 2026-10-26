@@ -7,6 +7,7 @@ import { ArrowLeft, MapPin, Loader2 } from "lucide-react";
 import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabel, type Listing } from "@/lib/api";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
+import PhotoGallery from "@/components/PhotoGallery";
 
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
@@ -58,21 +59,22 @@ export default function DetailsClient({ id }: { id: string }) {
       {!loading && item && (
         <>
           <div className="relative">
-            {item.images?.[0] ? (
-              <img src={item.images[0]} alt="" className="w-full h-[58vh] object-cover" />
-            ) : (
-              <div className="w-full h-[58vh] flex items-center justify-center" style={{ background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
-                <span className="font-heading text-2xl" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>
-              </div>
-            )}
+            <PhotoGallery
+              images={item.images}
+              fallback={
+                <div className="w-full flex items-center justify-center" style={{ height: "78vh", minHeight: 420, background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
+                  <span className="font-heading text-2xl" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>
+                </div>
+              }
+            />
             <button
               type="button"
               onClick={() => router.back()}
-              className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center icon-glass"
+              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full flex items-center justify-center icon-glass"
             >
               <ArrowLeft size={18} color="#2E1A0F" />
             </button>
-            <div className="absolute top-4 right-4">
+            <div className="absolute top-4 right-4 z-20">
               <SaveButton
                 item={item}
                 className="w-10 h-10 rounded-full flex items-center justify-center icon-glass"

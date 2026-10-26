@@ -362,6 +362,8 @@ export const catLabel: Record<string, string> = {
   vifaa: "Vifaa vya Ujenzi",
 };
 
+export const shopCategories = ["store_godown", "frame"];
+
 const RENTAL_PERIODS = new Set(["mwezi", "miezi_3", "miezi_6", "mwaka", "usiku", "siku", "wiki"]);
 
 export function unitLabel(unit?: string | null) {

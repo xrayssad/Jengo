@@ -35,7 +35,7 @@ const sideLinks = [
 function CardSkeleton() {
   return (
     <div className="estate-card">
-      <div className="w-full h-[280px]" style={{ background: "linear-gradient(165deg, #E8D5C4, #F5E6D3)" }} />
+      <div className="w-full" style={{ height: "min(72vw, 520px)", minHeight: 360, background: "linear-gradient(165deg, #E8D5C4, #F5E6D3)" }} />
     </div>
   );
 }

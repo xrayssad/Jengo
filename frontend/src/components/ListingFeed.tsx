@@ -6,6 +6,31 @@ import { ArrowLeft, Loader2 } from "lucide-react";
 import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "./ListingCard";
 
+function asList(category: string | string[]) {
+  const raw = Array.isArray(category) ? category : [category];
+  return raw.map((c) => String(c || "").trim()).filter(Boolean);
+}
+
+async function loadCats(cats: string[]) {
+  if (cats.length <= 1) {
+    const res = await fetchListings({ category: cats[0], status: "active" });
+    return (res.items || []).filter((item) => !cats[0] || item.category === cats[0]);
+  }
+  const rows = await Promise.all(cats.map((c) => fetchListings({ category: c, status: "active" })));
+  const seen = new Set<string>();
+  const out: Listing[] = [];
+  for (const res of rows) {
+    for (const item of res.items || []) {
+      if (!item.id || seen.has(item.id)) continue;
+      if (item.category && !cats.includes(item.category)) continue;
+      seen.add(item.id);
+      out.push(item);
+    }
+  }
+  out.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
+  return out;
+}
+
 export default function ListingFeed({
   title,
   subtitle,
@@ -13,8 +38,9 @@ export default function ListingFeed({
 }: {
   title: string;
   subtitle: string;
-  category: string;
+  category: string | string[];
 }) {
+  const cats = asList(category);
   const [items, setItems] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,16 +48,16 @@ export default function ListingFeed({
     let stop = false;
     (async () => {
       setLoading(true);
-      const res = await fetchListings({ category, status: "active" });
+      const next = await loadCats(cats);
       if (!stop) {
-        setItems((res.items || []).filter((item) => item.category === category));
+        setItems(next);
         setLoading(false);
       }
     })();
     return () => {
       stop = true;
     };
-  }, [category]);
+  }, [cats.join(",")]);
 
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
@@ -54,8 +80,8 @@ export default function ListingFeed({
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Weka tangazo</Link>
           </div>
         )}
-        {items.map((item) => (
-          <ListingCard key={item.id} item={item} />
+        {items.map((item, i) => (
+          <ListingCard key={item.id} item={item} eager={i === 0} />
         ))}
       </div>
     </main>
