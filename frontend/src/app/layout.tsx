@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Source_Sans_3 } from "next/font/google";
+import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import "./globals.css";
 
-const playfair = Playfair_Display({
+const playfair = Cormorant_Garamond({
   subsets: ["latin"],
+  weight: ["500", "600", "700"],
   variable: "--font-playfair",
   display: "swap",
 });

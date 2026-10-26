@@ -32,7 +32,7 @@ export default function AppAlert({ open, kind = "info", title, message, onClose 
     >
       <div
         className="w-full max-w-sm rounded-[22px] overflow-hidden shadow-xl"
-        style={{ backgroundColor: "#FFF6ED", border: "1.5px solid #3D2415" }}
+        style={{ backgroundColor: "#FFF6ED", border: "1px solid rgba(210,166,121,0.45)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-5 pt-5 pb-4 flex gap-3 items-start" style={{ background: s.bg }}>

@@ -18,7 +18,7 @@ export default function SocialActions({ item }: { item: Listing }) {
         onClick={(e) => e.stopPropagation()}
       >
         <Send size={19} color="#2E1A0F" strokeWidth={1.8} />
-        <span className="text-xs font-semibold" style={{ color: "#8B5E3C" }}>Ujumbe</span>
+        <span className="text-xs" style={{ color: "#8B5E3C" }}>Ujumbe</span>
       </Link>
     </div>
   );

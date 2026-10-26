@@ -33,6 +33,19 @@ export default function DetailsClient({ id }: { id: string }) {
     };
   }, [id]);
 
+  const specs = item
+    ? [
+        { label: "Aina", value: catLabel[item.category || ""] || item.category || "—" },
+        {
+          label: item.category === "vifaa" ? "Kipimo" : "Kipindi",
+          value: item.category === "vifaa" ? (unitLabel(listingUnit(item)) || "—") : (periodLabel(item.period) || "—"),
+        },
+        item.category === "vifaa" && item.stock != null
+          ? { label: "Stock", value: String(item.stock) }
+          : { label: "Hali", value: "Inapatikana" },
+      ]
+    : [];
+
   return (
     <main className="min-h-screen pb-28" style={{ backgroundColor: "#FFF6ED" }}>
       {loading && <div className="flex justify-center py-24"><Loader2 size={28} color="#8B5E3C" className="animate-spin" /></div>}
@@ -46,56 +59,62 @@ export default function DetailsClient({ id }: { id: string }) {
         <>
           <div className="relative">
             {item.images?.[0] ? (
-              <img src={item.images[0]} alt="" className="w-full h-[52vh] object-cover" />
+              <img src={item.images[0]} alt="" className="w-full h-[58vh] object-cover" />
             ) : (
-              <div className="w-full h-[52vh] flex items-center justify-center" style={{ background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
-                <span className="font-heading" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>
+              <div className="w-full h-[58vh] flex items-center justify-center" style={{ background: "linear-gradient(165deg, #3D2415, #2E1A0F)" }}>
+                <span className="font-heading text-2xl" style={{ color: "#D2A679" }}>{catLabel[item.category || ""] || "Jengo"}</span>
               </div>
             )}
             <button
               type="button"
               onClick={() => router.back()}
-              className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: "rgba(255,246,237,0.92)", border: "1px solid rgba(46,26,15,0.15)" }}
+              className="absolute top-4 left-4 w-10 h-10 rounded-full flex items-center justify-center icon-glass"
             >
               <ArrowLeft size={18} color="#2E1A0F" />
             </button>
             <div className="absolute top-4 right-4">
               <SaveButton
                 item={item}
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: "rgba(255,246,237,0.92)", border: "1px solid rgba(46,26,15,0.15)" }}
+                className="w-10 h-10 rounded-full flex items-center justify-center icon-glass"
               />
             </div>
           </div>
-          <div className="max-w-md mx-auto px-5 -mt-6 relative z-10">
-            <div className="soft-card p-5">
-              <h1 className="font-heading text-2xl leading-snug" style={{ color: "#2E1A0F" }}>{item.title}</h1>
+          <div className="max-w-md mx-auto px-4 -mt-14 relative z-10">
+            <div className="sheet rounded-[28px] p-5">
+              <h1 className="font-heading text-[32px] leading-[1.05]" style={{ color: "#2E1A0F" }}>{item.title}</h1>
               <p className="flex items-center gap-1.5 mt-2 text-sm" style={{ color: "#5C4033" }}>
                 <MapPin size={14} color="#8B5E3C" />
-                {[item.location, item.city].filter(Boolean).join(", ")}
+                {[item.location, item.city].filter(Boolean).join(", ") || "—"}
               </p>
-              <p className="mt-3 font-semibold text-lg" style={{ color: "#2E1A0F" }}>
+              <p className="mt-3 font-heading text-3xl leading-none" style={{ color: "#2E1A0F" }}>
                 TZS {formatPrice(item.price)}
-                <span className="text-sm font-normal" style={{ color: "#5C4033" }}>
+                <span className="text-sm font-normal ml-1" style={{ color: "#5C4033" }}>
                   {item.category === "vifaa"
                     ? (listingUnit(item) ? ` / ${unitLabel(listingUnit(item))}` : "")
                     : periodLabel(item.period)}
                 </span>
               </p>
-              {item.category === "vifaa" && item.stock != null && (
-                <p className="text-sm mt-1" style={{ color: "#8B5E3C" }}>Stock: {item.stock}</p>
-              )}
+              <div className="flex gap-2 mt-4">
+                {specs.map((spec) => (
+                  <div key={spec.label} className="spec-pill flex-1">
+                    <p className="text-[11px]" style={{ color: "#8B5E3C" }}>{spec.label}</p>
+                    <p className="text-sm mt-0.5" style={{ color: "#2E1A0F" }}>{spec.value}</p>
+                  </div>
+                ))}
+              </div>
               <div className="mt-4">
                 <SocialActions item={item} />
               </div>
             </div>
-            <p className="text-sm leading-relaxed mt-6 whitespace-pre-wrap" style={{ color: "#5C4033" }}>
-              {item.description?.trim() || "Hakuna maelezo ya ziada."}
-            </p>
+            <div className="sheet rounded-[28px] p-5 mt-4">
+              <p className="text-sm" style={{ color: "#8B5E3C" }}>Maelezo</p>
+              <p className="text-sm leading-relaxed mt-2 whitespace-pre-wrap" style={{ color: "#5C4033" }}>
+                {item.description?.trim() || "Hakuna maelezo ya ziada."}
+              </p>
+            </div>
           </div>
-          <div className="fixed bottom-0 left-0 right-0 z-30 px-5 py-3" style={{ backgroundColor: "rgba(255,246,237,0.96)", borderTop: "1px solid rgba(210,166,121,0.35)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-            <div className="max-w-md mx-auto">
+          <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <div className="nav-island max-w-md mx-auto px-4 py-3">
               {item.category === "vifaa" && (
                 <input
                   value={qty}

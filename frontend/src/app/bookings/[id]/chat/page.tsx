@@ -36,7 +36,7 @@ function Thread() {
   return (
     <main className="min-h-screen flex flex-col" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3 glass">
-        <button type="button" onClick={() => router.back()} className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center">
+        <button type="button" onClick={() => router.back()} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
           <ArrowLeft size={18} color="#2E1A0F" />
         </button>
         <div>
@@ -53,18 +53,20 @@ function Thread() {
           <div key={m.id} className="flex" style={{ justifyContent: m.mine ? "flex-end" : "flex-start" }}>
             <div
               className="max-w-[80%] px-3.5 py-2.5 rounded-[18px] text-sm"
-              style={{ backgroundColor: m.mine ? "#2E1A0F" : "white", color: m.mine ? "#FFF6ED" : "#2E1A0F", border: m.mine ? "none" : "1px solid rgba(46,26,15,0.12)" }}
+              style={{ backgroundColor: m.mine ? "#2E1A0F" : "rgba(255,246,237,0.86)", color: m.mine ? "#FFF6ED" : "#2E1A0F", border: m.mine ? "none" : "1px solid rgba(210,166,121,0.4)" }}
             >
               {m.body}
             </div>
           </div>
         ))}
       </div>
-      <form onSubmit={submit} className="sticky bottom-0 px-4 py-3 flex gap-2 max-w-md w-full mx-auto" style={{ backgroundColor: "#FFF6ED", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-        <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Andika ujumbe..." className="input-chocolate flex-1 px-4 py-3 text-sm" />
-        <button type="submit" className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: "#2E1A0F" }}>
-          <Send size={18} color="#FFF6ED" />
-        </button>
+      <form onSubmit={submit} className="sticky bottom-0 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+        <div className="nav-island max-w-md w-full mx-auto px-3 py-2 flex gap-2">
+          <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Andika ujumbe..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "#2E1A0F" }} />
+          <button type="submit" className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#2E1A0F" }} aria-label="Tuma ujumbe">
+            <Send size={18} color="#FFF6ED" />
+          </button>
+        </div>
       </form>
     </main>
   );

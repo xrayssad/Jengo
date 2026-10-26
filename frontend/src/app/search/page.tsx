@@ -66,8 +66,8 @@ function SearchInner() {
       <header className="sticky top-0 z-20 px-4 pt-4 pb-3 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
         <div className="max-w-md mx-auto">
           <div className="flex items-center gap-3 mb-3">
-            <Link href="/home" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center shadow-warm-sm shrink-0">
-              <ArrowLeft size={18} strokeWidth={2.2} />
+            <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass shrink-0">
+              <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
             </Link>
             <div className="relative flex-1">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10" color="#8B5E3C" strokeWidth={2} />
@@ -94,12 +94,8 @@ function SearchInner() {
                   key={f.id || "zote"}
                   type="button"
                   onClick={() => setCategory(f.id)}
-                  className="px-4 py-1.5 rounded-full text-sm whitespace-nowrap font-medium"
-                  style={{
-                    backgroundColor: active ? "#2E1A0F" : "white",
-                    color: active ? "#FFF6ED" : "#2E1A0F",
-                    border: active ? "none" : "1.5px solid #3D2415",
-                  }}
+                  className={`px-4 py-1.5 text-sm whitespace-nowrap ${active ? "rounded-full" : "chip"}`}
+                  style={active ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}
                 >
                   {f.label}
                 </button>
@@ -128,14 +124,13 @@ function SearchInner() {
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16">
             <Search size={40} color="#D2A679" className="mx-auto mb-4 opacity-60" />
-            <p className="font-bold" style={{ color: "#2E1A0F" }}>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>
               {query || category ? "Hakuna matokeo" : "Hakuna matangazo bado"}
             </p>
             {!query && !category && (
               <Link
                 href="/weka-tangazo"
-                className="inline-block mt-4 px-6 py-3 rounded-full text-sm font-semibold"
-                style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}
+                className="btn-primary inline-block mt-4 px-6 py-3 rounded-full text-sm font-semibold"
               >
                 Weka Tangazo
               </Link>

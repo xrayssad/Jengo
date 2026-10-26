@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import {
   ArrowLeft, Mail, FileText, Heart, Settings, LogOut,
-  ChevronRight, BadgeCheck, Home, Plus
+  ChevronRight, Home, Plus
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { clearAuth, getAuthUser } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
 import AdminLink from "@/components/AdminLink";
@@ -32,56 +33,31 @@ export default function ProfilePage() {
   return (
     <AuthGate>
     <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.4)" }}>
+      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center shadow-warm-sm">
-            <ArrowLeft size={18} strokeWidth={2.2} />
+          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+            <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
           </Link>
-          <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Profile</h1>
+          <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Profile</h1>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 py-5 space-y-5">
-        <div
-          className="rounded-[22px] p-5 relative overflow-hidden"
-          style={{
-            background: "linear-gradient(165deg, #3D2415 0%, #2E1A0F 60%, #1A0F08 100%)",
-            border: "1px solid rgba(210,166,121,0.3)",
-            boxShadow: "0 8px 28px rgba(46,26,15,0.35)",
-          }}
-        >
-          <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full opacity-30 blur-2xl"
-            style={{ background: "radial-gradient(circle, #8B5E3C, transparent)" }} />
-
-          <div className="relative z-10 flex items-center gap-4">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold shrink-0"
-              style={{
-                background: "linear-gradient(145deg, #8B5E3C, #D2A679)",
-                color: "#2E1A0F",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-              }}
-            >
-              {name.charAt(0).toUpperCase()}
-            </div>
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold truncate" style={{ color: "#FFF6ED" }}>{name}</h2>
-                <BadgeCheck size={16} color="#C4A35A" className="opacity-40" />
-              </div>
-              <div className="flex items-center gap-1.5 mt-1">
-                <Mail size={12} color="#D2A679" />
-                <span className="text-sm truncate" style={{ color: "#D2A679" }}>
-                  {email || "Akaunti ya majaribio"}
-                </span>
-              </div>
-            </div>
+        <div className="relative overflow-hidden rounded-[28px]" style={{ height: 168 }}>
+          <Image src="/real/apartment.jpg" alt="" fill className="object-cover" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(46,26,15,0.55), rgba(46,26,15,0.12))" }} />
+          <div className="photo-dock">
+            <p className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>{name}</p>
+            <p className="flex items-center gap-1.5 mt-1 text-sm" style={{ color: "#5C4033" }}>
+              <Mail size={12} color="#8B5E3C" />
+              {email || "Akaunti"}
+            </p>
           </div>
         </div>
 
         <Link
           href="/weka-tangazo"
-          className="btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-[18px] font-semibold text-sm"
+          className="btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-full font-semibold text-sm"
         >
           <Plus size={18} strokeWidth={2.5} />
           Weka Tangazo Jipya
@@ -90,33 +66,23 @@ export default function ProfilePage() {
           <AdminLink />
         </div>
 
-        <div
-          className="rounded-[22px] overflow-hidden"
-          style={{
-            backgroundColor: "white",
-            border: "1.5px solid #3D2415",
-            boxShadow: "0 0 0 1px rgba(46,26,15,0.1), 0 4px 16px rgba(46,26,15,0.08)",
-          }}
-        >
+        <div className="sheet rounded-[28px] overflow-hidden">
           {menuItems.map((item, i) => {
             const Icon = item.icon;
             return (
               <Link
                 key={item.label}
                 href={item.href}
-                className="flex items-center gap-3 px-4 py-4 transition-colors"
+                className="flex items-center gap-3 px-4 py-4"
                 style={{
-                  borderBottom: i < menuItems.length - 1 ? "1px solid rgba(61,36,21,0.12)" : "none",
+                  borderBottom: i < menuItems.length - 1 ? "1px solid rgba(210,166,121,0.28)" : "none",
                 }}
               >
-                <div
-                  className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: "#FFF6ED" }}
-                >
+                <div className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 icon-glass">
                   <Icon size={18} color="#8B5E3C" strokeWidth={1.8} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-sm" style={{ color: "#2E1A0F" }}>{item.label}</p>
+                  <p className="text-sm" style={{ color: "#2E1A0F" }}>{item.label}</p>
                   <p className="text-xs" style={{ color: "#5C4033" }}>{item.desc}</p>
                 </div>
                 <ChevronRight size={16} color="#8B5E3C" />
@@ -126,11 +92,11 @@ export default function ProfilePage() {
         </div>
 
         <button
-          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-[18px] font-semibold text-sm"
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full text-sm"
           style={{
-            backgroundColor: "white",
+            backgroundColor: "rgba(255,246,237,0.8)",
             color: "#A6452E",
-            border: "1.5px solid rgba(166,69,46,0.4)",
+            border: "1px solid rgba(166,69,46,0.35)",
           }}
           onClick={() => {
             clearAuth();

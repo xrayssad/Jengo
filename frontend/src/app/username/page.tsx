@@ -40,8 +40,9 @@ export default function UsernamePage() {
 
   return (
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "#FFF6ED" }}>
-      <div className="soft-card w-full max-w-sm p-6 fade-up">
-        <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Chagua username</h1>
+      <div className="sheet w-full max-w-sm p-6 rounded-[28px] fade-up">
+        <p className="text-sm" style={{ color: "#8B5E3C" }}>Akaunti ya Google</p>
+        <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "#2E1A0F" }}>Chagua username</h1>
         <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
           Akaunti ya Google iko tayari. Weka username mara moja, kisha utaenda nyumbani.
         </p>

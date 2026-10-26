@@ -60,17 +60,18 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
-      <div className="relative h-[28vh] min-h-[180px]">
+      <div className="relative h-[36vh] min-h-[220px]">
         {slides.map((s, i) => (
           <div key={s.image} className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: slide === i ? 1 : 0 }}>
             <Image src={s.image} alt="" fill className="object-cover" priority={i === 0} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(26,15,8,0.55), transparent 70%)" }} />
+            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(46,26,15,0.62), rgba(46,26,15,0.12) 70%, transparent)" }} />
           </div>
         ))}
       </div>
-      <div className="px-5 -mt-10 relative z-10 pb-12">
-        <div className="soft-card max-w-sm mx-auto p-6 fade-up">
-          <h1 className="font-heading text-3xl mb-1" style={{ color: "#2E1A0F" }}>Karibu tena</h1>
+      <div className="px-5 -mt-14 relative z-10 pb-12">
+        <div className="sheet max-w-sm mx-auto p-6 rounded-[28px] fade-up">
+          <p className="text-sm" style={{ color: "#8B5E3C" }}>Jengo</p>
+          <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "#2E1A0F" }}>Karibu tena</h1>
           <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Ingia kwa barua pepe au Google.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

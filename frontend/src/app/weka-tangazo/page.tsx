@@ -113,8 +113,8 @@ export default function WekaTangazoPage() {
     return (
       <AuthGate>
       <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
-        <div className="max-w-sm w-full text-center">
-          <h1 className="font-heading text-xl mb-2" style={{ color: "#2E1A0F" }}>Tangazo limewekwa</h1>
+        <div className="sheet max-w-sm w-full text-center p-6 rounded-[28px]">
+          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Tangazo limewekwa</h1>
           <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Linaonekana kwenye Discover sasa.</p>
           <button type="button" onClick={() => router.push("/discover")} className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-sm">
             Angalia Discover
@@ -131,15 +131,15 @@ export default function WekaTangazoPage() {
   return (
     <AuthGate>
     <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
-        <button type="button" onClick={() => router.push("/home")} className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
+      <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3 glass">
+        <button type="button" onClick={() => router.push("/home")} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
           <ArrowLeft size={18} color="#2E1A0F" />
         </button>
-        <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
+        <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Weka Tangazo</h1>
       </header>
 
       <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5">
-      <div className="soft-card p-5 space-y-4">
+      <div className="sheet rounded-[28px] p-5 space-y-4">
         <div className="grid grid-cols-2 gap-2">
           {categories.map((c) => (
             <button
@@ -149,11 +149,11 @@ export default function WekaTangazoPage() {
                 setCategory(c.id);
                 if (c.id !== "vifaa") setPeriod(periods[c.id][0].id);
               }}
-              className="p-3 rounded-[16px] text-sm font-semibold"
+              className="p-3 rounded-[18px] text-sm"
               style={{
-                backgroundColor: category === c.id ? "#2E1A0F" : "white",
+                backgroundColor: category === c.id ? "#2E1A0F" : "rgba(255,246,237,0.7)",
                 color: category === c.id ? "#FFF6ED" : "#2E1A0F",
-                border: "1.5px solid #3D2415",
+                border: "1px solid rgba(210,166,121,0.45)",
               }}
             >
               {c.label}
@@ -168,7 +168,7 @@ export default function WekaTangazoPage() {
           <>
             <div className="flex flex-wrap gap-2">
               {units.map((u) => (
-                <button key={u.id} type="button" onClick={() => setUnit(u.id)} className="px-3 py-2 rounded-full text-xs font-semibold" style={{ backgroundColor: unit === u.id ? "#8B5E3C" : "white", color: unit === u.id ? "#FFF6ED" : "#2E1A0F", border: "1px solid #D2A679" }}>
+                <button key={u.id} type="button" onClick={() => setUnit(u.id)} className={`px-3 py-2 text-xs ${unit === u.id ? "rounded-full" : "chip"}`} style={unit === u.id ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}>
                   {u.label}
                 </button>
               ))}
@@ -178,7 +178,7 @@ export default function WekaTangazoPage() {
         ) : (
           <div className="flex flex-wrap gap-2">
             {periods[category].map((p) => (
-              <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className="px-3 py-2 rounded-full text-xs font-semibold" style={{ backgroundColor: period === p.id ? "#8B5E3C" : "white", color: period === p.id ? "#FFF6ED" : "#2E1A0F", border: "1px solid #D2A679" }}>
+              <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`px-3 py-2 text-xs ${period === p.id ? "rounded-full" : "chip"}`} style={period === p.id ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}>
                 {p.label}
               </button>
             ))}

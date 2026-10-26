@@ -13,35 +13,34 @@ const methods = [
 export default function PaymentsPage() {
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass" style={{ borderBottom: "1px solid rgba(210,166,121,0.4)" }}>
+      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center shadow-warm-sm">
-            <ArrowLeft size={18} strokeWidth={2.2} />
+          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+            <ArrowLeft size={18} strokeWidth={2.2} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Malipo</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>Payments & historia</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Malipo</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Njia na historia</p>
           </div>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-5 space-y-6">
         <div>
-          <h2 className="text-sm font-bold mb-3" style={{ color: "#2E1A0F" }}>Njia za malipo</h2>
+          <h2 className="font-heading text-xl mb-3" style={{ color: "#2E1A0F" }}>Njia za malipo</h2>
           <div className="space-y-2">
             {methods.map((m) => {
               const Icon = m.icon;
               return (
                 <div
                   key={m.title}
-                  className="flex items-center gap-3 p-3.5 rounded-[16px]"
-                  style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}
+                  className="flex items-center gap-3 p-3.5 sheet rounded-[24px]"
                 >
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: "#FFF6ED" }}>
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
                     <Icon size={18} color="#8B5E3C" />
                   </div>
                   <div>
-                    <p className="font-semibold text-sm" style={{ color: "#2E1A0F" }}>{m.title}</p>
+                    <p className="text-sm" style={{ color: "#2E1A0F" }}>{m.title}</p>
                     <p className="text-xs" style={{ color: "#5C4033" }}>{m.desc}</p>
                   </div>
                 </div>
@@ -51,13 +50,10 @@ export default function PaymentsPage() {
         </div>
 
         <div>
-          <h2 className="text-sm font-bold mb-3" style={{ color: "#2E1A0F" }}>Historia</h2>
-          <div
-            className="p-6 rounded-[16px] text-center"
-            style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}
-          >
-            <p className="font-semibold text-sm" style={{ color: "#2E1A0F" }}>Hakuna malipo bado</p>
-            <p className="text-xs mt-1" style={{ color: "#5C4033" }}>
+          <h2 className="font-heading text-xl mb-3" style={{ color: "#2E1A0F" }}>Historia</h2>
+          <div className="p-6 sheet rounded-[24px] text-center">
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna malipo bado</p>
+            <p className="text-sm mt-1" style={{ color: "#5C4033" }}>
               Malipo halisi yataunganishwa baadaye.
             </p>
           </div>

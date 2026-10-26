@@ -42,23 +42,23 @@ export default function MalipoPage() {
 
   return (
     <main className="min-h-screen pb-24" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
+      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
+          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Malipo</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>Maombi yako na bei. Pesa bado hazikatwi hapa.</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Malipo</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Maombi yako na bei. Pesa bado hazikatwi hapa.</p>
           </div>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-4 pt-4 space-y-3">
-        <div className="p-4 rounded-[18px]" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
-          <p className="text-[11px] uppercase" style={{ color: "#D2A679" }}>Jumla ya maombi</p>
-          <p className="text-2xl font-bold mt-1">TZS {formatPrice(total)}</p>
-          <p className="text-xs mt-1" style={{ color: "#F5E6D3" }}>Hali: haijalipwa. Lipa ukikutana na mwenye tangazo.</p>
+        <div className="p-5 rounded-[28px]" style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}>
+          <p className="text-sm" style={{ color: "#D2A679" }}>Jumla ya maombi</p>
+          <p className="font-heading text-3xl mt-1">TZS {formatPrice(total)}</p>
+          <p className="text-xs mt-2" style={{ color: "#F5E6D3" }}>Hali: haijalipwa. Lipa ukikutana na mwenye tangazo.</p>
         </div>
 
         {loading && <div className="flex justify-center py-10"><Loader2 className="animate-spin" color="#8B5E3C" /></div>}
@@ -66,16 +66,16 @@ export default function MalipoPage() {
         {!loading && rows.length === 0 && (
           <div className="text-center py-12">
             <CreditCard size={32} color="#D2A679" className="mx-auto mb-3" />
-            <p className="font-bold" style={{ color: "#2E1A0F" }}>Hakuna malipo bado</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna malipo bado</p>
             <p className="text-sm mt-1" style={{ color: "#5C4033" }}>Tuma ombi kwenye tangazo kwanza.</p>
           </div>
         )}
 
         {rows.map((r, i) => (
-          <Link key={i} href={`/tangazo/${r.listing_id}`} className="block p-4 rounded-[18px]" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}>
+          <Link key={i} href={`/tangazo/${r.listing_id}`} className="block p-4 sheet rounded-[24px]">
             <div className="flex items-start justify-between gap-3">
-              <h2 className="font-bold" style={{ color: "#2E1A0F" }}>{r.title || "Tangazo"}</h2>
-              <span className="text-[10px] font-bold px-2 py-1 rounded-full" style={{ backgroundColor: "#F5E6D3", color: "#8B5E3C" }}>HAIJALIPWA</span>
+              <h2 className="font-heading text-lg leading-snug" style={{ color: "#2E1A0F" }}>{r.title || "Tangazo"}</h2>
+              <span className="text-[11px] px-2 py-1 rounded-full shrink-0" style={{ backgroundColor: "rgba(210,166,121,0.28)", color: "#8B5E3C" }}>Haijalipwa</span>
             </div>
             <p className="text-sm mt-2" style={{ color: "#2E1A0F" }}>{r.price ? `TZS ${formatPrice(r.price)}` : "Bei haipatikani"}</p>
             {r.message && <p className="text-xs mt-1" style={{ color: "#5C4033" }}>{r.message}</p>}

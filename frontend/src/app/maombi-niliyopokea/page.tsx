@@ -38,14 +38,14 @@ export default function IncomingPage() {
   return (
     <AuthGate>
     <main className="min-h-screen pb-24 overflow-x-hidden" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
+      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #2E1A0F" }}>
+          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Maombi niliyopokea</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>Kubali au kataa</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Maombi niliyopokea</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Kubali au kataa</p>
           </div>
         </div>
       </header>
@@ -53,7 +53,7 @@ export default function IncomingPage() {
         {loading && <p className="text-center py-10" style={{ color: "#5C4033" }}>Inapakia...</p>}
         {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "#2E1A0F" }}>Hakuna ombi</p>}
         {rows.map((r) => (
-          <div key={r.id} className="market-card p-5">
+          <div key={r.id} className="sheet rounded-[28px] p-5">
             <h2 className="font-heading" style={{ color: "#2E1A0F" }}>{r.title}</h2>
             {r.quantity != null && (
               <p className="text-sm mt-1 font-semibold" style={{ color: "#8B5E3C" }}>Kiasi: {r.quantity}</p>

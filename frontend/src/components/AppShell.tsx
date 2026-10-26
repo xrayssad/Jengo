@@ -40,7 +40,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {children}
       {show && (
         <>
-          <div aria-hidden style={{ height: "calc(76px + env(safe-area-inset-bottom, 0px))" }} />
+          <div aria-hidden style={{ height: "calc(86px + env(safe-area-inset-bottom, 0px))" }} />
           <BottomNav />
         </>
       )}

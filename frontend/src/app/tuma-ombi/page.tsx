@@ -84,29 +84,27 @@ function TumaOmbiForm() {
   if (done) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "#FFF6ED" }}>
-        <div className="max-w-sm w-full text-center">
+        <div className="sheet max-w-sm w-full text-center p-6 rounded-[28px]">
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-5"
-            style={{ background: "linear-gradient(145deg, #5E7F4F, #3D5C34)" }}
+            className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
+            style={{ backgroundColor: "#2E1A0F" }}
           >
-            <CheckCircle2 size={40} color="#FFF6ED" />
+            <CheckCircle2 size={32} color="#FFF6ED" />
           </div>
-          <h1 className="text-xl font-bold mb-2" style={{ color: "#2E1A0F" }}>Ombi limetumwa</h1>
+          <h1 className="font-heading text-3xl mb-2" style={{ color: "#2E1A0F" }}>Ombi limetumwa</h1>
           <p className="text-sm mb-8" style={{ color: "#5C4033" }}>
             Ombi lako kuhusu «{title}» limepokelewa.
           </p>
           <div className="space-y-3">
             <Link
               href={backHref}
-              className="block w-full py-3.5 rounded-[16px] font-semibold text-sm"
-              style={{ backgroundColor: "#2E1A0F", color: "#FFF6ED" }}
+              className="btn-primary block w-full py-3.5 rounded-full font-semibold text-sm"
             >
               Rudi tangazo
             </Link>
             <Link
               href="/home"
-              className="block w-full py-3 rounded-[16px] font-semibold text-sm"
-              style={{ color: "#8B5E3C" }}
+              className="btn-secondary block w-full py-3 rounded-full font-semibold text-sm"
             >
               Rudi Home
             </Link>
@@ -118,29 +116,21 @@ function TumaOmbiForm() {
 
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "#FFF6ED" }}>
-      <header
-        className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3"
-        style={{
-          backgroundColor: "rgba(255,246,237,0.92)",
-          backdropFilter: "blur(12px)",
-          borderBottom: "1px solid rgba(210,166,121,0.35)",
-        }}
-      >
+      <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3 glass">
         <Link
           href={backHref}
-          className="w-10 h-10 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}
+          className="w-10 h-10 rounded-full flex items-center justify-center icon-glass"
         >
           <ArrowLeft size={18} color="#2E1A0F" />
         </Link>
         <div>
-          <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Tuma Ombi</h1>
+          <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Tuma Ombi</h1>
           <p className="text-xs truncate max-w-[220px]" style={{ color: "#8B5E3C" }}>{title}</p>
         </div>
       </header>
 
       <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-6">
-      <div className="soft-card p-5 space-y-5">
+      <div className="sheet rounded-[28px] p-5 space-y-5">
         <p className="text-sm" style={{ color: "#5C4033" }}>
           Andika ujumbe mfupi kwa mwenye tangazo.
         </p>

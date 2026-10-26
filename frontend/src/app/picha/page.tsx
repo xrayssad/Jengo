@@ -11,13 +11,13 @@ export default function SavedImagesPage() {
 
   return (
     <main className="min-h-screen pb-24" style={{ backgroundColor: "#FFF6ED" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5" style={{ backgroundColor: "rgba(255,246,237,0.94)", borderBottom: "1px solid rgba(210,166,121,0.35)" }}>
+      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: "white", border: "1.5px solid #3D2415" }}>
+          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="text-lg font-bold" style={{ color: "#2E1A0F" }}>Picha zilizohifadhiwa</h1>
+            <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Picha zilizohifadhiwa</h1>
             <p className="text-xs" style={{ color: "#5C4033" }}>Picha ulizopakua kutoka kwenye post</p>
           </div>
         </div>
@@ -26,13 +26,13 @@ export default function SavedImagesPage() {
         {items.length === 0 && (
           <div className="col-span-2 text-center py-16">
             <Download size={32} color="#D2A679" className="mx-auto mb-3" />
-            <p className="font-bold" style={{ color: "#2E1A0F" }}>Hakuna picha bado</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna picha bado</p>
           </div>
         )}
         {items.map((img) => (
-          <Link key={img.id} href={`/tangazo/${img.listing_id}`} className="block rounded-[16px] overflow-hidden" style={{ backgroundColor: "white", border: "1px solid rgba(61,36,21,0.12)" }}>
+          <Link key={img.id} href={`/tangazo/${img.listing_id}`} className="estate-card block">
             <img src={img.url} alt="" className="w-full h-36 object-cover" />
-            <p className="text-xs font-semibold p-2 truncate" style={{ color: "#2E1A0F" }}>{img.title}</p>
+            <p className="text-xs p-2 truncate" style={{ color: "#2E1A0F" }}>{img.title}</p>
           </Link>
         ))}
       </div>

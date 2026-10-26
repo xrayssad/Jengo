@@ -35,12 +35,12 @@ export default function Page() {
     <main className="min-h-screen" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-5 py-4 glass">
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="btn-secondary w-10 h-10 rounded-full flex items-center justify-center">
+          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
             <ArrowLeft size={18} color="#2E1A0F" />
           </Link>
           <div>
-            <h1 className="font-heading text-lg" style={{ color: "#2E1A0F" }}>Matangazo yangu</h1>
-            <p className="text-xs" style={{ color: "#5C4033" }}>Uliyoweka</p>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "#2E1A0F" }}>Matangazo yangu</h1>
+            <p className="text-sm" style={{ color: "#5C4033" }}>Uliyoweka</p>
           </div>
         </div>
       </header>

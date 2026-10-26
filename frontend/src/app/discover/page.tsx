@@ -48,8 +48,9 @@ export default function DiscoverPage() {
     <main className="min-h-screen pb-8" style={{ backgroundColor: "#FFF6ED" }}>
       <header className="sticky top-0 z-20 px-5 pt-5 pb-3 glass">
         <div className="max-w-md mx-auto">
-          <h1 className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Discover</h1>
-          <div className="mt-3 flex items-center gap-2 px-4 py-3" style={{ backgroundColor: "white", border: "1px solid rgba(46,26,15,0.16)", borderRadius: 999 }}>
+          <p className="text-sm" style={{ color: "#8B5E3C" }}>Tazama</p>
+          <h1 className="font-heading text-[34px] leading-[1.05]" style={{ color: "#2E1A0F" }}>Discover</h1>
+          <div className="mt-4 flex items-center gap-2 px-4 py-3 sheet rounded-full">
             <Search size={16} color="#8B5E3C" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Tafuta jina au eneo" className="flex-1 bg-transparent text-sm outline-none" style={{ color: "#2E1A0F" }} />
           </div>
@@ -59,8 +60,8 @@ export default function DiscoverPage() {
                 key={c.id || "all"}
                 type="button"
                 onClick={() => setCat(c.id)}
-                className="px-3.5 py-1.5 rounded-full text-xs font-semibold shrink-0"
-                style={{ backgroundColor: cat === c.id ? "#2E1A0F" : "white", color: cat === c.id ? "#FFF6ED" : "#2E1A0F", border: "1px solid rgba(46,26,15,0.16)" }}
+                className={`px-3.5 py-1.5 text-sm shrink-0 ${cat === c.id ? "rounded-full" : "chip"}`}
+                style={cat === c.id ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}
               >
                 {c.label}
               </button>
@@ -72,7 +73,7 @@ export default function DiscoverPage() {
         {loading && <div className="flex justify-center py-16"><Loader2 className="animate-spin" color="#8B5E3C" /></div>}
         {!loading && shown.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading" style={{ color: "#2E1A0F" }}>Hakuna tangazo</p>
+            <p className="font-heading text-2xl" style={{ color: "#2E1A0F" }}>Hakuna tangazo</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Weka tangazo</Link>
           </div>
         )}
