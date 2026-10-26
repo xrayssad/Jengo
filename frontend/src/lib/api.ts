@@ -30,6 +30,7 @@ export type AuthUser = {
   full_name?: string | null;
   username?: string | null;
   email?: string | null;
+  phone?: string | null;
   role?: "user" | "admin" | string;
   is_admin?: boolean;
   needs_username?: boolean;
@@ -96,30 +97,36 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 }
 
 export async function register(body: {
-  email: string;
+  email?: string;
+  phone?: string;
   password: string;
   username: string;
   full_name: string;
 }) {
-  return request<{ ok: boolean; email: string; needs_verify?: boolean }>("/auth/register", {
+  return request<{ ok: boolean; email?: string; phone?: string; needs_verify?: boolean }>("/auth/register", {
     method: "POST",
     body: JSON.stringify(body),
   });
 }
 
-export async function verifyEmail(email: string, code: string) {
+export async function verifyOtp(ident: { email?: string; phone?: string }, code: string) {
   const data = await request<AuthUser>("/auth/verify", {
     method: "POST",
-    body: JSON.stringify({ email, code }),
+    body: JSON.stringify({ email: ident.email || "", phone: ident.phone || "", code }),
   });
   saveAuth(data);
   return data;
 }
 
-export async function resendOtp(email: string) {
+export async function verifyEmail(email: string, code: string) {
+  return verifyOtp({ email }, code);
+}
+
+export async function resendOtp(ident: string | { email?: string; phone?: string }) {
+  const body = typeof ident === "string" ? { email: ident, phone: ident } : { email: ident.email || "", phone: ident.phone || "" };
   return request<{ ok: boolean }>("/auth/resend", {
     method: "POST",
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -132,10 +139,10 @@ export async function confirmEmailLink(tokenHash: string, type?: string) {
   return data;
 }
 
-export async function login(email: string, password: string) {
+export async function login(ident: string, password: string) {
   const data = await request<AuthUser>("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email: ident, phone: ident, password }),
   });
   saveAuth(data);
   return data;

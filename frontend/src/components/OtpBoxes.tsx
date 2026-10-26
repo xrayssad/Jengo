@@ -5,7 +5,7 @@ import { useRef } from "react";
 export default function OtpBoxes({
   value,
   onChange,
-  length = 8,
+  length = 6,
 }: {
   value: string;
   onChange: (next: string) => void;
@@ -22,7 +22,7 @@ export default function OtpBoxes({
   };
 
   return (
-    <div className="flex gap-1.5 justify-between">
+    <div className="flex gap-2 justify-between">
       {Array.from({ length }).map((_, i) => (
         <input
           key={i}
@@ -43,7 +43,7 @@ export default function OtpBoxes({
             e.preventDefault();
             onChange(e.clipboardData.getData("text").replace(/\D/g, "").slice(0, length));
           }}
-          className="input-chocolate w-9 h-11 text-center text-sm font-semibold"
+          className="input-chocolate w-11 h-12 text-center text-base font-semibold"
         />
       ))}
     </div>

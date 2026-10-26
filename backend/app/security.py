@@ -13,7 +13,7 @@ QTY_RE = re.compile(r"^\[\[qty:([0-9.]+)\]\]\s*")
 REVIEW_RE = re.compile(r"\[\[review:(\d+):(.*?)\]\]\s*$", re.S)
 COMMISSION_RE = re.compile(r"\[\[commission:([^:\]]*):([^:\]]*)\]\]")
 
-LOGIN_ERROR = "Barua pepe au nenosiri si sahihi"
+LOGIN_ERROR = "Barua pepe, simu au nenosiri si sahihi"
 
 
 def load_env():
@@ -106,9 +106,13 @@ def needs_username(profile: dict | None) -> bool:
 def public_profile(user, token: str | None = None) -> dict:
     p = profile_of(user.id) or {}
     role = profile_role(p)
+    email = getattr(user, "email", None) or p.get("email")
+    if email and str(email).endswith("@simu.jengo.app"):
+        email = None
     out = {
         "user_id": user.id,
-        "email": getattr(user, "email", None) or p.get("email"),
+        "email": email,
+        "phone": getattr(user, "phone", None) or p.get("phone"),
         "username": p.get("username"),
         "full_name": p.get("full_name"),
         "role": role,

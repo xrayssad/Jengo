@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
+import { Eye, EyeOff, Mail, Lock, User, Phone } from "lucide-react";
 import { register as apiRegister, startGoogle } from "@/lib/api";
 
 const slides = [
@@ -18,7 +18,9 @@ export default function RegisterPage() {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
   const [username, setUsername] = useState("");
+  const [via, setVia] = useState<"phone" | "email">("phone");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
   const [slide, setSlide] = useState(0);
@@ -44,13 +46,17 @@ export default function RegisterPage() {
     }
     setBusy(true);
     try {
-      await apiRegister({
-        email: email.trim(),
+      const created = await apiRegister({
+        email: via === "email" ? email.trim() : "",
+        phone: via === "phone" ? phone.trim() : "",
         password,
         username: username.trim(),
         full_name: fullName.trim(),
       });
-      router.push(`/verify?email=${encodeURIComponent(email.trim())}&sent=1`);
+      const q = created.phone
+        ? `phone=${encodeURIComponent(created.phone)}`
+        : `email=${encodeURIComponent(created.email || email.trim())}`;
+      router.push(`/verify?${q}&sent=1`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Imeshindikana kujisajili");
     } finally {
@@ -81,8 +87,24 @@ export default function RegisterPage() {
         <div className="sheet max-w-sm mx-auto p-6 rounded-[28px] fade-up">
           <p className="text-sm" style={{ color: "#8B5E3C" }}>Jengo</p>
           <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "#2E1A0F" }}>Fungua akaunti</h1>
-          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Baada ya kujisajili, weka namba kutoka barua pepe ili akaunti ianze kufanya kazi.</p>
+          <p className="text-sm mb-6" style={{ color: "#5C4033" }}>Baada ya kujisajili, weka namba ya tarakimu 6 tuliyotuma kwenye simu au barua pepe.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex gap-2">
+              {([
+                { id: "phone", label: "Simu" },
+                { id: "email", label: "Barua pepe" },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setVia(opt.id)}
+                  className={`flex-1 py-2 text-sm ${via === opt.id ? "rounded-full" : "chip"}`}
+                  style={via === opt.id ? { backgroundColor: "#2E1A0F", color: "#FFF6ED" } : { color: "#2E1A0F" }}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
             <div>
               <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Jina kamili</label>
               <div className="relative">
@@ -94,13 +116,23 @@ export default function RegisterPage() {
               <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Username</label>
               <input required value={username} onChange={(e) => setUsername(e.target.value)} placeholder="jengo_duka" className="input-chocolate w-full px-4 py-3.5 text-sm" />
             </div>
-            <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Barua pepe</label>
-              <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
-                <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
+            {via === "phone" ? (
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Namba ya simu</label>
+                <div className="relative">
+                  <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
+                  <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="0712 345 678" inputMode="tel" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
+                </div>
               </div>
-            </div>
+            ) : (
+              <div>
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Barua pepe</label>
+                <div className="relative">
+                  <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="#8B5E3C" />
+                  <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
+                </div>
+              </div>
+            )}
             <div>
               <label className="text-xs font-semibold mb-1.5 block" style={{ color: "#2E1A0F" }}>Nenosiri</label>
               <div className="relative">
