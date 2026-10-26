@@ -79,9 +79,18 @@ def clear_otp(meta: dict | None) -> dict:
     return out
 
 
+def otp_text(code: str) -> str:
+    return f"Jengo namba: {code}"
+
+
 def send_sms(phone: str, code: str) -> bool:
-    text = f"Jengo namba: {code}"
+    text = otp_text(code)
     return _africastalking(phone, text) or _twilio(phone, text) or _webhook(phone, text)
+
+
+def send_email(to: str, code: str) -> bool:
+    text = otp_text(code)
+    return _resend(to, text) or _sendgrid(to, text) or _brevo(to, text) or _smtp(to, text) or _email_webhook(to, text)
 
 
 def _africastalking(phone: str, text: str) -> bool:
@@ -129,6 +138,110 @@ def _webhook(phone: str, text: str) -> bool:
         return False
     try:
         res = httpx.post(url, json={"phone": phone, "message": text}, timeout=10.0)
+        return res.status_code < 300
+    except Exception:
+        return False
+
+
+def _mail_from() -> str:
+    return (os.getenv("MAIL_FROM") or os.getenv("SMTP_FROM") or os.getenv("RESEND_FROM") or "Jengo <noreply@jengo.app>").strip()
+
+
+def _resend(to: str, text: str) -> bool:
+    key = (os.getenv("RESEND_API_KEY") or "").strip()
+    if not key:
+        return False
+    try:
+        res = httpx.post(
+            "https://api.resend.com/emails",
+            json={"from": _mail_from(), "to": [to], "subject": "Jengo namba", "text": text},
+            headers={"Authorization": f"Bearer {key}"},
+            timeout=10.0,
+        )
+        return res.status_code < 300
+    except Exception:
+        return False
+
+
+def _sendgrid(to: str, text: str) -> bool:
+    key = (os.getenv("SENDGRID_API_KEY") or "").strip()
+    if not key:
+        return False
+    sender = _mail_from()
+    try:
+        res = httpx.post(
+            "https://api.sendgrid.com/v3/mail/send",
+            json={
+                "personalizations": [{"to": [{"email": to}]}],
+                "from": {"email": sender[sender.find("<") + 1 : sender.find(">")] if "<" in sender else sender, "name": "Jengo"},
+                "subject": "Jengo namba",
+                "content": [{"type": "text/plain", "value": text}],
+            },
+            headers={"Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+            timeout=10.0,
+        )
+        return res.status_code < 300
+    except Exception:
+        return False
+
+
+def _brevo(to: str, text: str) -> bool:
+    key = (os.getenv("BREVO_API_KEY") or os.getenv("SENDINBLUE_API_KEY") or "").strip()
+    if not key:
+        return False
+    sender = _mail_from()
+    email = sender[sender.find("<") + 1 : sender.find(">")] if "<" in sender else sender
+    try:
+        res = httpx.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json={
+                "sender": {"email": email, "name": "Jengo"},
+                "to": [{"email": to}],
+                "subject": "Jengo namba",
+                "textContent": text,
+            },
+            headers={"api-key": key, "Accept": "application/json"},
+            timeout=10.0,
+        )
+        return res.status_code < 300
+    except Exception:
+        return False
+
+
+def _smtp(to: str, text: str) -> bool:
+    host = (os.getenv("SMTP_HOST") or "").strip()
+    user = (os.getenv("SMTP_USER") or os.getenv("SMTP_USERNAME") or "").strip()
+    password = (os.getenv("SMTP_PASSWORD") or os.getenv("SMTP_PASS") or "").strip()
+    if not host or not user or not password:
+        return False
+    port = int(os.getenv("SMTP_PORT") or "587")
+    sender = _mail_from()
+    from_addr = sender[sender.find("<") + 1 : sender.find(">")] if "<" in sender else sender
+    message = f"From: {sender}\r\nTo: {to}\r\nSubject: Jengo namba\r\n\r\n{text}\r\n"
+    try:
+        import smtplib
+        import ssl
+
+        if port == 465:
+            with smtplib.SMTP_SSL(host, port, context=ssl.create_default_context(), timeout=10) as smtp:
+                smtp.login(user, password)
+                smtp.sendmail(from_addr, [to], message)
+        else:
+            with smtplib.SMTP(host, port, timeout=10) as smtp:
+                smtp.starttls(context=ssl.create_default_context())
+                smtp.login(user, password)
+                smtp.sendmail(from_addr, [to], message)
+        return True
+    except Exception:
+        return False
+
+
+def _email_webhook(to: str, text: str) -> bool:
+    url = (os.getenv("EMAIL_WEBHOOK_URL") or "").strip()
+    if not url:
+        return False
+    try:
+        res = httpx.post(url, json={"email": to, "message": text}, timeout=10.0)
         return res.status_code < 300
     except Exception:
         return False
