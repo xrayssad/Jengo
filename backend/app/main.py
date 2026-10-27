@@ -770,6 +770,21 @@ def login(request: Request, body: LoginIn):
 GOOGLE_OFF = "Google is not connected in Supabase. Turn on the Google provider, or log in with email."
 
 
+def _google_client_id(authorize_url: str, probe) -> str:
+    from urllib.parse import parse_qs, urljoin, urlparse
+
+    env_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
+    loc = probe.headers.get("location") or ""
+    haystack = " ".join([loc, probe.text or "", authorize_url])
+    if loc:
+        abs_url = urljoin(authorize_url, loc)
+        cid = (parse_qs(urlparse(abs_url).query).get("client_id") or [""])[0]
+        if cid:
+            return cid
+    found = re.search(r"([A-Za-z0-9\-_.]+\.apps\.googleusercontent\.com)", haystack)
+    return found.group(1) if found else env_id
+
+
 @app.get("/auth/google")
 def google_start(redirect_to: str):
     dest = _safe_redirect(redirect_to)
@@ -784,6 +799,7 @@ def google_start(redirect_to: str):
         raise
     except Exception:
         raise HTTPException(status_code=400, detail=GOOGLE_OFF)
+    client_id = (os.getenv("GOOGLE_CLIENT_ID") or "").strip()
     try:
         import httpx
 
@@ -791,11 +807,12 @@ def google_start(redirect_to: str):
         body = (probe.text or "").lower()
         if probe.status_code >= 400 or "provider is not enabled" in body or "unsupported provider" in body:
             raise HTTPException(status_code=400, detail=GOOGLE_OFF)
+        client_id = _google_client_id(url, probe) or client_id
     except HTTPException:
         raise
     except Exception:
         pass
-    return {"url": url}
+    return {"url": url, "client_id": client_id}
 
 
 @app.post("/auth/session")

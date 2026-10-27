@@ -71,10 +71,13 @@ export default function RegisterPage() {
 
   const google = async () => {
     setGoogleMsg("");
+    setBusy(true);
     try {
       await startGoogle(`${window.location.origin}/auth/callback`);
     } catch (err) {
       setGoogleMsg(err instanceof Error ? err.message : "Google is not connected in Supabase. Turn on the Google provider, or log in with email.");
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -153,8 +156,8 @@ export default function RegisterPage() {
               {busy ? "Creating account..." : "Continue"}
             </button>
           </form>
-          <button type="button" onClick={google} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
-            Continue with Google
+          <button type="button" onClick={google} disabled={busy} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
+            {busy ? "Opening Google..." : "Continue with Google"}
           </button>
           {googleMsg && <p className="text-sm mt-3 font-semibold" style={{ color: "var(--error)" }}>{googleMsg}</p>}
           <p className="text-center text-sm mt-6">
