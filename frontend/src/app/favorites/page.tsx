@@ -2,16 +2,38 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bookmark } from "lucide-react";
+import { ArrowLeft, Bookmark, Clapperboard } from "lucide-react";
 import ListingCard from "@/components/ListingCard";
+import PosterName from "@/components/PosterName";
 import { type Listing } from "@/lib/api";
-import { readSaved } from "@/lib/social";
+import { readSaved, type SavedPost } from "@/lib/social";
+
+function ReelFavorite({ item }: { item: SavedPost }) {
+  return (
+    <Link href="/reels" className="estate-card block overflow-hidden">
+      <div className="relative" style={{ height: 220, backgroundColor: "var(--ink-2)" }}>
+        {item.thumb_url || item.images?.[0] ? (
+          <img src={item.thumb_url || item.images?.[0]} alt="" className="w-full h-full object-cover" />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center">
+            <Clapperboard size={28} color="var(--gold)" />
+          </div>
+        )}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.72), transparent 55%)" }} />
+        <div className="absolute left-3 right-3 bottom-3">
+          <PosterName item={item} tone="photo" />
+          <p className="text-sm mt-1 truncate" style={{ color: "#FFF6ED" }}>{item.title}</p>
+        </div>
+      </div>
+    </Link>
+  );
+}
 
 export default function FavoritesPage() {
-  const [items, setItems] = useState<Listing[]>([]);
+  const [items, setItems] = useState<SavedPost[]>([]);
 
   useEffect(() => {
-    const sync = () => setItems(readSaved() as Listing[]);
+    const sync = () => setItems(readSaved());
     sync();
     window.addEventListener("storage", sync);
     window.addEventListener("jengo-saved", sync);
@@ -30,7 +52,7 @@ export default function FavoritesPage() {
           </Link>
           <div>
             <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Favorites</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Saved with a bookmark</p>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Saved listings and reels</p>
           </div>
         </div>
       </header>
@@ -39,12 +61,16 @@ export default function FavoritesPage() {
           <div className="text-center py-16">
             <Bookmark size={28} color="var(--caramel)" className="mx-auto mb-3" />
             <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No favorites yet</p>
-            <p className="text-sm mt-2 px-4" style={{ color: "var(--muted)" }}>Tap the bookmark on a listing to see it here.</p>
+            <p className="text-sm mt-2 px-4" style={{ color: "var(--muted)" }}>Tap the bookmark on a listing or reel to see it here.</p>
           </div>
         )}
-        {items.map((item) => (
-          <ListingCard key={item.id} item={item} />
-        ))}
+        {items.map((item) =>
+          item.kind === "reel" ? (
+            <ReelFavorite key={item.id} item={item} />
+          ) : (
+            <ListingCard key={item.id} item={item as Listing} />
+          ),
+        )}
       </div>
     </main>
   );

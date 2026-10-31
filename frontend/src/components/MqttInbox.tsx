@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { Send } from "lucide-react";
 import { clearAuth, fetchInbox, fetchMqttSession, getAuthUser, getToken } from "@/lib/api";
 
-type Ping = { type?: string; thread_key?: string; id?: string; listing_id?: string; likes_count?: number };
+type Ping = { type?: string; thread_key?: string; id?: string; listing_id?: string; reel_id?: string; likes_count?: number };
 type Unwatch = () => void;
 type Ctx = { unread: boolean; clear: () => void; watchListing: (id: string) => Unwatch };
 
@@ -126,6 +126,10 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
     const onPing = (ping: Ping) => {
       if (ping.type === "like") {
         window.dispatchEvent(new CustomEvent("jengo-like", { detail: ping }));
+        return;
+      }
+      if (ping.type === "reel_like") {
+        window.dispatchEvent(new CustomEvent("jengo-reel-like", { detail: ping }));
         return;
       }
       window.dispatchEvent(new CustomEvent("jengo-chat", { detail: ping }));

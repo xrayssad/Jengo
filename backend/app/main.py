@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app import mqtt_bus, phone_auth, places, social
+from app import cloudinary_media, mqtt_bus, phone_auth, places, reels, social
 from app.uploads import save_listing_photo
 from app.security import (
     LOGIN_ERROR,
@@ -145,6 +145,13 @@ class MessageIn(BaseModel):
 class CommentIn(BaseModel):
     body: str
     parent_id: str = ""
+
+
+class ReelIn(BaseModel):
+    caption: str = ""
+    video_url: str
+    public_id: str
+    thumb_url: str = ""
 
 
 def _save_row(table: str, row: dict, fallback: dict):
@@ -1487,3 +1494,40 @@ def create_comment(listing_id: str, body: CommentIn, user=Depends(current_user))
 @app.post("/comments/{comment_id}/like")
 def like_comment(comment_id: str, user=Depends(current_user)):
     return social.toggle_comment_like(comment_id, user.id)
+
+
+@app.get("/reels/sign")
+def sign_reel(user=Depends(current_user)):
+    limiter.check(f"reel-sign:{user.id}", 20)
+    return cloudinary_media.sign_video_upload()
+
+
+@app.get("/reels")
+def list_reels(limit: int = 40):
+    return {"items": reels.list_reels(limit)}
+
+
+@app.get("/reels/mine")
+def my_reels(limit: int = 40, user=Depends(current_user)):
+    return {"items": reels.list_reels(limit, mine_id=user.id)}
+
+
+@app.get("/reels/{reel_id}")
+def get_reel(reel_id: str):
+    return reels.get_reel(reel_id)
+
+
+@app.post("/reels")
+def create_reel(body: ReelIn, user=Depends(current_user)):
+    limiter.check(f"reel-create:{user.id}", 8)
+    return reels.create_reel(user.id, body.caption, body.video_url, body.public_id, body.thumb_url)
+
+
+@app.post("/reels/{reel_id}/like")
+def like_reel(reel_id: str, body: LikeIn, user=Depends(current_user)):
+    out = reels.like_reel(reel_id, body.on, user.id)
+    ping = {"type": "reel_like", "reel_id": reel_id, "likes_count": out["likes_count"], "on": body.on}
+    owner = str(out.get("owner_id") or "")
+    if owner and owner != user.id:
+        mqtt_bus.notify_users([owner], ping)
+    return {"id": reel_id, "likes_count": out["likes_count"]}

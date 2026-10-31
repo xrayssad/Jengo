@@ -432,6 +432,98 @@ export async function likeListing(id: string, on: boolean): Promise<number> {
   return data.likes_count;
 }
 
+export type Reel = {
+  id: string;
+  caption?: string;
+  video_url: string;
+  thumb_url?: string;
+  public_id?: string;
+  likes_count?: number;
+  created_at?: string;
+  owner_id?: string;
+  owner_username?: string | null;
+  owner_name?: string | null;
+};
+
+export async function fetchReels(limit = 40) {
+  return request<{ items: Reel[] }>(`/reels?limit=${limit}`);
+}
+
+export async function fetchMyReels(limit = 40) {
+  return request<{ items: Reel[] }>(`/reels/mine?limit=${limit}`);
+}
+
+export async function fetchReel(id: string) {
+  return request<Reel>(`/reels/${id}`);
+}
+
+export async function likeReel(id: string, on: boolean): Promise<number> {
+  const data = await request<{ likes_count: number }>(`/reels/${id}/like`, {
+    method: "POST",
+    body: JSON.stringify({ on }),
+  });
+  return data.likes_count;
+}
+
+export async function createReel(body: { caption: string; video_url: string; public_id: string; thumb_url?: string }) {
+  return request<Reel>("/reels", {
+    method: "POST",
+    body: JSON.stringify(body),
+  });
+}
+
+export async function signReelUpload() {
+  return request<{
+    cloud_name: string;
+    api_key: string;
+    timestamp: number;
+    signature: string;
+    folder: string;
+    upload_url: string;
+    max_bytes: number;
+  }>("/reels/sign");
+}
+
+export async function uploadReelVideo(file: File, onProgress?: (pct: number) => void) {
+  const sign = await signReelUpload();
+  if (file.size > (sign.max_bytes || 80 * 1024 * 1024)) {
+    throw new Error("Video is too large. Use one under 80MB");
+  }
+  const body = new FormData();
+  body.append("file", file);
+  body.append("api_key", sign.api_key);
+  body.append("timestamp", String(sign.timestamp));
+  body.append("signature", sign.signature);
+  body.append("folder", sign.folder);
+  const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", sign.upload_url);
+    xhr.upload.onprogress = (ev) => {
+      if (!onProgress || !ev.lengthComputable) return;
+      onProgress(Math.round((ev.loaded / ev.total) * 100));
+    };
+    xhr.onerror = () => reject(new Error("Cloudinary could not take the video"));
+    xhr.onload = () => {
+      try {
+        const parsed = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
+        if (xhr.status >= 200 && xhr.status < 300 && parsed.secure_url) {
+          resolve(parsed);
+          return;
+        }
+        reject(new Error(String(parsed.error && typeof parsed.error === "object" && "message" in parsed.error ? (parsed.error as { message: string }).message : "Cloudinary upload failed")));
+      } catch {
+        reject(new Error("Cloudinary upload failed"));
+      }
+    };
+    xhr.send(body);
+  });
+  return {
+    video_url: String(data.secure_url || ""),
+    public_id: String(data.public_id || ""),
+    thumb_url: String(data.secure_url || "").replace("/video/upload/", "/video/upload/so_0,w_720,h_1280,c_fill,q_auto,f_jpg/").replace(/\.[a-z0-9]+$/i, ".jpg"),
+  };
+}
+
 export type Booking = {
   id: string;
   listing_id: string;

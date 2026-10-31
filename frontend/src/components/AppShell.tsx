@@ -25,6 +25,10 @@ function hideNav(path: string) {
   return false;
 }
 
+function fullBleed(path: string) {
+  return path === "/reels";
+}
+
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "";
   const show = !hideNav(path);
@@ -41,7 +45,9 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {children}
       {show && (
         <>
-          <div aria-hidden style={{ height: "calc(86px + env(safe-area-inset-bottom, 0px))" }} />
+          {!fullBleed(path) && (
+            <div aria-hidden style={{ height: "calc(86px + env(safe-area-inset-bottom, 0px))" }} />
+          )}
           <BottomNav />
         </>
       )}

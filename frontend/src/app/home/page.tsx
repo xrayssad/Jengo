@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
-  Menu, Search, User, Send, Compass, Bookmark, Settings, X,
+  Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
@@ -27,7 +27,7 @@ const sideLinks = [
   { label: "Requests I received", href: "/maombi-niliyopokea", icon: Inbox },
   { label: "Profile", href: "/profile", icon: User },
   { label: "Messages", href: "/messages", icon: Send },
-  { label: "Discover", href: "/discover", icon: Compass },
+  { label: "Reels", href: "/reels", icon: Clapperboard },
   { label: "Favorites", href: "/favorites", icon: Bookmark },
   { label: "Saved photos", href: "/picha", icon: Download },
   { label: "Payments", href: "/malipo", icon: CreditCard },
