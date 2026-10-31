@@ -1,9 +1,9 @@
 import type { Listing } from "@/lib/api";
 
 export function posterLabel(item: { owner_name?: string | null; owner_username?: string | null }) {
-  const name = (item.owner_name || "").trim();
   const username = (item.owner_username || "").trim();
-  return { name, username, show: Boolean(name || username) };
+  const name = (item.owner_name || "").trim() || username || "Jengo";
+  return { name, username, show: true };
 }
 
 export default function PosterName({
