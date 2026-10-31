@@ -188,19 +188,13 @@ async function googleClientId(redirectTo: string) {
 async function finishGoogleToken(token: string, nonce: string) {
   const { getSupabase } = await import("./supabase");
   const supabase = getSupabase();
-  let { data, error } = await supabase.auth.signInWithIdToken({
+  const { data, error } = await supabase.auth.signInWithIdToken({
     provider: "google",
     token,
     nonce,
   });
-  if (error && /nonce/i.test(error.message)) {
-    ({ data, error } = await supabase.auth.signInWithIdToken({
-      provider: "google",
-      token,
-    }));
-  }
   if (error || !data.session?.access_token) {
-    throw new Error(googleError(error?.message || GOOGLE_OFF));
+    throw new Error(error?.message || GOOGLE_OFF);
   }
   const user = await adoptSession(data.session.access_token);
   window.location.href = afterAuthPath(user);

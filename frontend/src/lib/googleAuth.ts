@@ -108,14 +108,14 @@ function gisCredential(clientId: string, hashedNonce: string): Promise<string> {
   );
 }
 
-function implicitCredential(clientId: string, nonce: string): Promise<string> {
+function implicitCredential(clientId: string, hashed: string): Promise<string> {
   const redirectUri = `${window.location.origin}/auth/google-popup`;
   const url = new URL("https://accounts.google.com/o/oauth2/v2/auth");
   url.searchParams.set("client_id", clientId);
   url.searchParams.set("redirect_uri", redirectUri);
   url.searchParams.set("response_type", "id_token");
   url.searchParams.set("scope", "openid email profile");
-  url.searchParams.set("nonce", nonce);
+  url.searchParams.set("nonce", hashed);
   url.searchParams.set("prompt", "select_account");
 
   return new Promise((resolve, reject) => {
@@ -157,7 +157,7 @@ export async function requestGoogleIdToken(clientId: string): Promise<{ token: s
       throw new Error(originHint());
     }
     try {
-      const token = await implicitCredential(clientId, nonce);
+      const token = await implicitCredential(clientId, hashed);
       return { token, nonce };
     } catch (next) {
       if (googleClosed(next) && !originBlocked(err)) {
