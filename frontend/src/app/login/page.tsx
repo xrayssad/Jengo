@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Eye, EyeOff, Mail, Lock } from "lucide-react";
+import { Eye, EyeOff, User, Lock } from "lucide-react";
 import { afterAuthPath, login as apiLogin, resendOtp, startGoogle } from "@/lib/api";
 
 const slides = [
@@ -37,12 +37,12 @@ export default function LoginPage() {
       const user = await apiLogin(email.trim(), password);
       window.location.href = afterAuthPath(user);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Email, phone or password is incorrect";
+      const msg = err instanceof Error ? err.message : "Username or password is incorrect";
       if (msg.toLowerCase().includes("haijathibitishwa") || msg.toLowerCase().includes("not verified")) {
         setUnverified(true);
         setError("Account not verified. Resend the code to confirm it.");
       } else {
-        setError("Phone, email or password is incorrect");
+        setError("Username or password is incorrect");
       }
     } finally {
       setBusy(false);
@@ -75,13 +75,13 @@ export default function LoginPage() {
         <div className="sheet max-w-sm mx-auto p-6 rounded-[28px] fade-up">
           <p className="text-sm" style={{ color: "var(--mocha)" }}>Jengo</p>
           <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "var(--ink)" }}>Welcome back</h1>
-          <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>Log in with phone, email or Google.</p>
+          <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>Log in with your username or Google.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--ink)" }}>Phone or email</label>
+              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--ink)" }}>Username</label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="var(--mocha)" />
-                <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="0712 345 678 or email" inputMode="email" autoComplete="username" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
+                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="var(--mocha)" />
+                <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jengo_duka" autoComplete="username" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
               </div>
             </div>
             <div>
@@ -102,12 +102,9 @@ export default function LoginPage() {
                 style={{ color: "var(--mocha)" }}
                 onClick={async () => {
                   try {
-                    if (!email.includes("@")) {
-                      setError("OTP is sent to email only. Log in with email to verify.");
-                      return;
-                    }
-                    await resendOtp({ email: email.trim() });
-                    window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
+                    const sent = await resendOtp({ email: email.trim() });
+                    const inbox = sent.email || email.trim();
+                    window.location.href = `/verify?email=${encodeURIComponent(inbox)}&sent=1`;
                   } catch (err) {
                     const msg = err instanceof Error ? err.message : "Could not send";
                     if (msg.toLowerCase().includes("60") || msg.toLowerCase().includes("baadaye") || msg.toLowerCase().includes("later")) {

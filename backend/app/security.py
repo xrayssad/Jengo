@@ -13,7 +13,7 @@ QTY_RE = re.compile(r"^\[\[qty:([0-9.]+)\]\]\s*")
 REVIEW_RE = re.compile(r"\[\[review:(\d+):(.*?)\]\]\s*$", re.S)
 COMMISSION_RE = re.compile(r"\[\[commission:([^:\]]*):([^:\]]*)\]\]")
 
-LOGIN_ERROR = "Email, phone or password is incorrect"
+LOGIN_ERROR = "Username or password is incorrect"
 
 
 def load_env():
@@ -155,7 +155,15 @@ def _as_phones(val) -> list[str]:
     return []
 
 
-def decorate_listing(row: dict | None) -> dict | None:
+def _owner_fields(profile: dict | None) -> dict:
+    p = profile or {}
+    return {
+        "owner_username": str(p.get("username") or "").strip(),
+        "owner_name": str(p.get("full_name") or "").strip(),
+    }
+
+
+def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owner: bool = True) -> dict | None:
     if not row:
         return row
     item = dict(row)
@@ -171,7 +179,29 @@ def decorate_listing(row: dict | None) -> dict | None:
     if not phones:
         phones = _as_phones(item.get("phone")) or _as_phones(meta.get("phone"))
     item["phones"] = phones
+    if owner is None and lookup_owner and item.get("owner_id"):
+        owner = profile_of(str(item["owner_id"]))
+    item.update(_owner_fields(owner))
     return item
+
+
+def decorate_listings(rows: list | None) -> list:
+    items = [row for row in (rows or []) if row]
+    ids: list[str] = []
+    seen: set[str] = set()
+    for row in items:
+        oid = str(row.get("owner_id") or "")
+        if oid and oid not in seen:
+            seen.add(oid)
+            ids.append(oid)
+    owners: dict[str, dict] = {}
+    if ids:
+        res = db().table("profiles").select("id,username,full_name").in_("id", ids).execute()
+        owners = {str(r.get("id")): r for r in (res.data or [])}
+    return [
+        decorate_listing(row, owners.get(str(row.get("owner_id") or "")), lookup_owner=False)
+        for row in items
+    ]
 
 
 def qty_from_booking(row: dict) -> float | None:

@@ -44,7 +44,7 @@ export default function DiscoverPage() {
       if (cat === "maduka" && !shop.has(item.category || "")) return false;
       if (cat && cat !== "maduka" && item.category !== cat) return false;
       if (!needle) return true;
-      return [item.title, item.location, item.city, item.category].filter(Boolean).join(" ").toLowerCase().includes(needle);
+      return [item.title, item.location, item.city, item.category, item.owner_name, item.owner_username].filter(Boolean).join(" ").toLowerCase().includes(needle);
     });
   }, [items, q, cat]);
 

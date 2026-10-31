@@ -20,6 +20,7 @@ from app.security import (
     current_user,
     db,
     decorate_listing,
+    decorate_listings,
     is_admin,
     limiter,
     needs_username,
@@ -100,6 +101,7 @@ class RegisterIn(BaseModel):
 class LoginIn(BaseModel):
     email: str = ""
     phone: str = ""
+    username: str = ""
     password: str
 
 
@@ -560,7 +562,7 @@ def _existing_account_detail(user) -> str:
     if "google" in _auth_providers(user):
         return "This account uses Google. Log in with Google. No OTP needed."
     if _account_confirmed(user):
-        return "Account exists. Log in with phone or email and password."
+        return "Account exists. Log in with your username and password."
     return "Account exists. Verify the code in your email, or log in."
 
 
@@ -595,11 +597,11 @@ def health():
 @app.post("/auth/register")
 def register(request: Request, body: RegisterIn):
     limiter.check(f"register:{_client_key(request)}", 5)
-    kind, ident = phone_auth.parse_ident(body.phone, body.email)
+    kind, ident = phone_auth.parse_ident(body.email)
     username = body.username.strip()
     full_name = body.full_name.strip()
-    if kind not in {"email", "phone"}:
-        raise HTTPException(status_code=400, detail="Enter a phone number or email")
+    if kind != "email":
+        raise HTTPException(status_code=400, detail="Use an email to create the account")
     if len(body.password) < 8:
         raise HTTPException(status_code=400, detail="Password must be at least 8 characters")
     if not USERNAME_RE.match(username):
@@ -608,18 +610,13 @@ def register(request: Request, body: RegisterIn):
         raise HTTPException(status_code=400, detail="Name is required")
     if _username_taken(username):
         raise HTTPException(status_code=400, detail="Username is already taken")
-    email = ident if kind == "email" else ""
-    phone = ident if kind == "phone" else ""
-    existing = _find_account(email, phone)
+    email = ident
+    existing = _find_account(email, "")
     if existing:
         if _account_confirmed(existing) or "google" in _auth_providers(existing):
             raise HTTPException(status_code=400, detail=_existing_account_detail(existing))
-        _continue_unconfirmed_signup(existing, email, body.password, username, full_name, phone)
-        if phone:
-            return _password_session(body.password, phone=phone)
+        _continue_unconfirmed_signup(existing, email, body.password, username, full_name)
         return {"ok": True, "email": email, "needs_verify": True}
-    if phone:
-        return _register_phone(phone, body.password, username, full_name)
     return _register_email(email, body.password, username, full_name)
 
 
@@ -738,7 +735,11 @@ def confirm_email_link(request: Request, body: ConfirmIn):
 @app.post("/auth/resend")
 def resend(request: Request, body: ResendIn):
     limiter.check(f"resend:{_client_key(request)}", 5)
-    kind, ident = phone_auth.parse_ident(body.email)
+    kind, ident = phone_auth.parse_ident(body.email, body.phone)
+    if kind == "username":
+        profile = _profile_by_username(ident)
+        ident = str((profile or {}).get("email") or "").strip()
+        kind = "email" if "@" in ident and not ident.endswith("@simu.jengo.app") else ""
     if kind != "email":
         raise HTTPException(status_code=400, detail="Enter your email")
     existing = _find_account(ident)
@@ -753,13 +754,28 @@ def resend(request: Request, body: ResendIn):
     user = existing or _auth_user_by_email(ident)
     if not user or not _issue_otp(user.id, ident):
         raise HTTPException(status_code=400, detail="Could not send the 8-digit code to your email")
-    return {"ok": True}
+    return {"ok": True, "email": ident}
+
+
+def _profile_by_username(username: str) -> dict | None:
+    res = db().table("profiles").select("*").ilike("username", username).limit(5).execute()
+    rows = [r for r in (res.data or []) if str(r.get("username") or "").lower() == username.lower()]
+    return rows[0] if rows else None
 
 
 @app.post("/auth/login")
 def login(request: Request, body: LoginIn):
     limiter.check(f"login:{_client_key(request)}", 8)
-    kind, ident = phone_auth.parse_ident(body.phone, body.email)
+    kind, ident = phone_auth.parse_ident(body.username, body.phone, body.email)
+    if kind == "username":
+        profile = _profile_by_username(ident)
+        if not profile:
+            raise HTTPException(status_code=401, detail=LOGIN_ERROR)
+        email = str(profile.get("email") or "").strip()
+        phone = str(profile.get("phone") or "").strip()
+        if email.endswith("@simu.jengo.app"):
+            email = ""
+        return _password_session(body.password, email=email, phone=phone)
     if kind == "phone":
         return _password_session(body.password, phone=ident)
     if kind != "email":
@@ -971,7 +987,7 @@ def admin_users(user=Depends(current_user)):
 def admin_listings(user=Depends(current_user)):
     require_admin(user)
     res = db().table("listings").select("*").order("created_at", desc=True).limit(200).execute()
-    return {"items": [decorate_listing(x) for x in (res.data or [])]}
+    return {"items": decorate_listings(res.data or [])}
 
 
 @app.get("/admin/bookings")
@@ -1072,7 +1088,7 @@ def list_listings(
             cap = max(cap, 100)
     column = "likes_count" if sort == "likes" else "created_at"
     res = query.order(column, desc=True).limit(cap).execute()
-    items = [decorate_listing(x) for x in (res.data or [])]
+    items = decorate_listings(res.data or [])
     return {"items": items}
 
 

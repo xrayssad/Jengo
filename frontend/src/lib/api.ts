@@ -17,6 +17,8 @@ export type Listing = {
   unit?: string | null;
   stock?: number | null;
   owner_id?: string;
+  owner_username?: string | null;
+  owner_name?: string | null;
   phones?: string[];
   phone?: string;
 };
@@ -126,7 +128,7 @@ export async function verifyEmail(email: string, code: string) {
 
 export async function resendOtp(ident: string | { email?: string; phone?: string }) {
   const body = typeof ident === "string" ? { email: ident, phone: ident } : { email: ident.email || "", phone: ident.phone || "" };
-  return request<{ ok: boolean }>("/auth/resend", {
+  return request<{ ok: boolean; email?: string }>("/auth/resend", {
     method: "POST",
     body: JSON.stringify(body),
   });
@@ -144,7 +146,7 @@ export async function confirmEmailLink(tokenHash: string, type?: string) {
 export async function login(ident: string, password: string) {
   const data = await request<AuthUser>("/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email: ident, phone: ident, password }),
+    body: JSON.stringify({ username: ident, password }),
   });
   saveAuth(data);
   return data;

@@ -262,6 +262,7 @@ function AdminDesk() {
                     <thead>
                       <tr style={{ borderBottom: "2px solid var(--ink)" }}>
                         <th className="py-2 font-semibold">Title</th>
+                        <th className="py-2 font-semibold">Posted by</th>
                         <th className="py-2 font-semibold">Category</th>
                         <th className="py-2 font-semibold">Price</th>
                         <th className="py-2 font-semibold">Status</th>
@@ -272,6 +273,10 @@ function AdminDesk() {
                       {listings.map((item) => (
                         <tr key={item.id} style={{ borderBottom: "1px solid rgba(var(--ink-rgb),0.12)" }}>
                           <td className="py-3 pr-3">{item.title}</td>
+                          <td className="py-3 pr-3">
+                            {item.owner_name || item.owner_username || "—"}
+                            {item.owner_username ? ` @${item.owner_username}` : ""}
+                          </td>
                           <td className="py-3 pr-3">{catLabel[item.category || ""] || item.category || "—"}</td>
                           <td className="py-3 pr-3">TZS {formatPrice(item.price)}</td>
                           <td className="py-3 pr-3">{LISTING_STATUS[item.status || "active"] || item.status}</td>

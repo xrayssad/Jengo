@@ -8,6 +8,7 @@ import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabe
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
+import PosterName from "@/components/PosterName";
 
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
@@ -84,6 +85,9 @@ export default function DetailsClient({ id }: { id: string }) {
           <div className="max-w-md mx-auto px-4 -mt-14 relative z-10">
             <div className="sheet rounded-[28px] p-5">
               <h1 className="font-heading text-[32px] leading-[1.05]" style={{ color: "var(--ink)" }}>{item.title}</h1>
+              <div className="mt-3">
+                <PosterName item={item} />
+              </div>
               <p className="flex items-center gap-1.5 mt-2 text-sm" style={{ color: "var(--muted)" }}>
                 <MapPin size={14} color="var(--mocha)" />
                 {[item.location, item.city].filter(Boolean).join(", ") || "—"}

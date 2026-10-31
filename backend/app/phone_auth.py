@@ -33,9 +33,13 @@ def parse_ident(*vals) -> tuple[str, str]:
             continue
         if "@" in s:
             return "email", s.lower()
+        if re.fullmatch(r"[A-Za-z0-9_]{3,20}", s) and not re.fullmatch(r"\d{3,20}", s):
+            return "username", s
         phone = as_e164(s)
         if phone:
             return "phone", phone
+        if re.fullmatch(r"[A-Za-z0-9_]{3,20}", s):
+            return "username", s
     return "", ""
 
 

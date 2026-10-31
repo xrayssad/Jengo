@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { catLabel, formatPrice, listingUnit, periodLabel, unitLabel, type Listing } from "@/lib/api";
+import PosterName from "./PosterName";
 import SocialActions from "./SocialActions";
 
 export default function ListingCard({ item, eager }: { item: Listing; eager?: boolean }) {
@@ -41,6 +42,9 @@ export default function ListingCard({ item, eager }: { item: Listing; eager?: bo
             {photos.length} photos
           </span>
         )}
+        <div className="absolute top-3 left-3 z-10 max-w-[70%]">
+          <PosterName item={item} tone="photo" />
+        </div>
         <div className="photo-dock">
           <p className="font-heading text-[28px] leading-none" style={{ color: "var(--ink)" }}>
             TZS {formatPrice(item.price)}
