@@ -274,8 +274,7 @@ function AdminDesk() {
                         <tr key={item.id} style={{ borderBottom: "1px solid rgba(var(--ink-rgb),0.12)" }}>
                           <td className="py-3 pr-3">{item.title}</td>
                           <td className="py-3 pr-3">
-                            {item.owner_name || item.owner_username || "—"}
-                            {item.owner_username ? ` @${item.owner_username}` : ""}
+                            {[item.owner_name, item.owner_username && `@${item.owner_username}`].filter(Boolean).join(" ") || "—"}
                           </td>
                           <td className="py-3 pr-3">{catLabel[item.category || ""] || item.category || "—"}</td>
                           <td className="py-3 pr-3">TZS {formatPrice(item.price)}</td>
