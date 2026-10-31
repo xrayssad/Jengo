@@ -148,6 +148,7 @@ function implicitCredential(clientId: string, hashed: string): Promise<string> {
 
 export async function requestGoogleIdToken(clientId: string): Promise<{ token: string; nonce: string }> {
   const { nonce, hashed } = await noncePair();
+  sessionStorage.setItem("jengo-google-nonce", nonce);
   try {
     const token = await gisCredential(clientId, hashed);
     return { token, nonce };

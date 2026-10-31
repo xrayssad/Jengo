@@ -23,8 +23,20 @@ export default function GooglePopupPage() {
       return;
     }
     if (postPopupToken({ credential })) return;
+    const rawNonce = sessionStorage.getItem("jengo-google-nonce") || "";
+    let hasNonce = false;
+    try {
+      const part = credential.split(".")[1] || "";
+      hasNonce = Boolean(JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/"))).nonce);
+    } catch {
+      hasNonce = false;
+    }
     getSupabase()
-      .auth.signInWithIdToken({ provider: "google", token: credential })
+      .auth.signInWithIdToken(
+        hasNonce && rawNonce
+          ? { provider: "google", token: credential, nonce: rawNonce }
+          : { provider: "google", token: credential },
+      )
       .then(({ data, error: exchangeError }) => {
         if (exchangeError || !data.session?.access_token) {
           throw new Error(exchangeError?.message || "Session is invalid");

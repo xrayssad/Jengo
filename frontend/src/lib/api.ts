@@ -185,14 +185,23 @@ async function googleClientId(redirectTo: string) {
   return clientId;
 }
 
+function idTokenHasNonce(token: string) {
+  try {
+    const part = token.split(".")[1] || "";
+    const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
+    return Boolean(json.nonce);
+  } catch {
+    return false;
+  }
+}
+
 async function finishGoogleToken(token: string, nonce: string) {
   const { getSupabase } = await import("./supabase");
   const supabase = getSupabase();
-  const { data, error } = await supabase.auth.signInWithIdToken({
-    provider: "google",
-    token,
-    nonce,
-  });
+  const body = idTokenHasNonce(token)
+    ? { provider: "google" as const, token, nonce }
+    : { provider: "google" as const, token };
+  const { data, error } = await supabase.auth.signInWithIdToken(body);
   if (error || !data.session?.access_token) {
     throw new Error(error?.message || GOOGLE_OFF);
   }
