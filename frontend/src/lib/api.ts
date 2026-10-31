@@ -160,80 +160,14 @@ function googleError(raw: string) {
   return raw || GOOGLE_OFF;
 }
 
-async function googleClientId(redirectTo: string) {
-  const envId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
-  let clientId = envId;
-  let authorizeUrl = "";
-  try {
-    const res = await request<{ url: string; client_id?: string }>(
-      `/auth/google?redirect_to=${encodeURIComponent(redirectTo)}`,
-    );
-    authorizeUrl = res.url || "";
-    clientId = res.client_id || envId;
-  } catch (err) {
-    if (!clientId) throw new Error(googleError(err instanceof Error ? err.message : GOOGLE_OFF));
-  }
-  if (!clientId && authorizeUrl) {
-    try {
-      const probe = await fetch(`/api/google-client?url=${encodeURIComponent(authorizeUrl)}`);
-      const body = (await probe.json()) as { client_id?: string };
-      clientId = body.client_id || "";
-    } catch {
-      clientId = "";
-    }
-  }
-  return clientId;
-}
-
-function idTokenHasNonce(token: string) {
-  try {
-    const part = token.split(".")[1] || "";
-    const json = JSON.parse(atob(part.replace(/-/g, "+").replace(/_/g, "/")));
-    return Boolean(json.nonce);
-  } catch {
-    return false;
-  }
-}
-
-async function finishGoogleToken(token: string, nonce: string) {
-  const { getSupabase } = await import("./supabase");
-  const supabase = getSupabase();
-  const body = idTokenHasNonce(token)
-    ? { provider: "google" as const, token, nonce }
-    : { provider: "google" as const, token };
-  const { data, error } = await supabase.auth.signInWithIdToken(body);
-  if (error || !data.session?.access_token) {
-    throw new Error(error?.message || GOOGLE_OFF);
-  }
-  const user = await adoptSession(data.session.access_token);
-  window.location.href = afterAuthPath(user);
-}
-
-async function googleOAuthRedirect(redirectTo: string) {
-  const { getSupabase } = await import("./supabase");
-  const { error } = await getSupabase().auth.signInWithOAuth({
-    provider: "google",
-    options: { redirectTo },
-  });
-  if (error) throw new Error(googleError(error.message));
-}
-
 export async function startGoogle(redirectTo: string) {
-  const { googleClosed, originBlocked, requestGoogleIdToken } = await import("./googleAuth");
-  const clientId = await googleClientId(redirectTo);
-  if (clientId) {
-    try {
-      const { token, nonce } = await requestGoogleIdToken(clientId);
-      await finishGoogleToken(token, nonce);
-      return;
-    } catch (err) {
-      if (googleClosed(err)) return;
-      if (!originBlocked(err)) {
-        throw err instanceof Error ? err : new Error(GOOGLE_OFF);
-      }
-    }
-  }
-  await googleOAuthRedirect(redirectTo);
+  const { getSupabase } = await import("./supabase");
+  const { data, error } = await getSupabase().auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo, skipBrowserRedirect: true },
+  });
+  if (error || !data.url) throw new Error(googleError(error?.message || GOOGLE_OFF));
+  window.location.assign(data.url);
 }
 
 export async function adoptSession(accessToken: string) {

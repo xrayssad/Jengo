@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Send } from "lucide-react";
-import { fetchInbox, fetchMqttSession, getAuthUser } from "@/lib/api";
+import { clearAuth, fetchInbox, fetchMqttSession, getAuthUser, getToken } from "@/lib/api";
 
 type Ping = { type?: string; thread_key?: string; id?: string; listing_id?: string; likes_count?: number };
 type Unwatch = () => void;
@@ -36,6 +36,15 @@ function persistUnread(on: boolean) {
 
 function viewingInbox(path: string) {
   return path === "/messages";
+}
+
+function skipInbox(path: string) {
+  return (
+    path.startsWith("/login") ||
+    path.startsWith("/register") ||
+    path.startsWith("/verify") ||
+    path.startsWith("/auth")
+  );
 }
 
 export function InboxLink({ className }: { className?: string }) {
@@ -123,20 +132,24 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
       if (!viewingInbox(pathRef.current)) markUnread();
     };
 
+    const signedIn = () => Boolean(getAuthUser() && getToken());
+
     const checkInbox = async () => {
-      if (!getAuthUser()) return;
+      if (!signedIn() || skipInbox(pathRef.current)) return;
       try {
         const res = await fetchInbox();
         const seen = localStorage.getItem(SEEN_KEY) || "";
         const hasNew = (res.items || []).some((m) => (m.created_at || "") > seen);
         if (hasNew && !viewingInbox(pathRef.current)) markUnread();
-      } catch {
-        /* offline */
+      } catch (err) {
+        const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
+        if (status === 401) clearAuth();
       }
     };
 
     const start = async () => {
       if (stop || clientRef.current) return;
+      if (!signedIn() || skipInbox(pathRef.current)) return;
       await checkInbox();
       try {
         const mqtt = (await import("mqtt")).default;
@@ -171,16 +184,20 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
         });
       } catch {
         window.__jengoMqtt = false;
-        if (!stop && getAuthUser()) wait = window.setTimeout(start, 2500);
+        if (!stop && signedIn()) wait = window.setTimeout(start, 2500);
       }
     };
 
     start();
     poll = window.setInterval(() => {
-      if (!window.__jengoMqtt) checkInbox();
+      if (window.__jengoMqtt) return;
+      if (!clientRef.current) start();
+      else checkInbox();
     }, 12000);
     const onFocus = () => {
-      if (!window.__jengoMqtt) checkInbox();
+      if (window.__jengoMqtt) return;
+      if (!clientRef.current) start();
+      else checkInbox();
     };
     window.addEventListener("focus", onFocus);
     document.addEventListener("visibilitychange", onFocus);
@@ -195,7 +212,7 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
       clientRef.current?.end(true);
       clientRef.current = null;
     };
-  }, [markUnread]);
+  }, [markUnread, path]);
 
   return <InboxCtx.Provider value={{ unread, clear, watchListing }}>{children}</InboxCtx.Provider>;
 }

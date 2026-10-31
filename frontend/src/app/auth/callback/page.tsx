@@ -22,12 +22,22 @@ function googleOffMessage(raw: string) {
   if (text.includes("exchange external code") || text.includes("invalid_client") || text.includes("unauthorized")) {
     return "Google could not verify the Client ID or Secret. Check Google Cloud and Supabase, then try again. This is not OTP.";
   }
+  if (text.includes("code verifier") || text.includes("pkce") || text.includes("flow state")) {
+    return "Google sign-in must start and finish in the same browser. Go back to log in and try Continue with Google again.";
+  }
   return raw;
 }
 
 function errorTitle(raw: string) {
   const text = raw.toLowerCase();
-  if (text.includes("google") || text.includes("exchange") || text.includes("oauth") || text.includes("client")) {
+  if (
+    text.includes("google") ||
+    text.includes("exchange") ||
+    text.includes("oauth") ||
+    text.includes("client") ||
+    text.includes("flow state") ||
+    text.includes("pkce")
+  ) {
     return "Google sign-in";
   }
   if (text.includes("kiungo") || text.includes("thibitisho") || text.includes("token") || text.includes("link") || text.includes("verif")) {
@@ -36,56 +46,91 @@ function errorTitle(raw: string) {
   return "Sign in";
 }
 
+function isFlowStateError(raw: string) {
+  const text = raw.toLowerCase();
+  return text.includes("flow state") || text.includes("code verifier") || text.includes("pkce");
+}
+
 async function finishSession(accessToken: string) {
   const user = await adoptSession(accessToken);
-  window.location.href = afterAuthPath(user);
+  window.location.replace(afterAuthPath(user));
+}
+
+async function sessionToken() {
+  const { data } = await getSupabase().auth.getSession();
+  return data.session?.access_token || "";
+}
+
+async function finishWithCode(code: string) {
+  const existing = await sessionToken();
+  if (existing) return finishSession(existing);
+  const { data, error } = await getSupabase().auth.exchangeCodeForSession(code);
+  const token = data.session?.access_token || (await sessionToken());
+  if (!token) throw new Error(error?.message || "Session is invalid");
+  return finishSession(token);
+}
+
+let runningKey = "";
+let running: Promise<void> | null = null;
+
+function completeCallback() {
+  const { get } = readParams();
+  const key =
+    get("code") ||
+    get("access_token") ||
+    get("token_hash") ||
+    get("error_description") ||
+    get("error") ||
+    get("msg") ||
+    "empty";
+  if (running && runningKey === key) return running;
+  runningKey = key;
+  running = (async () => {
+    const err = get("error_description") || get("error") || get("msg") || "";
+    if (err) throw new Error(err);
+    const code = get("code");
+    const token = get("access_token");
+    const tokenHash = get("token_hash");
+    const type = get("type") || "signup";
+    if (code) {
+      await finishWithCode(code);
+      return;
+    }
+    if (token) {
+      await finishSession(token);
+      return;
+    }
+    if (tokenHash) {
+      const user = await confirmEmailLink(tokenHash, type);
+      window.location.replace(afterAuthPath(user));
+      return;
+    }
+    throw new Error("Verification did not finish. Open the link from your email, or log in with email.");
+  })();
+  return running;
 }
 
 export default function AuthCallbackPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const { get } = readParams();
-    const err = get("error_description") || get("error") || get("msg") || "";
-    if (err) {
-      setError(googleOffMessage(err));
-      return;
-    }
-    const code = get("code");
-    const token = get("access_token");
-    const tokenHash = get("token_hash");
-    const type = get("type") || "signup";
-    if (code) {
-      getSupabase()
-        .auth.exchangeCodeForSession(code)
-        .then(({ data, error: exchangeError }) => {
-          if (exchangeError || !data.session?.access_token) {
-            throw new Error(exchangeError?.message || "Session is invalid");
-          }
-          return finishSession(data.session.access_token);
-        })
-        .catch((caught) => {
-          setError(googleOffMessage(caught instanceof Error ? caught.message : "Session is invalid"));
-        });
-      return;
-    }
-    if (token) {
-      finishSession(token).catch((caught) => {
-        setError(caught instanceof Error ? caught.message : "Session is invalid");
+    let cancelled = false;
+    completeCallback()
+      .catch(async (caught) => {
+        const raw = caught instanceof Error ? caught.message : "Session is invalid";
+        if (isFlowStateError(raw)) {
+          const token = await sessionToken();
+          if (token) return finishSession(token);
+        }
+        if (!cancelled) setError(googleOffMessage(raw));
+      })
+      .catch((caught) => {
+        if (cancelled) return;
+        setError(googleOffMessage(caught instanceof Error ? caught.message : "Session is invalid"));
       });
-      return;
-    }
-    if (tokenHash) {
-      confirmEmailLink(tokenHash, type)
-        .then((user) => {
-          window.location.href = afterAuthPath(user);
-        })
-        .catch((caught) => {
-          setError(caught instanceof Error ? caught.message : "Link expired or is invalid");
-        });
-      return;
-    }
-    setError("Verification did not finish. Open the link from your email, or log in with email.");
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
