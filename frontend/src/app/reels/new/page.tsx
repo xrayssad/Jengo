@@ -1,29 +1,50 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clapperboard, Loader2 } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { createReel, uploadReelVideo } from "@/lib/api";
 
-const ALLOWED = new Set(["video/mp4", "video/quicktime", "video/webm"]);
+const MAX_BYTES = 80 * 1024 * 1024;
+const MAX_SECONDS = 90;
+
+function isVideoFile(file: File) {
+  const type = (file.type || "").toLowerCase();
+  if (!type) return true;
+  if (type.startsWith("video/")) return true;
+  return /\.(mp4|m4v|mov|qt|webm|3gp|3gpp|mkv)$/i.test(file.name || "");
+}
 
 function readDuration(file: File) {
-  return new Promise<number>((resolve, reject) => {
+  return new Promise<number>((resolve) => {
     const url = URL.createObjectURL(file);
     const el = document.createElement("video");
     el.preload = "metadata";
+    el.muted = true;
+    el.defaultMuted = true;
+    el.playsInline = true;
+    el.setAttribute("playsinline", "true");
+    el.setAttribute("webkit-playsinline", "true");
+    el.style.cssText = "position:fixed;left:-9999px;width:1px;height:1px;opacity:0";
+    const done = (seconds: number) => {
+      window.clearTimeout(timer);
+      el.removeAttribute("src");
+      el.load();
+      el.remove();
+      URL.revokeObjectURL(url);
+      resolve(seconds);
+    };
+    const timer = window.setTimeout(() => done(0), 5000);
     el.onloadedmetadata = () => {
       const n = el.duration;
-      URL.revokeObjectURL(url);
-      resolve(Number.isFinite(n) ? n : 0);
+      done(Number.isFinite(n) && n !== Infinity ? n : 0);
     };
-    el.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Could not read the video"));
-    };
+    el.onerror = () => done(0);
+    document.body.appendChild(el);
     el.src = url;
+    el.load();
   });
 }
 
@@ -36,28 +57,27 @@ export default function NewReelPage() {
   const [pct, setPct] = useState(0);
   const [error, setError] = useState("");
 
+  useEffect(() => () => {
+    if (preview) URL.revokeObjectURL(preview);
+  }, [preview]);
+
   const pick = async (next: File | null) => {
     setError("");
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview("");
     if (!next) return;
-    if (!ALLOWED.has(next.type)) {
+    if (!isVideoFile(next)) {
       setError("Use an MP4, MOV or WebM video");
       return;
     }
-    if (next.size > 80 * 1024 * 1024) {
+    if (next.size > MAX_BYTES) {
       setError("Video is too large. Use one under 80MB");
       return;
     }
-    try {
-      const seconds = await readDuration(next);
-      if (seconds > 90) {
-        setError("Keep the reel under 90 seconds");
-        return;
-      }
-    } catch {
-      setError("Could not read the video");
+    const seconds = await readDuration(next);
+    if (seconds > MAX_SECONDS) {
+      setError("Keep the reel under 90 seconds");
       return;
     }
     setFile(next);
@@ -104,7 +124,13 @@ export default function NewReelPage() {
         <div className="max-w-md mx-auto px-5 pt-5 pb-8 space-y-4">
           <label className="block overflow-hidden rounded-[28px]" style={{ backgroundColor: "var(--ink-2)", minHeight: 360 }}>
             {preview ? (
-              <video src={preview} className="w-full h-[360px] object-cover" controls muted playsInline />
+              <video
+                src={preview}
+                className="w-full h-[360px] object-cover"
+                controls
+                playsInline
+                preload="metadata"
+              />
             ) : (
               <span className="h-[360px] flex flex-col items-center justify-center gap-2">
                 <Clapperboard size={32} color="var(--gold)" />
@@ -113,9 +139,13 @@ export default function NewReelPage() {
             )}
             <input
               type="file"
-              accept="video/mp4,video/quicktime,video/webm"
+              accept="video/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm,.3gp"
               className="sr-only"
-              onChange={(e) => pick(e.target.files?.[0] || null)}
+              onChange={(e) => {
+                const picked = e.target.files?.[0] || null;
+                e.target.value = "";
+                void pick(picked);
+              }}
             />
           </label>
           <div>

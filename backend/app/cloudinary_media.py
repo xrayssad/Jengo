@@ -58,3 +58,10 @@ def thumb_from_public_id(public_id: str) -> str:
     if not pid or not cloud_name():
         return ""
     return f"https://res.cloudinary.com/{cloud_name()}/video/upload/so_0,w_720,h_1280,c_fill,q_auto,f_jpg/{pid}.jpg"
+
+
+def play_from_public_id(public_id: str) -> str:
+    pid = (public_id or "").strip().lstrip("/")
+    if not pid or not cloud_name():
+        return ""
+    return f"https://res.cloudinary.com/{cloud_name()}/video/upload/f_mp4,vc_h264,ac_aac,q_auto/{pid}.mp4"

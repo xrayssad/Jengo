@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent } from "react";
 import Link from "next/link";
-import { Clapperboard, Plus } from "lucide-react";
+import { Clapperboard, Plus, Volume2, VolumeX } from "lucide-react";
 import PosterName from "@/components/PosterName";
 import ReelActions from "@/components/ReelActions";
 import { fetchReels, getAuthUser, type Reel } from "@/lib/api";
@@ -10,51 +10,101 @@ import { fetchReels, getAuthUser, type Reel } from "@/lib/api";
 function ReelSlide({
   item,
   active,
+  muted,
+  onMutedChange,
 }: {
   item: Reel;
   active: boolean;
+  muted: boolean;
+  onMutedChange: (next: boolean) => void;
 }) {
   const video = useRef<HTMLVideoElement>(null);
-  const [muted, setMuted] = useState(true);
+  const tap = useRef<{ y: number; t: number } | null>(null);
 
   useEffect(() => {
     const el = video.current;
     if (!el) return;
+    el.muted = muted;
+    el.defaultMuted = muted;
+    el.volume = 1;
     if (active) {
       el.play().catch(() => undefined);
     } else {
       el.pause();
       el.currentTime = 0;
     }
-  }, [active]);
+  }, [active, muted]);
+
+  const applyMute = (next: boolean) => {
+    const el = video.current;
+    if (el) {
+      el.muted = next;
+      el.defaultMuted = next;
+      el.volume = 1;
+      if (active) el.play().catch(() => undefined);
+    }
+    onMutedChange(next);
+  };
+
+  const toggleSound = (e: MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    applyMute(!muted);
+  };
 
   return (
-    <section className="reel-slide relative snap-start snap-always">
+    <section
+      className="reel-slide relative snap-start snap-always"
+      onPointerDown={(e) => {
+        tap.current = { y: e.clientY, t: Date.now() };
+      }}
+      onPointerUp={(e) => {
+        const start = tap.current;
+        tap.current = null;
+        if (!start) return;
+        if ((e.target as HTMLElement).closest("button,a")) return;
+        if (Math.abs(e.clientY - start.y) > 12 || Date.now() - start.t > 400) return;
+        applyMute(!muted);
+      }}
+    >
       <video
         ref={video}
         src={item.video_url}
         poster={item.thumb_url || undefined}
-        className="absolute inset-0 w-full h-full object-cover"
+        className="reel-video pointer-events-none"
         playsInline
         loop
         muted={muted}
         preload={active ? "auto" : "metadata"}
-        onClick={() => setMuted((cur) => !cur)}
       />
-      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, rgba(17,12,9,0.28) 0%, transparent 22%, transparent 58%, rgba(17,12,9,0.78) 100%)" }} />
-      <div className="absolute right-3 bottom-28 z-10">
-        <ReelActions item={item} />
-      </div>
-      <div className="absolute left-4 right-20 bottom-8 z-10">
-        <PosterName item={item} tone="photo" />
-        {item.caption ? (
-          <p className="text-sm mt-2 leading-snug" style={{ color: "#FFF6ED", textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}>
-            {item.caption}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{ background: "linear-gradient(180deg, rgba(17,12,9,0.22) 0%, transparent 24%, transparent 62%, rgba(17,12,9,0.2) 100%)" }}
+      />
+      <div className="reel-meta">
+        <div className="min-w-0 flex-1 pointer-events-none">
+          <PosterName item={item} tone="photo" />
+          {item.caption ? (
+            <p className="text-sm mt-2 leading-snug line-clamp-4" style={{ color: "#FFF6ED", textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}>
+              {item.caption}
+            </p>
+          ) : null}
+          <p className="text-[11px] mt-2" style={{ color: "rgba(255,246,237,0.72)" }}>
+            {muted ? "Tap for sound" : "Sound on"}
           </p>
-        ) : null}
-        <p className="text-[11px] mt-2" style={{ color: "rgba(255,246,237,0.72)" }}>
-          {muted ? "Tap for sound" : "Sound on"}
-        </p>
+        </div>
+        <div className="shrink-0">
+          <ReelActions item={item} />
+          <button
+            type="button"
+            onClick={toggleSound}
+            className="mt-5 mx-auto flex flex-col items-center gap-1"
+            aria-label={muted ? "Turn sound on" : "Turn sound off"}
+          >
+            {muted ? <VolumeX size={26} color="#FFF6ED" /> : <Volume2 size={26} color="#FFF6ED" />}
+            <span className="text-xs font-semibold" style={{ color: "#FFF6ED" }}>{muted ? "Muted" : "Sound"}</span>
+          </button>
+        </div>
       </div>
     </section>
   );
@@ -63,6 +113,7 @@ function ReelSlide({
 export default function ReelsPage() {
   const [items, setItems] = useState<Reel[]>([]);
   const [active, setActive] = useState(0);
+  const [muted, setMuted] = useState(true);
   const [error, setError] = useState("");
   const scroller = useRef<HTMLDivElement>(null);
   const signedIn = Boolean(getAuthUser());
@@ -100,19 +151,24 @@ export default function ReelsPage() {
 
   return (
     <main className="reel-stage">
-      <header className="absolute top-0 left-0 right-0 z-20 px-4 pt-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs" style={{ color: "rgba(255,246,237,0.72)" }}>Jengo</p>
-          <h1 className="font-heading text-3xl leading-none" style={{ color: "#FFF6ED" }}>Reels</h1>
+      <header
+        className="absolute top-0 left-0 right-0 z-20 px-4 flex items-center justify-center"
+        style={{ paddingTop: "max(16px, env(safe-area-inset-top))" }}
+      >
+        <div className="w-full max-w-[480px] flex items-center justify-between">
+          <div>
+            <p className="text-xs" style={{ color: "rgba(255,246,237,0.72)" }}>Jengo</p>
+            <h1 className="font-heading text-3xl leading-none" style={{ color: "#FFF6ED" }}>Reels</h1>
+          </div>
+          <Link
+            href={signedIn ? "/reels/new" : "/login"}
+            className="w-11 h-11 rounded-full flex items-center justify-center"
+            style={{ backgroundColor: "rgba(255,246,237,0.16)", boxShadow: "0 0 0 1px rgba(255,246,237,0.28)" }}
+            aria-label="Post a reel"
+          >
+            <Plus size={20} color="#FFF6ED" strokeWidth={2.4} />
+          </Link>
         </div>
-        <Link
-          href={signedIn ? "/reels/new" : "/login"}
-          className="w-11 h-11 rounded-full flex items-center justify-center"
-          style={{ backgroundColor: "rgba(255,246,237,0.16)", boxShadow: "0 0 0 1px rgba(255,246,237,0.28)" }}
-          aria-label="Post a reel"
-        >
-          <Plus size={20} color="#FFF6ED" strokeWidth={2.4} />
-        </Link>
       </header>
 
       {error ? (
@@ -132,7 +188,7 @@ export default function ReelsPage() {
         <div ref={scroller} className="reel-scroller">
           {items.map((item, i) => (
             <div key={item.id} data-reel={i} className="h-full">
-              <ReelSlide item={item} active={i === active} />
+              <ReelSlide item={item} active={i === active} muted={muted} onMutedChange={setMuted} />
             </div>
           ))}
         </div>

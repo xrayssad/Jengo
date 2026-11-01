@@ -33,6 +33,7 @@
   --foam: #FFF6ED;
   --stamp: #2E1A0F;
   --veil-rgb: 46, 26, 15;
+  --bottom-nav-space: calc(86px + env(safe-area-inset-bottom, 0px));
 }
 
 html.dark {
@@ -58,6 +59,7 @@ html.dark {
   --foam: #FFF6ED;
   --stamp: #2E1A0F;
   --veil-rgb: 17, 12, 9;
+  --bottom-nav-space: calc(86px + env(safe-area-inset-bottom, 0px));
 }
 
 html, body {
@@ -336,14 +338,20 @@ html.dark select.input-chocolate {
 }
 
 .reel-stage {
+  --reel-nav: var(--bottom-nav-space);
   position: relative;
+  height: 100vh;
   height: 100dvh;
   background: #110C09;
   overflow: hidden;
+  padding-bottom: var(--reel-nav);
+  box-sizing: border-box;
 }
 
 .reel-scroller {
   height: 100%;
+  width: min(100%, 480px);
+  margin: 0 auto;
   overflow-y: auto;
   scroll-snap-type: y mandatory;
   overscroll-behavior-y: contain;
@@ -354,9 +362,49 @@ html.dark select.input-chocolate {
   display: none;
 }
 
+.reel-scroller > [data-reel] {
+  height: 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
 .reel-slide {
-  height: 100dvh;
+  position: relative;
+  height: 100%;
   width: 100%;
+  overflow: hidden;
+}
+
+.reel-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center center;
+  background: #110C09;
+}
+
+.reel-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 14px;
+  background: linear-gradient(180deg, transparent 0%, rgba(17, 12, 9, 0.78) 78%);
+}
+
+@media (min-width: 720px) {
+  .reel-video {
+    object-fit: contain;
+    max-height: 100%;
+    max-width: 100%;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

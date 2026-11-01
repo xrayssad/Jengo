@@ -13,8 +13,12 @@ def decorate_reel(row: dict | None, owner: dict | None = None, *, lookup_owner: 
     p = owner or {}
     item["owner_username"] = str(p.get("username") or "").strip()
     item["owner_name"] = str(p.get("full_name") or "").strip()
-    if not item.get("thumb_url") and item.get("public_id"):
-        item["thumb_url"] = cloudinary_media.thumb_from_public_id(str(item["public_id"]))
+    if item.get("public_id"):
+        play = cloudinary_media.play_from_public_id(str(item["public_id"]))
+        if play:
+            item["video_url"] = play
+        if not item.get("thumb_url"):
+            item["thumb_url"] = cloudinary_media.thumb_from_public_id(str(item["public_id"]))
     return item
 
 
