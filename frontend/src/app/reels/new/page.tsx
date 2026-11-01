@@ -54,7 +54,6 @@ export default function NewReelPage() {
   const [preview, setPreview] = useState("");
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
-  const [pct, setPct] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => () => {
@@ -91,9 +90,8 @@ export default function NewReelPage() {
     }
     setBusy(true);
     setError("");
-    setPct(0);
     try {
-      const uploaded = await uploadReelVideo(file, setPct);
+      const uploaded = await uploadReelVideo(file);
       await createReel({
         caption: caption.trim(),
         video_url: uploaded.video_url,
@@ -160,9 +158,6 @@ export default function NewReelPage() {
             <p className="text-[11px] mt-1" style={{ color: "var(--muted)" }}>{caption.length}/240</p>
           </div>
           {error ? <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p> : null}
-          {busy ? (
-            <p className="text-sm" style={{ color: "var(--mocha)" }}>Uploading to Cloudinary… {pct}%</p>
-          ) : null}
           <button type="button" disabled={busy} onClick={submit} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
             {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Posting...</span> : "Post reel"}
           </button>

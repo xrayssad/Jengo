@@ -274,8 +274,9 @@ export default function ReelsPage() {
             href={signedIn ? "/reels/new" : "/login"}
             className="reel-add-btn shrink-0"
             aria-label="Add new reel"
+            style={{ background: "rgba(17, 12, 9, 0.32)", color: "#FFFFFF", border: "1.5px solid #FFFFFF" }}
           >
-            <Plus size={16} strokeWidth={2.6} />
+            <Plus size={16} strokeWidth={2.6} color="#FFFFFF" />
             <span>Add reel</span>
           </Link>
         </div>
@@ -292,8 +293,12 @@ export default function ReelsPage() {
           <Clapperboard size={36} color="#C4A35A" />
           <p className="font-heading text-3xl mt-4" style={{ color: "#FFF6ED" }}>No reels yet</p>
           <p className="text-sm mt-2" style={{ color: "rgba(255,246,237,0.72)" }}>Post a short walk-through of a room, shop or site.</p>
-          <Link href={signedIn ? "/reels/new" : "/login"} className="reel-add-btn mt-5">
-            <Plus size={16} strokeWidth={2.6} />
+          <Link
+            href={signedIn ? "/reels/new" : "/login"}
+            className="reel-add-btn mt-5"
+            style={{ background: "rgba(17, 12, 9, 0.32)", color: "#FFFFFF", border: "1.5px solid #FFFFFF" }}
+          >
+            <Plus size={16} strokeWidth={2.6} color="#FFFFFF" />
             <span>Add reel</span>
           </Link>
         </div>

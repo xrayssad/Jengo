@@ -502,7 +502,7 @@ export async function uploadReelVideo(file: File, onProgress?: (pct: number) => 
       if (!onProgress || !ev.lengthComputable) return;
       onProgress(Math.round((ev.loaded / ev.total) * 100));
     };
-    xhr.onerror = () => reject(new Error("Cloudinary could not take the video"));
+    xhr.onerror = () => reject(new Error("Could not post the reel"));
     xhr.onload = () => {
       try {
         const parsed = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
@@ -510,9 +510,9 @@ export async function uploadReelVideo(file: File, onProgress?: (pct: number) => 
           resolve(parsed);
           return;
         }
-        reject(new Error(String(parsed.error && typeof parsed.error === "object" && "message" in parsed.error ? (parsed.error as { message: string }).message : "Cloudinary upload failed")));
+        reject(new Error("Could not post the reel"));
       } catch {
-        reject(new Error("Cloudinary upload failed"));
+        reject(new Error("Could not post the reel"));
       }
     };
     xhr.send(body);
