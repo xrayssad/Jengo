@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type RefObject } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Clapperboard, Pause, Play, Plus, Volume2, VolumeX } from "lucide-react";
@@ -8,6 +8,164 @@ import PosterName from "@/components/PosterName";
 import ReelActions from "@/components/ReelActions";
 import { fetchReels, getAuthUser, type Reel } from "@/lib/api";
 import { hushAllReels, hushVideo, watchReelVideo } from "@/lib/reelsMedia";
+
+function formatReelTime(sec: number) {
+  if (!Number.isFinite(sec) || sec < 0) return "0:00";
+  const total = Math.floor(sec);
+  const m = Math.floor(total / 60);
+  const s = total % 60;
+  return `${m}:${String(s).padStart(2, "0")}`;
+}
+
+function ReelSeek({ video, active }: { video: RefObject<HTMLVideoElement | null>; active: boolean }) {
+  const track = useRef<HTMLDivElement>(null);
+  const drag = useRef(false);
+  const [now, setNow] = useState(0);
+  const [dur, setDur] = useState(0);
+
+  useEffect(() => {
+    const el = video.current;
+    if (!el) return;
+    const stamp = () => {
+      if (!drag.current) {
+        setNow(el.currentTime || 0);
+        const next = el.duration;
+        if (Number.isFinite(next) && next > 0) setDur(next);
+      }
+    };
+    const onMeta = () => {
+      const next = el.duration;
+      if (Number.isFinite(next) && next > 0) setDur(next);
+    };
+    el.addEventListener("loadedmetadata", onMeta);
+    el.addEventListener("durationchange", onMeta);
+    onMeta();
+    stamp();
+    if (!active) {
+      return () => {
+        el.removeEventListener("loadedmetadata", onMeta);
+        el.removeEventListener("durationchange", onMeta);
+      };
+    }
+    let raf = 0;
+    const sync = () => {
+      stamp();
+      raf = window.requestAnimationFrame(sync);
+    };
+    raf = window.requestAnimationFrame(sync);
+    return () => {
+      window.cancelAnimationFrame(raf);
+      el.removeEventListener("loadedmetadata", onMeta);
+      el.removeEventListener("durationchange", onMeta);
+    };
+  }, [video, active]);
+
+  const seekAt = (clientX: number) => {
+    const el = video.current;
+    const bar = track.current;
+    if (!el || !bar || !dur) return;
+    const rect = bar.getBoundingClientRect();
+    const pct = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+    el.currentTime = pct * dur;
+    setNow(el.currentTime);
+  };
+
+  const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    drag.current = true;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    seekAt(e.clientX);
+  };
+
+  const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    seekAt(e.clientX);
+  };
+
+  const endDrag = (e: PointerEvent<HTMLDivElement>) => {
+    if (!drag.current) return;
+    e.preventDefault();
+    e.stopPropagation();
+    drag.current = false;
+  };
+
+  const pct = dur > 0 ? Math.min(100, (now / dur) * 100) : 0;
+
+  return (
+    <div
+      className="reel-seek"
+      data-reel-seek
+      style={{ position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 12, padding: "0 14px 10px" }}
+    >
+      <div className="reel-seek-row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <span
+          className="reel-seek-time"
+          style={{ color: "#FFF6ED", fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums", minWidth: "2.15em", textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}
+        >
+          {formatReelTime(now)}
+        </span>
+        <div
+          ref={track}
+          className="reel-seek-track"
+          role="slider"
+          tabIndex={0}
+          aria-label="Video progress"
+          aria-valuemin={0}
+          aria-valuemax={Math.floor(dur) || 0}
+          aria-valuenow={Math.floor(now)}
+          aria-valuetext={`${formatReelTime(now)} of ${formatReelTime(dur)}`}
+          style={{ flex: 1, height: 22, display: "flex", alignItems: "center", touchAction: "none", cursor: "pointer" }}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onKeyDown={(e) => {
+            const el = video.current;
+            if (!el || !dur) return;
+            if (e.key === "ArrowRight") {
+              e.preventDefault();
+              el.currentTime = Math.min(dur, el.currentTime + 2);
+              setNow(el.currentTime);
+            }
+            if (e.key === "ArrowLeft") {
+              e.preventDefault();
+              el.currentTime = Math.max(0, el.currentTime - 2);
+              setNow(el.currentTime);
+            }
+          }}
+        >
+          <div className="reel-seek-rail" style={{ position: "relative", width: "100%", height: 3, borderRadius: 999, background: "rgba(255,246,237,0.28)" }}>
+            <div className="reel-seek-fill" style={{ width: `${pct}%`, height: "100%", borderRadius: 999, background: "#FFF6ED" }} />
+            <span
+              className="reel-seek-knob"
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: `${pct}%`,
+                width: 12,
+                height: 12,
+                borderRadius: "50%",
+                background: "#FFF6ED",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.35)",
+                transform: "translate(-50%, -50%)",
+                pointerEvents: "none",
+              }}
+            />
+          </div>
+        </div>
+        <span
+          className="reel-seek-time reel-seek-time-end"
+          style={{ color: "#FFF6ED", fontSize: 11, fontWeight: 600, fontVariantNumeric: "tabular-nums", minWidth: "2.15em", textAlign: "right", textShadow: "0 1px 2px rgba(0,0,0,0.55)" }}
+        >
+          {formatReelTime(dur)}
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function ReelSkeleton() {
   return (
@@ -143,7 +301,7 @@ function ReelSlide({
         const start = tap.current;
         tap.current = null;
         if (!start) return;
-        if ((e.target as HTMLElement).closest("button,a")) return;
+        if ((e.target as HTMLElement).closest("button,a,[data-reel-seek]")) return;
         if (Math.abs(e.clientY - start.y) > 12 || Date.now() - start.t > 400) return;
         togglePlayback();
       }}
@@ -180,7 +338,7 @@ function ReelSlide({
           </div>
         </div>
       ) : null}
-      <div className="reel-meta">
+      <div className="reel-meta" style={{ paddingBottom: 48 }}>
         <div className="min-w-0 flex-1 pointer-events-none">
           <PosterName item={item} tone="photo" />
           {item.caption ? (
@@ -205,6 +363,7 @@ function ReelSlide({
           </button>
         </div>
       </div>
+      <ReelSeek video={video} active={active && live} />
     </section>
   );
 }

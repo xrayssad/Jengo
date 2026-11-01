@@ -54,6 +54,7 @@ export default function NewReelPage() {
   const [preview, setPreview] = useState("");
   const [caption, setCaption] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pct, setPct] = useState(0);
   const [error, setError] = useState("");
 
   useEffect(() => () => {
@@ -90,8 +91,9 @@ export default function NewReelPage() {
     }
     setBusy(true);
     setError("");
+    setPct(0);
     try {
-      const uploaded = await uploadReelVideo(file);
+      const uploaded = await uploadReelVideo(file, setPct);
       await createReel({
         caption: caption.trim(),
         video_url: uploaded.video_url,
@@ -158,8 +160,19 @@ export default function NewReelPage() {
             <p className="text-[11px] mt-1" style={{ color: "var(--muted)" }}>{caption.length}/240</p>
           </div>
           {error ? <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p> : null}
+          {busy ? (
+            <div className="space-y-2">
+              <div className="h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: "rgba(var(--ink-rgb), 0.12)" }}>
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${pct}%`, backgroundColor: "var(--ink)", transition: "width 0.2s ease" }}
+                />
+              </div>
+              <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Uploading {pct}%</p>
+            </div>
+          ) : null}
           <button type="button" disabled={busy} onClick={submit} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
-            {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Posting...</span> : "Post reel"}
+            {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Uploading {pct}%</span> : "Post reel"}
           </button>
         </div>
       </main>
