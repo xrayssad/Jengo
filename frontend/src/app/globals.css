@@ -399,6 +399,106 @@ html.dark select.input-chocolate {
   background: linear-gradient(180deg, transparent 0%, rgba(17, 12, 9, 0.78) 78%);
 }
 
+.reel-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px 0 11px;
+  border-radius: 999px;
+  background: #FFF6ED;
+  color: #2E1A0F;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  box-shadow: 0 8px 20px rgba(17, 12, 9, 0.28);
+}
+
+.reel-add-btn:active {
+  transform: scale(0.98);
+}
+
+.reel-skeleton {
+  position: absolute;
+  inset: 0;
+  background: #18110C;
+  overflow: hidden;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.reel-stage > .reel-skeleton {
+  position: relative;
+  height: 100%;
+  width: min(100%, 480px);
+}
+
+.reel-skel-shimmer {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(255, 246, 237, 0.05) 0%, transparent 28%, transparent 58%, rgba(255, 246, 237, 0.04) 100%),
+    linear-gradient(105deg, transparent 18%, rgba(255, 246, 237, 0.08) 48%, transparent 72%);
+  background-size: 100% 100%, 220% 100%;
+  animation: reel-skel 1.35s ease-in-out infinite;
+}
+
+.reel-skel-meta {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 22px 18px 20px;
+}
+
+.reel-skel-bone {
+  display: block;
+  background: rgba(255, 246, 237, 0.12);
+  border-radius: 999px;
+}
+
+.reel-flash {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.reel-flash-icon {
+  width: 74px;
+  height: 74px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(17, 12, 9, 0.5);
+  animation: reel-flash 460ms ease forwards;
+}
+
+.reel-flash-hold {
+  animation: none;
+  opacity: 0.92;
+}
+
+@keyframes reel-skel {
+  0% { background-position: 0 0, 180% 0; }
+  100% { background-position: 0 0, -80% 0; }
+}
+
+@keyframes reel-flash {
+  0% { opacity: 0; transform: scale(0.84); }
+  28% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.06); }
+}
+
 @media (min-width: 720px) {
   .reel-video {
     object-fit: contain;
