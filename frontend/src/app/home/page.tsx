@@ -16,7 +16,7 @@ import { clearAuth, fetchListings, readHomeListingsCache, suggestPlaces, writeHo
 
 const chips = [
   { href: "/nyumba", label: "Houses/Rooms" },
-  { href: "/kazi", label: "Kazi za Ujenzi" },
+  { href: "/kazi", label: "Construction Jobs" },
   { href: "/godown", label: "Godown/Store" },
   { href: "/airbnb", label: "Airbnb" },
   { href: "/maduka", label: "Shops" },
@@ -33,7 +33,7 @@ const sideLinks = [
   { label: "Saved photos", href: "/picha", icon: Download },
   { label: "Payments", href: "/malipo", icon: CreditCard },
   { label: "My Posts", href: "/mypost", icon: LayoutList },
-  { label: "Kazi za Ujenzi", href: "/kazi", icon: Hammer },
+  { label: "Construction Jobs", href: "/kazi", icon: Hammer },
   { label: "My requests", href: "/maombi-yangu", icon: Inbox },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
@@ -238,7 +238,7 @@ export default function HomePage() {
           <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.58), rgba(var(--veil-rgb),0.08))" }} />
           <div className="photo-dock">
-            <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Kazi za Ujenzi</h3>
+            <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Construction Jobs</h3>
             <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs.</p>
           </div>
         </Link>

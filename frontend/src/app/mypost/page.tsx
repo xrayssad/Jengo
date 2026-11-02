@@ -6,7 +6,7 @@ import { ArrowLeft, Clapperboard, Hammer, Loader2 } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import ListingCard from "@/components/ListingCard";
 import PosterName from "@/components/PosterName";
-import { catLabel, fetchMyPosts, formatPrice, type Job, type Listing, type Reel } from "@/lib/api";
+import { catLabel, fetchMyPosts, type Job, type Listing, type Reel } from "@/lib/api";
 import { readIds } from "@/lib/mine";
 
 type Row =
@@ -54,13 +54,17 @@ function JobPost({ item }: { item: Job }) {
         )}
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.55), transparent 50%)" }} />
         <div className="absolute left-3 right-3 bottom-3">
-          <p className="text-[11px]" style={{ color: "var(--gold)" }}>Kazi za Ujenzi</p>
+          <p className="text-[11px]" style={{ color: "var(--gold)" }}>Construction Jobs</p>
           <p className="font-heading text-lg leading-snug" style={{ color: "#FFF6ED" }}>{item.title}</p>
           {place ? <p className="text-xs mt-0.5" style={{ color: "rgba(255,246,237,0.8)" }}>{place}</p> : null}
         </div>
       </div>
       <div className="px-4 py-3 flex items-center justify-between">
-        <p className="text-sm" style={{ color: "var(--ink)" }}>TSh {formatPrice(item.budget)}</p>
+        {item.deadline ? (
+          <p className="text-sm" style={{ color: "var(--ink)" }}>Deadline {item.deadline}</p>
+        ) : (
+          <span />
+        )}
         <span className="text-[11px]" style={{ color: "var(--mocha)" }}>{item.status || "open"}</span>
       </div>
     </Link>
@@ -161,7 +165,7 @@ export default function Page() {
             }
             return (
               <div key={`job-${row.item.id}`}>
-                <p className="text-[11px] mb-2" style={{ color: "var(--mocha)" }}>Kazi za Ujenzi</p>
+                <p className="text-[11px] mb-2" style={{ color: "var(--mocha)" }}>Construction Jobs</p>
                 <JobPost item={row.item} />
               </div>
             );

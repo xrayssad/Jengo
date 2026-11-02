@@ -154,8 +154,8 @@ def create_job(
     description: str,
     location: str,
     city: str,
-    budget: float,
-    deadline: str,
+    budget: float = 0,
+    deadline: str = "",
     images: list[str] | None = None,
 ) -> dict:
     heading = (title or "").strip()[:200]
@@ -165,11 +165,9 @@ def create_job(
     if not place:
         raise HTTPException(status_code=400, detail="Andika eneo")
     try:
-        money = float(budget)
+        money = max(0.0, float(budget or 0))
     except (TypeError, ValueError):
-        raise HTTPException(status_code=400, detail="Andika bajeti")
-    if money <= 0:
-        raise HTTPException(status_code=400, detail="Andika bajeti")
+        money = 0.0
     due = (deadline or "").strip()[:40]
     if not due:
         raise HTTPException(status_code=400, detail="Andika tarehe ya mwisho")

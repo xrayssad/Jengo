@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Hammer, Loader2, MapPin, Plus } from "lucide-react";
-import { fetchJobs, formatPrice, type Job } from "@/lib/api";
+import { fetchJobs, type Job } from "@/lib/api";
 
 function JobRow({ item }: { item: Job }) {
   const place = [item.location, item.city].filter(Boolean).join(", ");
@@ -31,8 +31,14 @@ function JobRow({ item }: { item: Job }) {
         </div>
       </div>
       <div className="px-4 py-3 flex items-center justify-between gap-3">
-        <p className="text-sm" style={{ color: "var(--ink)" }}>Budget TSh {formatPrice(item.budget)}</p>
-        <span className="text-[11px]" style={{ color: "var(--mocha)" }}>{item.offers_count ? `${item.offers_count} offers` : "No workers yet"}</span>
+        {item.deadline ? (
+          <p className="text-sm" style={{ color: "var(--ink)" }}>Deadline {item.deadline}</p>
+        ) : (
+          <span />
+        )}
+        {item.offers_count ? (
+          <span className="text-[11px]" style={{ color: "var(--mocha)" }}>{item.offers_count} offers</span>
+        ) : null}
       </div>
     </Link>
   );
@@ -71,7 +77,7 @@ export default function Page() {
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Kazi za Ujenzi</h1>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Construction Jobs</h1>
             <p className="text-sm" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs</p>
           </div>
         </div>

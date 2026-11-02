@@ -856,7 +856,7 @@ export async function createJob(body: {
   description?: string;
   location: string;
   city?: string;
-  budget: number;
+  budget?: number;
   deadline: string;
   images?: string[];
 }) {

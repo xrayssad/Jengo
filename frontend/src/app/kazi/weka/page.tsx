@@ -15,7 +15,6 @@ export default function Page() {
   const router = useRouter();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [budget, setBudget] = useState("");
   const [deadline, setDeadline] = useState("");
   const [place, setPlace] = useState<PlaceValue>({ location: "", city: "", lat: null, lng: null });
   const [photos, setPhotos] = useState<string[]>([]);
@@ -34,8 +33,8 @@ export default function Page() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (title.trim().length < 3 || !budget || !place.location.trim() || !deadline) {
-      show("error", "Fill the form", "Title, budget, location and date are required.");
+    if (title.trim().length < 3 || !place.location.trim() || !deadline) {
+      show("error", "Fill the form", "Title, location and date are required.");
       return;
     }
     setLoading(true);
@@ -45,7 +44,6 @@ export default function Page() {
         description: description.trim(),
         location: place.location.trim(),
         city: place.city.trim(),
-        budget: Number(budget),
         deadline,
         images: photos.slice(0, 6),
       });
@@ -85,7 +83,6 @@ export default function Page() {
             </div>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Job title" className="input-chocolate w-full px-4 py-3.5 text-sm" />
             <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Details: walls, rooms, materials" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
-            <input value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="Budget (TSh)" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
             <div>
               <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Deadline</p>
               <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="input-chocolate w-full px-4 py-3.5 text-sm" />

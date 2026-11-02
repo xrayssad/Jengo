@@ -164,7 +164,7 @@ class JobIn(BaseModel):
     description: str = ""
     location: str
     city: str = ""
-    budget: float
+    budget: float = 0
     deadline: str
     images: list[str] = Field(default_factory=list)
 

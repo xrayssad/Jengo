@@ -125,7 +125,7 @@ export default function JobClient({ id }: { id: string }) {
           </Link>
           <div className="min-w-0">
             <h1 className="font-heading text-2xl leading-none truncate" style={{ color: "var(--ink)" }}>{job?.title || "Job"}</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Kazi za Ujenzi</p>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Construction Jobs</p>
           </div>
         </div>
       </header>
@@ -152,7 +152,9 @@ export default function JobClient({ id }: { id: string }) {
               }
             />
             <div className="sheet rounded-[28px] p-5 space-y-2">
-              <p className="font-heading text-[28px] leading-none" style={{ color: "var(--ink)" }}>TSh {formatPrice(job.budget)}</p>
+              {Number(job.budget) > 0 ? (
+                <p className="font-heading text-[28px] leading-none" style={{ color: "var(--ink)" }}>TSh {formatPrice(job.budget)}</p>
+              ) : null}
               {place ? (
                 <p className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}>
                   <MapPin size={13} color="var(--mocha)" />
@@ -161,21 +163,13 @@ export default function JobClient({ id }: { id: string }) {
               ) : null}
               {job.deadline ? <p className="text-sm" style={{ color: "var(--muted)" }}>Deadline: {job.deadline}</p> : null}
               {job.description ? <p className="text-sm leading-relaxed pt-1" style={{ color: "var(--ink)" }}>{job.description}</p> : null}
-              <p className="text-xs pt-2" style={{ color: "var(--mocha)" }}>
-                {open
-                  ? (job.offers_count ? feeCopy(job) : "No fee until a worker offers and you accept.")
-                  : job.status === "awarded"
-                    ? `${feeCopy(job)} A worker has been chosen.`
-                    : "This job is closed. No fee."}
-              </p>
+              {!open && job.status === "awarded" ? (
+                <p className="text-xs pt-2" style={{ color: "var(--mocha)" }}>{feeCopy(job)} A worker has been chosen.</p>
+              ) : null}
             </div>
 
-            {mine && (
+            {mine && offers.length > 0 && (
               <div className="sheet rounded-[28px] p-5 space-y-3">
-                <h2 className="font-heading text-xl" style={{ color: "var(--ink)" }}>Worker offers</h2>
-                {offers.length === 0 && (
-                  <p className="text-sm" style={{ color: "var(--muted)" }}>No workers yet. Jengo does not charge a fee.</p>
-                )}
                 {offers.map((offer) => (
                   <div key={offer.id} className="p-3 rounded-[18px]" style={{ border: "1px solid rgba(var(--caramel-rgb),0.4)" }}>
                     <div className="flex items-start justify-between gap-3">
