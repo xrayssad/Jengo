@@ -28,6 +28,7 @@ const USER_KEY = "jengo_user";
 
 export type AuthUser = {
   access_token: string;
+  refresh_token?: string;
   user_id: string;
   full_name?: string | null;
   username?: string | null;
@@ -55,8 +56,16 @@ async function dropSupabaseSession() {
 
 export function saveAuth(data: AuthUser) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(TOKEN_KEY, data.access_token);
-  localStorage.setItem(USER_KEY, JSON.stringify(data));
+  const prev = getAuthUser();
+  const next: AuthUser = {
+    ...prev,
+    ...data,
+    access_token: data.access_token || prev?.access_token || "",
+    refresh_token: data.refresh_token || prev?.refresh_token,
+  };
+  if (!next.access_token) return;
+  localStorage.setItem(TOKEN_KEY, next.access_token);
+  localStorage.setItem(USER_KEY, JSON.stringify(next));
 }
 
 export function clearAuth() {
@@ -81,7 +90,74 @@ export function getAuthUser(): AuthUser | null {
   }
 }
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+export function isSignedIn() {
+  return Boolean(getAuthUser()?.access_token && getToken());
+}
+
+let renewing: Promise<AuthUser | null> | null = null;
+
+async function parseJson(text: string) {
+  try {
+    return text ? JSON.parse(text) : null;
+  } catch {
+    return { detail: text };
+  }
+}
+
+function errorFrom(data: unknown, status: number) {
+  const detail =
+    typeof data === "object" && data && "detail" in data
+      ? String((data as { detail: unknown }).detail)
+      : `Error ${status}`;
+  const err = new Error(detail) as Error & { status?: number };
+  err.status = status;
+  return err;
+}
+
+async function renewSession(): Promise<AuthUser | null> {
+  const current = getAuthUser();
+  const refresh = current?.refresh_token;
+  if (!refresh) return null;
+  if (!renewing) {
+    renewing = (async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refresh }),
+        });
+        const data = await parseJson(await res.text());
+        if (!res.ok) {
+          clearAuth();
+          return null;
+        }
+        const next = data as AuthUser;
+        if (!next?.access_token) {
+          clearAuth();
+          return null;
+        }
+        const admin = next.role === "admin" || Boolean(next.is_admin);
+        const merged: AuthUser = {
+          ...current,
+          ...next,
+          access_token: next.access_token,
+          refresh_token: next.refresh_token || refresh,
+          role: admin ? "admin" : "user",
+          is_admin: admin,
+        };
+        saveAuth(merged);
+        return merged;
+      } catch {
+        return null;
+      } finally {
+        renewing = null;
+      }
+    })();
+  }
+  return renewing;
+}
+
+async function request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     ...(options.headers as Record<string, string>),
@@ -89,21 +165,13 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
-  const text = await res.text();
-  let data: unknown = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = { detail: text };
-  }
+  const data = await parseJson(await res.text());
   if (!res.ok) {
-    const detail =
-      typeof data === "object" && data && "detail" in data
-        ? String((data as { detail: unknown }).detail)
-        : `Error ${res.status}`;
-    const err = new Error(detail) as Error & { status?: number };
-    err.status = res.status;
-    throw err;
+    if (res.status === 401 && !retried && path !== "/auth/refresh" && path !== "/auth/login") {
+      const renewed = await renewSession();
+      if (renewed) return request<T>(path, options, true);
+    }
+    throw errorFrom(data, res.status);
   }
   return data as T;
 }
@@ -189,12 +257,18 @@ export async function startGoogle(redirectTo: string) {
   window.location.assign(data.url);
 }
 
-export async function adoptSession(accessToken: string) {
+export async function adoptSession(accessToken: string, refreshToken?: string) {
   const data = await request<AuthUser>("/auth/session", {
     method: "POST",
-    body: JSON.stringify({ access_token: accessToken }),
+    body: JSON.stringify({
+      access_token: accessToken,
+      refresh_token: refreshToken || "",
+    }),
   });
-  saveAuth(data);
+  saveAuth({
+    ...data,
+    refresh_token: data.refresh_token || refreshToken || undefined,
+  });
   return data;
 }
 
@@ -208,6 +282,7 @@ export async function setUsername(username: string, fullName?: string) {
     ...current,
     ...data,
     access_token: data.access_token || current?.access_token || "",
+    refresh_token: data.refresh_token || current?.refresh_token,
     needs_username: data.needs_username ?? false,
   });
   return data;
@@ -220,17 +295,29 @@ export async function fetchMe() {
 export async function refreshAuth(): Promise<AuthUser | null> {
   const current = getAuthUser();
   if (!current?.access_token) return null;
-  const data = await fetchMe();
-  const admin = data.role === "admin" || Boolean(data.is_admin);
-  const next: AuthUser = {
-    ...current,
-    ...data,
-    access_token: current.access_token,
-    role: admin ? "admin" : "user",
-    is_admin: admin,
-  };
-  saveAuth(next);
-  return next;
+  try {
+    const data = await fetchMe();
+    // Re-read after request() may have renewed the session mid-call.
+    const latest = getAuthUser() || current;
+    const admin = data.role === "admin" || Boolean(data.is_admin);
+    const next: AuthUser = {
+      ...latest,
+      ...data,
+      access_token: latest.access_token,
+      refresh_token: latest.refresh_token,
+      role: admin ? "admin" : "user",
+      is_admin: admin,
+    };
+    saveAuth(next);
+    return next;
+  } catch (err) {
+    const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
+    if (status === 401) {
+      return renewSession();
+    }
+    // Keep the local session if the network blips; stay signed in.
+    return getAuthUser() || current;
+  }
 }
 
 export type AdminStats = {
@@ -876,26 +963,20 @@ export async function awardJob(jobId: string, offerId: string) {
   return request<Job>(`/jobs/${jobId}/award`, { method: "POST", body: JSON.stringify({ offer_id: offerId }) });
 }
 
-export async function uploadPhoto(file: File) {
+export async function uploadPhoto(file: File, retried = false) {
   const headers: Record<string, string> = {};
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   const body = new FormData();
   body.append("file", file);
   const res = await fetch(`${API_URL}/uploads`, { method: "POST", headers, body });
-  const text = await res.text();
-  let data: unknown = null;
-  try {
-    data = text ? JSON.parse(text) : null;
-  } catch {
-    data = { detail: text };
-  }
+  const data = await parseJson(await res.text());
   if (!res.ok) {
-    const detail =
-      typeof data === "object" && data && "detail" in data
-        ? String((data as { detail: unknown }).detail)
-        : `Error ${res.status}`;
-    throw new Error(detail);
+    if (res.status === 401 && !retried) {
+      const renewed = await renewSession();
+      if (renewed) return uploadPhoto(file, true);
+    }
+    throw errorFrom(data, res.status);
   }
   return data as { url: string };
 }

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { refreshAuth } from "@/lib/api";
+import { getAuthUser, refreshAuth } from "@/lib/api";
 
 export default function AuthGate({
   children,
@@ -17,6 +17,21 @@ export default function AuthGate({
   useEffect(() => {
     let stop = false;
     (async () => {
+      const local = getAuthUser();
+      if (!local?.access_token) {
+        router.replace("/login");
+        return;
+      }
+      if (local.needs_username) {
+        router.replace("/username");
+        return;
+      }
+      if (admin && !local.is_admin) {
+        // Confirm with the server before bouncing admins away.
+      } else {
+        setOk(true);
+      }
+
       try {
         const me = await refreshAuth();
         if (stop) return;
@@ -35,8 +50,17 @@ export default function AuthGate({
         setOk(true);
       } catch (err) {
         if (stop) return;
-        const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
-        router.replace(admin && status !== 401 ? "/home" : "/login");
+        // Keep the saved session on network errors; only leave when the token is gone.
+        if (!getAuthUser()?.access_token) {
+          const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
+          router.replace(admin && status !== 401 ? "/home" : "/login");
+          return;
+        }
+        if (admin && !getAuthUser()?.is_admin) {
+          router.replace("/home");
+          return;
+        }
+        setOk(true);
       }
     })();
     return () => {

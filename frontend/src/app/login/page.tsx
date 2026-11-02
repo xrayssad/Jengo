@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
 import { afterAuthPath, login as apiLogin, resendOtp, startGoogle } from "@/lib/api";
+import SignedInHome from "@/components/SignedInHome";
 
 const slides = [
   { image: "/real/room.jpg", title: "Houses / Rooms" },
@@ -63,6 +64,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
+      <SignedInHome />
       <div className="relative h-[36vh] min-h-[220px]">
         {slides.map((s, i) => (
           <div key={s.image} className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: slide === i ? 1 : 0 }}>

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useRef, useState } f
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Send } from "lucide-react";
-import { clearAuth, fetchInbox, fetchMqttSession, getAuthUser, getToken } from "@/lib/api";
+import { clearAuth, fetchInbox, fetchMqttSession, getAuthUser, getToken, refreshAuth } from "@/lib/api";
 
 type Ping = { type?: string; thread_key?: string; id?: string; listing_id?: string; reel_id?: string; likes_count?: number };
 type Unwatch = () => void;
@@ -161,7 +161,10 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
         if (hasNew && !viewingInbox(pathRef.current)) markUnread();
       } catch (err) {
         const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
-        if (status === 401) clearAuth();
+        if (status === 401) {
+          const me = await refreshAuth();
+          if (!me?.access_token) clearAuth();
+        }
       }
     };
 

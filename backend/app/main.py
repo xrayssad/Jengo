@@ -26,6 +26,7 @@ from app.security import (
     needs_username,
     profile_of,
     profile_role,
+    profile_from_session,
     public_profile,
     qty_from_booking,
     require_admin,
@@ -119,6 +120,11 @@ class ResendIn(BaseModel):
 
 class SessionIn(BaseModel):
     access_token: str
+    refresh_token: str = ""
+
+
+class RefreshIn(BaseModel):
+    refresh_token: str
 
 
 class ConfirmIn(BaseModel):
@@ -270,7 +276,7 @@ def _session_from_verify(res):
         raise HTTPException(status_code=400, detail="Verification failed")
     _finish_signup_profile(user)
     assert_active_account(user)
-    return public_profile(user, session.access_token)
+    return profile_from_session(user, session)
 
 
 def _upsert_profile(user_id: str, email: str | None, username: str, full_name: str, role: str = "user", phone: str = ""):
@@ -538,7 +544,7 @@ def _password_session(password: str, email: str = "", phone: str = ""):
                 raise HTTPException(status_code=403, detail="Account not verified")
             _finish_signup_profile(user)
             assert_active_account(user)
-            return public_profile(user, session.access_token)
+            return profile_from_session(user, session)
     msg = str(last or "").lower()
     if "not confirmed" in msg or "email not confirmed" in msg or "phone not confirmed" in msg:
         raise HTTPException(status_code=403, detail="Account not verified")
@@ -586,7 +592,7 @@ def _session_after_otp(user):
         raise HTTPException(status_code=400, detail="Verification failed")
     _finish_signup_profile(fresh)
     assert_active_account(fresh)
-    return public_profile(fresh, session.access_token)
+    return profile_from_session(fresh, session)
 
 
 def _existing_account_detail(user) -> str:
@@ -878,7 +884,25 @@ def auth_session(body: SessionIn):
         raise HTTPException(status_code=401, detail="Invalid session")
     _finish_signup_profile(user)
     assert_active_account(user)
-    return public_profile(user, body.access_token)
+    return public_profile(user, body.access_token, body.refresh_token.strip() or None)
+
+
+@app.post("/auth/refresh")
+def auth_refresh(body: RefreshIn):
+    token = (body.refresh_token or "").strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Session expired")
+    try:
+        res = anon().auth.refresh_session(token)
+    except Exception:
+        raise HTTPException(status_code=401, detail="Session expired")
+    session = getattr(res, "session", None)
+    user = getattr(res, "user", None) or getattr(session, "user", None)
+    if not session or not user:
+        raise HTTPException(status_code=401, detail="Session expired")
+    _finish_signup_profile(user)
+    assert_active_account(user)
+    return profile_from_session(user, session)
 
 
 @app.get("/auth/me")

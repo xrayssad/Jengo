@@ -46,16 +46,17 @@ function errorTitle(raw: string) {
   return "Sign in";
 }
 
-async function finishSession(accessToken: string) {
-  const user = await adoptSession(accessToken);
+async function finishSession(accessToken: string, refreshToken?: string) {
+  const user = await adoptSession(accessToken, refreshToken);
   window.location.replace(afterAuthPath(user));
 }
 
 async function finishWithCode(code: string) {
   const { data, error } = await getSupabase().auth.exchangeCodeForSession(code);
-  const token = data.session?.access_token;
+  const session = data.session;
+  const token = session?.access_token;
   if (!token) throw new Error(error?.message || "Session is invalid");
-  return finishSession(token);
+  return finishSession(token, session?.refresh_token || undefined);
 }
 
 let runningKey = "";
@@ -78,6 +79,7 @@ function completeCallback() {
     if (err) throw new Error(err);
     const code = get("code");
     const token = get("access_token");
+    const refresh = get("refresh_token") || undefined;
     const tokenHash = get("token_hash");
     const type = get("type") || "signup";
     if (code) {
@@ -85,7 +87,7 @@ function completeCallback() {
       return;
     }
     if (token) {
-      await finishSession(token);
+      await finishSession(token, refresh);
       return;
     }
     if (tokenHash) {

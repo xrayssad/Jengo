@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NextImage from "next/image";
+import SignedInHome from "@/components/SignedInHome";
 
 const categories = [
   { href: "/nyumba", title: "Houses / Rooms", line: "Monthly or yearly stays", img: "/real/room.jpg" },
@@ -12,6 +13,7 @@ const categories = [
 export default function LandingPage() {
   return (
     <main className="overflow-x-hidden" style={{ backgroundColor: "#2E1A0F" }}>
+      <SignedInHome />
       <section className="relative h-dvh min-h-[640px]">
         <NextImage src="/real/apartment.jpg" alt="Homes" fill className="object-cover" priority sizes="100vw" />
         <div

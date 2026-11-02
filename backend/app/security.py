@@ -103,7 +103,7 @@ def needs_username(profile: dict | None) -> bool:
     return not bool(USERNAME_RE.match(name))
 
 
-def public_profile(user, token: str | None = None) -> dict:
+def public_profile(user, token: str | None = None, refresh_token: str | None = None) -> dict:
     p = profile_of(user.id) or {}
     role = profile_role(p)
     email = getattr(user, "email", None) or p.get("email")
@@ -122,7 +122,17 @@ def public_profile(user, token: str | None = None) -> dict:
     }
     if token:
         out["access_token"] = token
+    if refresh_token:
+        out["refresh_token"] = refresh_token
     return out
+
+
+def profile_from_session(user, session) -> dict:
+    return public_profile(
+        user,
+        getattr(session, "access_token", None),
+        getattr(session, "refresh_token", None),
+    )
 
 
 def split_desc(desc: str | None) -> tuple[str, dict]:
