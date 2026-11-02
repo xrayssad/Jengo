@@ -16,11 +16,11 @@ import { clearAuth, fetchListings, readHomeListingsCache, suggestPlaces, writeHo
 
 const chips = [
   { href: "/nyumba", label: "Houses/Rooms" },
+  { href: "/kazi", label: "Kazi za Ujenzi" },
   { href: "/godown", label: "Godown/Store" },
   { href: "/airbnb", label: "Airbnb" },
   { href: "/maduka", label: "Shops" },
   { href: "/vifaa", label: "Materials" },
-  { href: "/kazi", label: "Kazi za Ujenzi" },
 ];
 
 const sideLinks = [
@@ -234,16 +234,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="relative overflow-hidden mb-4" style={{ borderRadius: 28, height: 196 }}>
-          <Image src="/real/apartment.jpg" alt="" fill className="object-cover" sizes="400px" priority />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.05))" }} />
-          <div className="photo-dock">
-            <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Places to live and work</h3>
-            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Real photos, clear prices.</p>
-          </div>
-        </div>
-
-        <Link href="/kazi" className="relative overflow-hidden mb-6 block" style={{ borderRadius: 28, height: 176 }}>
+        <Link href="/kazi" className="relative overflow-hidden mb-4 block" style={{ borderRadius: 28, height: 176 }}>
           <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.58), rgba(var(--veil-rgb),0.08))" }} />
           <div className="photo-dock">
@@ -251,6 +242,15 @@ export default function HomePage() {
             <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Rangi, tiles, dari, mabomba, umeme, ukarabati.</p>
           </div>
         </Link>
+
+        <div className="relative overflow-hidden mb-6" style={{ borderRadius: 28, height: 196 }}>
+          <Image src="/real/apartment.jpg" alt="" fill className="object-cover" sizes="400px" priority />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.05))" }} />
+          <div className="photo-dock">
+            <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Places to live and work</h3>
+            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Real photos, clear prices.</p>
+          </div>
+        </div>
 
         <div className="flex items-end justify-between mb-3">
           <h3 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Near you</h3>

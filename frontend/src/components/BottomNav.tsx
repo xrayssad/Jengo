@@ -8,7 +8,7 @@ import { useInboxLive } from "./MqttInbox";
 const items = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/reels", label: "Reels", icon: Clapperboard },
-  { href: "/mypost", label: "Posts", icon: LayoutList },
+  { href: "/mypost", label: "My Posts", icon: LayoutList },
   { href: "/messages", label: "Chat", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: User },
 ];
