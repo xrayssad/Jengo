@@ -46,26 +46,14 @@ function errorTitle(raw: string) {
   return "Sign in";
 }
 
-function isFlowStateError(raw: string) {
-  const text = raw.toLowerCase();
-  return text.includes("flow state") || text.includes("code verifier") || text.includes("pkce");
-}
-
 async function finishSession(accessToken: string) {
   const user = await adoptSession(accessToken);
   window.location.replace(afterAuthPath(user));
 }
 
-async function sessionToken() {
-  const { data } = await getSupabase().auth.getSession();
-  return data.session?.access_token || "";
-}
-
 async function finishWithCode(code: string) {
-  const existing = await sessionToken();
-  if (existing) return finishSession(existing);
   const { data, error } = await getSupabase().auth.exchangeCodeForSession(code);
-  const token = data.session?.access_token || (await sessionToken());
+  const token = data.session?.access_token;
   if (!token) throw new Error(error?.message || "Session is invalid");
   return finishSession(token);
 }
@@ -116,17 +104,9 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     let cancelled = false;
     completeCallback()
-      .catch(async (caught) => {
-        const raw = caught instanceof Error ? caught.message : "Session is invalid";
-        if (isFlowStateError(raw)) {
-          const token = await sessionToken();
-          if (token) return finishSession(token);
-        }
-        if (!cancelled) setError(googleOffMessage(raw));
-      })
       .catch((caught) => {
-        if (cancelled) return;
-        setError(googleOffMessage(caught instanceof Error ? caught.message : "Session is invalid"));
+        const raw = caught instanceof Error ? caught.message : "Session is invalid";
+        if (!cancelled) setError(googleOffMessage(raw));
       });
     return () => {
       cancelled = true;

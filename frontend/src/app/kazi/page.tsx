@@ -31,8 +31,8 @@ function JobRow({ item }: { item: Job }) {
         </div>
       </div>
       <div className="px-4 py-3 flex items-center justify-between gap-3">
-        <p className="text-sm" style={{ color: "var(--ink)" }}>Bajeti TSh {formatPrice(item.budget)}</p>
-        <span className="text-[11px]" style={{ color: "var(--mocha)" }}>{item.offers_count ? `${item.offers_count} ofa` : "Bado hakuna fundi"}</span>
+        <p className="text-sm" style={{ color: "var(--ink)" }}>Budget TSh {formatPrice(item.budget)}</p>
+        <span className="text-[11px]" style={{ color: "var(--mocha)" }}>{item.offers_count ? `${item.offers_count} offers` : "No workers yet"}</span>
       </div>
     </Link>
   );
@@ -53,7 +53,7 @@ export default function Page() {
         }
       })
       .catch((err) => {
-        if (!stop) setError(err instanceof Error ? err.message : "Imeshindwa kupata kazi");
+        if (!stop) setError(err instanceof Error ? err.message : "Could not load jobs");
       })
       .finally(() => {
         if (!stop) setLoading(false);
@@ -72,7 +72,7 @@ export default function Page() {
           </Link>
           <div className="flex-1 min-w-0">
             <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Kazi za Ujenzi</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Rangi, tiles, dari, mabomba, umeme, ukarabati</p>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs</p>
           </div>
         </div>
       </header>
@@ -82,14 +82,14 @@ export default function Page() {
           <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.08))" }} />
           <div className="photo-dock">
-            <p className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Kazi ndogo za nyumbani</p>
-            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Mteja weka kazi, fundi weka ofa. Ada ya Jengo baada ya kukubali.</p>
+            <p className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Small home jobs</p>
+            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Customers post a job, workers send an offer. Jengo fee after you accept.</p>
           </div>
         </div>
 
         <Link href="/kazi/weka" className="btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-full font-semibold text-sm">
           <Plus size={18} strokeWidth={2.5} />
-          Weka kazi
+          Post a job
         </Link>
 
         {loading && (
@@ -105,8 +105,8 @@ export default function Page() {
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-12">
             <Hammer size={28} color="var(--caramel)" className="mx-auto mb-3" />
-            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Hakuna kazi wazi</p>
-            <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Weka kazi ndogo kama rangi au ukarabati.</p>
+            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No open jobs</p>
+            <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Post a small job like paint or repairs.</p>
           </div>
         )}
         {items.map((item) => (

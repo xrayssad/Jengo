@@ -10,9 +10,9 @@ import { awardJob, createJobOffer, fetchJob, formatPrice, getAuthUser, type Job,
 
 function feeCopy(job: Job) {
   const fee = formatPrice(job.connection_fee || 0);
-  const size = job.fee_label || "ndogo";
+  const size = job.fee_label || "small";
   const range = job.fee_range || "3000–5000";
-  return `Ada ya kuunganisha: TSh ${fee} (kazi ${size}, TSh ${range}).`;
+  return `Connection fee: TSh ${fee} (${size} job, TSh ${range}).`;
 }
 
 export default function JobClient({ id }: { id: string }) {
@@ -60,7 +60,7 @@ export default function JobClient({ id }: { id: string }) {
         const next = await fetchJob(id);
         if (!stop) setJob(next);
       } catch (err) {
-        if (!stop) setError(err instanceof Error ? err.message : "Kazi haikupatikana");
+        if (!stop) setError(err instanceof Error ? err.message : "Job not found");
       } finally {
         if (!stop) setLoading(false);
       }
@@ -89,9 +89,9 @@ export default function JobClient({ id }: { id: string }) {
       setAmount("");
       setMessage("");
       await load();
-      show("success", "Ofa imetumwa", "Mteja ataona jina, simu, kiasi na ujumbe wako.");
+      show("success", "Offer sent", "The customer will see your name, phone, amount and message.");
     } catch (err) {
-      show("error", "Imeshindwa kutuma ofa", err instanceof Error ? err.message : "Jaribu tena.");
+      show("error", "Could not send the offer", err instanceof Error ? err.message : "Try again.");
     } finally {
       setBusy(false);
     }
@@ -104,9 +104,9 @@ export default function JobClient({ id }: { id: string }) {
       const next = await awardJob(id, pick.id);
       setJob(next);
       setPick(null);
-      show("success", "Fundi amechaguliwa", `${feeCopy(next)} Wasiliana na fundi sasa.`);
+      show("success", "Worker chosen", `${feeCopy(next)} Contact the worker now.`);
     } catch (err) {
-      show("error", "Imeshindwa kuchagua", err instanceof Error ? err.message : "Jaribu tena.");
+      show("error", "Could not choose the worker", err instanceof Error ? err.message : "Try again.");
     } finally {
       setBusy(false);
     }
@@ -124,7 +124,7 @@ export default function JobClient({ id }: { id: string }) {
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div className="min-w-0">
-            <h1 className="font-heading text-2xl leading-none truncate" style={{ color: "var(--ink)" }}>{job?.title || "Kazi"}</h1>
+            <h1 className="font-heading text-2xl leading-none truncate" style={{ color: "var(--ink)" }}>{job?.title || "Job"}</h1>
             <p className="text-sm" style={{ color: "var(--muted)" }}>Kazi za Ujenzi</p>
           </div>
         </div>
@@ -159,22 +159,22 @@ export default function JobClient({ id }: { id: string }) {
                   {place}
                 </p>
               ) : null}
-              {job.deadline ? <p className="text-sm" style={{ color: "var(--muted)" }}>Mwisho: {job.deadline}</p> : null}
+              {job.deadline ? <p className="text-sm" style={{ color: "var(--muted)" }}>Deadline: {job.deadline}</p> : null}
               {job.description ? <p className="text-sm leading-relaxed pt-1" style={{ color: "var(--ink)" }}>{job.description}</p> : null}
               <p className="text-xs pt-2" style={{ color: "var(--mocha)" }}>
                 {open
-                  ? (job.offers_count ? feeCopy(job) : "Ada hailipwi mpaka fundi apatikane na ukubali.")
+                  ? (job.offers_count ? feeCopy(job) : "No fee until a worker offers and you accept.")
                   : job.status === "awarded"
-                    ? `${feeCopy(job)} Fundi ameshachaguliwa.`
-                    : "Kazi imefungwa. Hakuna ada."}
+                    ? `${feeCopy(job)} A worker has been chosen.`
+                    : "This job is closed. No fee."}
               </p>
             </div>
 
             {mine && (
               <div className="sheet rounded-[28px] p-5 space-y-3">
-                <h2 className="font-heading text-xl" style={{ color: "var(--ink)" }}>Ofa za mafundi</h2>
+                <h2 className="font-heading text-xl" style={{ color: "var(--ink)" }}>Worker offers</h2>
                 {offers.length === 0 && (
-                  <p className="text-sm" style={{ color: "var(--muted)" }}>Bado hakuna fundi. Ada ya Jengo hailipwi.</p>
+                  <p className="text-sm" style={{ color: "var(--muted)" }}>No workers yet. Jengo does not charge a fee.</p>
                 )}
                 {offers.map((offer) => (
                   <div key={offer.id} className="p-3 rounded-[18px]" style={{ border: "1px solid rgba(var(--caramel-rgb),0.4)" }}>
@@ -192,11 +192,11 @@ export default function JobClient({ id }: { id: string }) {
                         onClick={() => setPick(offer)}
                         className="btn-primary w-full mt-3 py-2.5 rounded-full text-sm font-semibold"
                       >
-                        Chagua fundi
+                        Choose worker
                       </button>
                     )}
                     {offer.status === "awarded" && (
-                      <p className="text-xs mt-2" style={{ color: "var(--success)" }}>Amechaguliwa</p>
+                      <p className="text-xs mt-2" style={{ color: "var(--success)" }}>Chosen</p>
                     )}
                   </div>
                 ))}
@@ -205,13 +205,13 @@ export default function JobClient({ id }: { id: string }) {
 
             {!mine && open && (
               <form onSubmit={sendOffer} className="sheet rounded-[28px] p-5 space-y-3">
-                <h2 className="font-heading text-xl" style={{ color: "var(--ink)" }}>Weka ofa</h2>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Jina lako" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-                <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Simu" inputMode="tel" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-                <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Kiasi (TSh)" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-                <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Ujumbe mfupi" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
+                <h2 className="font-heading text-xl" style={{ color: "var(--ink)" }}>Send an offer</h2>
+                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+                <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Phone" inputMode="tel" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+                <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount (TSh)" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+                <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Short message" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
                 <button type="submit" disabled={busy} className="btn-primary w-full py-3.5 rounded-full text-sm font-semibold" style={{ opacity: busy ? 0.7 : 1 }}>
-                  {busy ? "Inatuma..." : "Tuma ofa"}
+                  {busy ? "Sending..." : "Send offer"}
                 </button>
               </form>
             )}
@@ -222,19 +222,19 @@ export default function JobClient({ id }: { id: string }) {
       {pick && job && (
         <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4" style={{ backgroundColor: "rgba(26,15,8,0.55)" }} onClick={() => setPick(null)}>
           <div className="w-full max-w-sm sheet rounded-[28px] p-5" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Thibitisha fundi</h2>
+            <h2 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Confirm worker</h2>
             <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>
               {pick.worker_name} · TSh {formatPrice(pick.amount)}
             </p>
             <p className="text-sm mt-3 leading-relaxed" style={{ color: "var(--ink)" }}>{feeCopy(job)}</p>
             <p className="text-xs mt-2" style={{ color: "var(--muted)" }}>
-              Ada inalipwa Jengo baada ya kukubali. Si asilimia, si escrow, wala mkataba.
+              The Jengo fee is paid after you accept. Not a percent, not escrow, not a contract.
             </p>
             <button type="button" disabled={busy} onClick={confirmAward} className="btn-primary w-full mt-4 py-3.5 rounded-full text-sm font-semibold">
-              {busy ? "Inahifadhi..." : "Kubali na chagua"}
+              {busy ? "Saving..." : "Accept and choose"}
             </button>
             <button type="button" onClick={() => setPick(null)} className="btn-secondary w-full mt-2 py-3.5 rounded-full text-sm font-semibold">
-              Ghairi
+              Cancel
             </button>
           </div>
         </div>

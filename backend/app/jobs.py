@@ -15,10 +15,10 @@ def connection_fee(budget) -> dict:
     except (TypeError, ValueError):
         n = 0
     if n < 300_000:
-        return {"size": "small", "label": "ndogo", "fee": 4000, "range": "3000–5000"}
+        return {"size": "small", "label": "small", "fee": 4000, "range": "3000–5000"}
     if n < 1_500_000:
-        return {"size": "medium", "label": "wastani", "fee": 7500, "range": "5000–10000"}
-    return {"size": "large", "label": "kubwa", "fee": 15000, "range": "10000–20000"}
+        return {"size": "medium", "label": "medium", "fee": 7500, "range": "5000–10000"}
+    return {"size": "large", "label": "large", "fee": 15000, "range": "10000–20000"}
 
 
 def _save_row(table: str, row: dict, fallback: dict):

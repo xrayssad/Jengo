@@ -96,7 +96,7 @@ export default function Page() {
           setError("");
         }
       } catch (err) {
-        if (!stop) setError(err instanceof Error ? err.message : "Imeshindwa kupata post");
+        if (!stop) setError(err instanceof Error ? err.message : "Could not load posts");
       } finally {
         if (!stop) setLoading(false);
       }
@@ -116,7 +116,7 @@ export default function Page() {
             </Link>
             <div>
               <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>My Posts</h1>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>Nyumba, Airbnb, maduka, fremu, vifaa na reels</p>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>Rooms, Airbnb, shops, frames, materials and reels</p>
             </div>
           </div>
         </header>
@@ -134,11 +134,11 @@ export default function Page() {
           {!loading && !error && rows.length === 0 && (
             <div className="text-center py-16">
               <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Huna post bado</p>
-              <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Weka tangazo, reel au kazi ya ujenzi.</p>
+              <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Post a listing, reel or construction job.</p>
               <div className="flex flex-col items-center gap-2 mt-4">
-                <Link href="/weka-tangazo" className="btn-primary inline-block px-5 py-3 rounded-full text-sm font-semibold">Weka tangazo</Link>
-                <Link href="/reels/new" className="text-sm" style={{ color: "var(--mocha)" }}>Weka reel</Link>
-                <Link href="/kazi/weka" className="text-sm" style={{ color: "var(--mocha)" }}>Weka kazi ya ujenzi</Link>
+                <Link href="/weka-tangazo" className="btn-primary inline-block px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
+                <Link href="/reels/new" className="text-sm" style={{ color: "var(--mocha)" }}>Post a reel</Link>
+                <Link href="/kazi/weka" className="text-sm" style={{ color: "var(--mocha)" }}>Post a construction job</Link>
               </div>
             </div>
           )}

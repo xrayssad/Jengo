@@ -10,9 +10,17 @@ type Ping = { type?: string; thread_key?: string; id?: string; listing_id?: stri
 type Unwatch = () => void;
 type Ctx = { unread: boolean; clear: () => void; watchListing: (id: string) => Unwatch };
 
-const UNREAD_KEY = "jengo_inbox_unread";
-const SEEN_KEY = "jengo_inbox_seen";
 const InboxCtx = createContext<Ctx>({ unread: false, clear: () => {}, watchListing: () => () => {} });
+
+function unreadKey() {
+  const uid = getAuthUser()?.user_id || "";
+  return uid ? `jengo_inbox_unread:${uid}` : "jengo_inbox_unread";
+}
+
+function seenKey() {
+  const uid = getAuthUser()?.user_id || "";
+  return uid ? `jengo_inbox_seen:${uid}` : "jengo_inbox_seen";
+}
 
 type MqttClient = {
   subscribe: (topic: string) => void;
@@ -27,8 +35,8 @@ export function useInboxLive() {
 
 function persistUnread(on: boolean) {
   try {
-    localStorage.setItem(UNREAD_KEY, on ? "1" : "0");
-    if (!on) localStorage.setItem(SEEN_KEY, new Date().toISOString());
+    localStorage.setItem(unreadKey(), on ? "1" : "0");
+    if (!on) localStorage.setItem(seenKey(), new Date().toISOString());
   } catch {
     /* quota */
   }
@@ -105,14 +113,20 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  const [userId, setUserId] = useState("");
+
+  useEffect(() => {
+    setUserId(getAuthUser()?.user_id || "");
+  }, []);
+
   useEffect(() => {
     try {
-      if (!localStorage.getItem(SEEN_KEY)) localStorage.setItem(SEEN_KEY, new Date().toISOString());
-      if (localStorage.getItem(UNREAD_KEY) === "1") setUnread(true);
+      if (!localStorage.getItem(seenKey())) localStorage.setItem(seenKey(), new Date().toISOString());
+      setUnread(localStorage.getItem(unreadKey()) === "1");
     } catch {
       /* private mode */
     }
-  }, []);
+  }, [userId]);
 
   useEffect(() => {
     if (viewingInbox(path)) clear();
@@ -142,7 +156,7 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
       if (!signedIn() || skipInbox(pathRef.current)) return;
       try {
         const res = await fetchInbox();
-        const seen = localStorage.getItem(SEEN_KEY) || "";
+        const seen = localStorage.getItem(seenKey()) || "";
         const hasNew = (res.items || []).some((m) => (m.created_at || "") > seen);
         if (hasNew && !viewingInbox(pathRef.current)) markUnread();
       } catch (err) {
@@ -216,7 +230,7 @@ export default function MqttInbox({ children }: { children: React.ReactNode }) {
       clientRef.current?.end(true);
       clientRef.current = null;
     };
-  }, [markUnread, path]);
+  }, [markUnread, userId]);
 
   return <InboxCtx.Provider value={{ unread, clear, watchListing }}>{children}</InboxCtx.Provider>;
 }

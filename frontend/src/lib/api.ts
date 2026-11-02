@@ -44,6 +44,15 @@ export function afterAuthPath(user: AuthUser) {
   return "/home";
 }
 
+async function dropSupabaseSession() {
+  try {
+    const { getSupabase } = await import("./supabase");
+    await getSupabase().auth.signOut({ scope: "local" });
+  } catch {
+    /* Google client may be missing */
+  }
+}
+
 export function saveAuth(data: AuthUser) {
   if (typeof window === "undefined") return;
   localStorage.setItem(TOKEN_KEY, data.access_token);
@@ -54,6 +63,7 @@ export function clearAuth() {
   if (typeof window === "undefined") return;
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+  void dropSupabaseSession();
 }
 
 export function getToken(): string | null {
@@ -105,6 +115,7 @@ export async function register(body: {
   username: string;
   full_name: string;
 }) {
+  await dropSupabaseSession();
   const data = await request<AuthUser & { ok?: boolean; email?: string; phone?: string; needs_verify?: boolean }>("/auth/register", {
     method: "POST",
     body: JSON.stringify(body),
@@ -144,6 +155,7 @@ export async function confirmEmailLink(tokenHash: string, type?: string) {
 }
 
 export async function login(ident: string, password: string) {
+  await dropSupabaseSession();
   const data = await request<AuthUser>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ username: ident, password }),
@@ -163,6 +175,11 @@ function googleError(raw: string) {
 }
 
 export async function startGoogle(redirectTo: string) {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  }
+  await dropSupabaseSession();
   const { getSupabase } = await import("./supabase");
   const { data, error } = await getSupabase().auth.signInWithOAuth({
     provider: "google",

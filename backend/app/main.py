@@ -302,15 +302,13 @@ def _upsert_profile(user_id: str, email: str | None, username: str, full_name: s
 
 
 def _username_taken(username: str, ignore_id: str | None = None) -> bool:
-    res = db().table("profiles").select("id").ilike("username", username).limit(5).execute()
+    res = db().table("profiles").select("id").ilike("username", username).limit(10).execute()
     for row in res.data or []:
         uid = row.get("id")
         if uid == ignore_id:
             continue
         auth_user = _get_auth_user(uid) if uid else None
         if auth_user and not _account_confirmed(auth_user):
-            continue
-        if not auth_user:
             continue
         return True
     return False
@@ -791,9 +789,14 @@ def resend(request: Request, body: ResendIn):
 
 
 def _profile_by_username(username: str) -> dict | None:
-    res = db().table("profiles").select("*").ilike("username", username).limit(5).execute()
+    res = db().table("profiles").select("*").ilike("username", username).limit(10).execute()
     rows = [r for r in (res.data or []) if str(r.get("username") or "").lower() == username.lower()]
-    return rows[0] if rows else None
+    live = []
+    for row in rows:
+        uid = row.get("id")
+        if uid and _get_auth_user(uid):
+            live.append(row)
+    return live[0] if live else None
 
 
 @app.post("/auth/login")

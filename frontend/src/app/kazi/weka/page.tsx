@@ -9,7 +9,7 @@ import PhotoPicker from "@/components/PhotoPicker";
 import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
 import { createJob } from "@/lib/api";
 
-const samples = ["Rangi", "Tiles", "Dari", "Mabomba", "Umeme", "Ukarabati"];
+const samples = ["Paint", "Tiles", "Ceiling", "Plumbing", "Electrical", "Repairs"];
 
 export default function Page() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function Page() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (title.trim().length < 3 || !budget || !place.location.trim() || !deadline) {
-      show("error", "Jaza sehemu", "Kichwa, bajeti, eneo na tarehe vinahitajika.");
+      show("error", "Fill the form", "Title, budget, location and date are required.");
       return;
     }
     setLoading(true);
@@ -51,7 +51,7 @@ export default function Page() {
       });
       router.replace(`/kazi/${created.id}`);
     } catch (err) {
-      show("error", "Imeshindwa kuweka kazi", err instanceof Error ? err.message : "Jaribu tena.");
+      show("error", "Could not post the job", err instanceof Error ? err.message : "Try again.");
     } finally {
       setLoading(false);
     }
@@ -64,12 +64,12 @@ export default function Page() {
           <button type="button" onClick={() => router.push("/kazi")} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
             <ArrowLeft size={18} color="var(--ink)" />
           </button>
-          <h1 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Weka kazi</h1>
+          <h1 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Post a job</h1>
         </header>
 
         <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5">
           <div className="sheet rounded-[28px] p-5 space-y-4">
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Mfano wa kazi ndogo</p>
+            <p className="text-sm" style={{ color: "var(--muted)" }}>Examples of small jobs</p>
             <div className="flex flex-wrap gap-2">
               {samples.map((name) => (
                 <button
@@ -83,27 +83,27 @@ export default function Page() {
                 </button>
               ))}
             </div>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Kichwa cha kazi" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Maelezo: ukuta, idadi ya vyumba, vifaa" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
-            <input value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="Bajeti (TSh)" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Job title" className="input-chocolate w-full px-4 py-3.5 text-sm" />
+            <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Details: walls, rooms, materials" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
+            <input value={budget} onChange={(e) => setBudget(e.target.value)} placeholder="Budget (TSh)" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
             <div>
-              <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Tarehe ya mwisho</p>
+              <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Deadline</p>
               <input type="date" value={deadline} onChange={(e) => setDeadline(e.target.value)} className="input-chocolate w-full px-4 py-3.5 text-sm" />
             </div>
             <div>
-              <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Picha</p>
+              <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Photos</p>
               <PhotoPicker urls={photos} onChange={setPhotos} />
             </div>
             <div>
-              <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Eneo</p>
+              <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Location</p>
               <PlacePicker value={place} onChange={setPlace} />
             </div>
             <p className="text-xs" style={{ color: "var(--muted)" }}>
-              Ada ya kuunganisha inaonyeshwa baada ya fundi kuweka ofa, kabla hujamchagua. Hakuna ada kama hakuna fundi.
+              The connection fee is shown after a worker offers, before you choose. No fee if nobody offers.
             </p>
             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
               {loading ? <Loader2 size={18} className="animate-spin" /> : null}
-              {loading ? "Inahifadhi..." : "Weka kazi"}
+              {loading ? "Saving..." : "Post job"}
             </button>
           </div>
         </form>

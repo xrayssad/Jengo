@@ -129,6 +129,20 @@ def inbox_for(user_id: str) -> list[dict]:
         .execute()
     )
     rows.extend(mine.data or [])
+    try:
+        mine_threads = (
+            db()
+            .table("jengo_messages")
+            .select("*")
+            .eq("kind", "listing_dm")
+            .like("thread_key", f"%{user_id}%")
+            .order("created_at", desc=True)
+            .limit(200)
+            .execute()
+        )
+        rows.extend(mine_threads.data or [])
+    except Exception:
+        pass
     sent = db().table("bookings").select("id").eq("user_id", user_id).execute()
     owned = db().table("listings").select("id").eq("owner_id", user_id).execute()
     owned_ids = [x["id"] for x in (owned.data or [])]

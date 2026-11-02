@@ -139,31 +139,6 @@ def _claim_reel(user, reel_id: str, remembered: bool) -> dict | None:
     return None
 
 
-def _ownerless_phone_matches(user, profile: dict | None) -> list[dict]:
-    user_phones = _user_phone_keys(user, profile)
-    if not user_phones:
-        return []
-    try:
-        res = db().table("listings").select("*").is_("owner_id", "null").limit(200).execute()
-    except Exception as exc:
-        log.warning("ownerless listings query failed user=%s err=%s", user.id, exc)
-        return []
-    skipped = []
-    for row in res.data or []:
-        listing_id = str(row.get("id") or "")
-        if not listing_id:
-            continue
-        ok, reason = _prove_listing(user, profile, row, remembered=False)
-        if ok:
-            miss = _claim_listing(user, profile, listing_id, remembered=False)
-            if miss:
-                skipped.append(miss)
-            continue
-        if reason not in {"already_owned", "no_proof"}:
-            skipped.append(_skip(user.id, "listing", listing_id, reason))
-    return skipped
-
-
 def claim(user, listing_ids: list[str] | None = None, reel_ids: list[str] | None = None) -> dict:
     profile = profile_of(user.id)
     skipped: list[dict] = []
@@ -185,7 +160,6 @@ def claim(user, listing_ids: list[str] | None = None, reel_ids: list[str] | None
         miss = _claim_reel(user, reel_id, remembered=True)
         if miss:
             skipped.append(miss)
-    skipped.extend(_ownerless_phone_matches(user, profile))
     return {"ok": True, "skipped": skipped}
 
 

@@ -1,3 +1,5 @@
+import { getAuthUser } from "@/lib/api";
+
 const LISTINGS_KEY = "jengo_my_listings";
 const BOOKINGS_KEY = "jengo_my_bookings";
 
@@ -8,17 +10,15 @@ export type SavedBooking = {
   created_at: string;
 };
 
-export function rememberListing(id: string) {
-  if (typeof window === "undefined" || !id) return;
-  const cur = readIds();
-  if (!cur.includes(id)) cur.unshift(id);
-  localStorage.setItem(LISTINGS_KEY, JSON.stringify(cur.slice(0, 100)));
+function scopedKey(base: string) {
+  const uid = getAuthUser()?.user_id || "";
+  return uid ? `${base}:${uid}` : "";
 }
 
-export function readIds(): string[] {
-  if (typeof window === "undefined") return [];
+function readStringList(key: string) {
+  if (typeof window === "undefined" || !key) return [];
   try {
-    const raw = localStorage.getItem(LISTINGS_KEY);
+    const raw = localStorage.getItem(key);
     const arr = raw ? JSON.parse(raw) : [];
     return Array.isArray(arr) ? arr.filter((x) => typeof x === "string") : [];
   } catch {
@@ -26,17 +26,31 @@ export function readIds(): string[] {
   }
 }
 
+export function rememberListing(id: string) {
+  const key = scopedKey(LISTINGS_KEY);
+  if (typeof window === "undefined" || !id || !key) return;
+  const cur = readStringList(key);
+  if (!cur.includes(id)) cur.unshift(id);
+  localStorage.setItem(key, JSON.stringify(cur.slice(0, 100)));
+}
+
+export function readIds(): string[] {
+  return readStringList(scopedKey(LISTINGS_KEY));
+}
+
 export function rememberBooking(b: SavedBooking) {
-  if (typeof window === "undefined") return;
+  const key = scopedKey(BOOKINGS_KEY);
+  if (typeof window === "undefined" || !key) return;
   const cur = readBookings();
   cur.unshift(b);
-  localStorage.setItem(BOOKINGS_KEY, JSON.stringify(cur.slice(0, 100)));
+  localStorage.setItem(key, JSON.stringify(cur.slice(0, 100)));
 }
 
 export function readBookings(): SavedBooking[] {
-  if (typeof window === "undefined") return [];
+  const key = scopedKey(BOOKINGS_KEY);
+  if (typeof window === "undefined" || !key) return [];
   try {
-    const raw = localStorage.getItem(BOOKINGS_KEY);
+    const raw = localStorage.getItem(key);
     const arr = raw ? JSON.parse(raw) : [];
     return Array.isArray(arr) ? arr : [];
   } catch {

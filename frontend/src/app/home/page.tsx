@@ -239,7 +239,7 @@ export default function HomePage() {
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.58), rgba(var(--veil-rgb),0.08))" }} />
           <div className="photo-dock">
             <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Kazi za Ujenzi</h3>
-            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Rangi, tiles, dari, mabomba, umeme, ukarabati.</p>
+            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs.</p>
           </div>
         </Link>
 
