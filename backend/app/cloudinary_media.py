@@ -5,7 +5,13 @@ import time
 from fastapi import HTTPException
 
 FOLDER = "jengo/reels"
-MAX_BYTES = 80 * 1024 * 1024
+MAX_BYTES = 250 * 1024 * 1024
+MAX_SECONDS = 180
+
+# Instagram / TikTok / YouTube Shorts delivery: 9:16 MP4, H.264 Baseline + AAC.
+# Parameter order is alphabetical so eager URLs match playback URLs.
+PLAY_TRANS = "ac_aac,af_44100,c_fill,du_180,f_mp4,fps_30,g_center,h_1280,q_auto:good,vc_h264:baseline:3.1,w_720"
+THUMB_TRANS = "c_fill,f_jpg,g_center,h_1280,q_auto,so_0,w_720"
 
 
 def cloud_name() -> str:
@@ -29,21 +35,32 @@ def require_cloudinary():
         raise HTTPException(status_code=503, detail="Add Cloudinary keys to the server, then try again")
 
 
+def _sign(params: dict[str, str]) -> str:
+    blob = "&".join(f"{k}={v}" for k, v in sorted(params.items())) + api_secret()
+    return hashlib.sha1(blob.encode("utf-8")).hexdigest()
+
+
 def sign_video_upload() -> dict:
     require_cloudinary()
     ts = int(time.time())
-    params = {"folder": FOLDER, "timestamp": str(ts)}
-    blob = "&".join(f"{k}={v}" for k, v in sorted(params.items())) + api_secret()
-    signature = hashlib.sha1(blob.encode("utf-8")).hexdigest()
+    params = {
+        "eager": PLAY_TRANS,
+        "eager_async": "true",
+        "folder": FOLDER,
+        "timestamp": str(ts),
+    }
     name = cloud_name()
     return {
         "cloud_name": name,
         "api_key": api_key(),
         "timestamp": ts,
-        "signature": signature,
+        "signature": _sign(params),
         "folder": FOLDER,
+        "eager": PLAY_TRANS,
+        "eager_async": True,
         "upload_url": f"https://api.cloudinary.com/v1_1/{name}/video/upload",
         "max_bytes": MAX_BYTES,
+        "max_seconds": MAX_SECONDS,
     }
 
 
@@ -57,11 +74,11 @@ def thumb_from_public_id(public_id: str) -> str:
     pid = (public_id or "").strip().lstrip("/")
     if not pid or not cloud_name():
         return ""
-    return f"https://res.cloudinary.com/{cloud_name()}/video/upload/so_0,w_720,h_1280,c_fill,q_auto,f_jpg/{pid}.jpg"
+    return f"https://res.cloudinary.com/{cloud_name()}/video/upload/{THUMB_TRANS}/{pid}.jpg"
 
 
 def play_from_public_id(public_id: str) -> str:
     pid = (public_id or "").strip().lstrip("/")
     if not pid or not cloud_name():
         return ""
-    return f"https://res.cloudinary.com/{cloud_name()}/video/upload/f_mp4,vc_h264,ac_aac,q_auto/{pid}.mp4"
+    return f"https://res.cloudinary.com/{cloud_name()}/video/upload/{PLAY_TRANS}/{pid}.mp4"

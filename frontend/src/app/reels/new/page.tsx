@@ -1,55 +1,25 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Clapperboard, Loader2 } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
-import { createReel, uploadReelVideo } from "@/lib/api";
+import { createReel, REEL_MAX_BYTES, uploadReelVideo } from "@/lib/api";
+import { armReelVideo } from "@/lib/reelsMedia";
 
-const MAX_BYTES = 80 * 1024 * 1024;
-const MAX_SECONDS = 90;
-
-function isVideoFile(file: File) {
+function isPhotoFile(file: File) {
   const type = (file.type || "").toLowerCase();
-  if (!type) return true;
-  if (type.startsWith("video/")) return true;
-  return /\.(mp4|m4v|mov|qt|webm|3gp|3gpp|mkv)$/i.test(file.name || "");
-}
-
-function readDuration(file: File) {
-  return new Promise<number>((resolve) => {
-    const url = URL.createObjectURL(file);
-    const el = document.createElement("video");
-    el.preload = "metadata";
-    el.muted = true;
-    el.defaultMuted = true;
-    el.playsInline = true;
-    el.setAttribute("playsinline", "true");
-    el.setAttribute("webkit-playsinline", "true");
-    el.style.cssText = "position:fixed;left:-9999px;width:1px;height:1px;opacity:0";
-    const done = (seconds: number) => {
-      window.clearTimeout(timer);
-      el.removeAttribute("src");
-      el.load();
-      el.remove();
-      URL.revokeObjectURL(url);
-      resolve(seconds);
-    };
-    const timer = window.setTimeout(() => done(0), 5000);
-    el.onloadedmetadata = () => {
-      const n = el.duration;
-      done(Number.isFinite(n) && n !== Infinity ? n : 0);
-    };
-    el.onerror = () => done(0);
-    document.body.appendChild(el);
-    el.src = url;
-    el.load();
-  });
+  const name = file.name || "";
+  if (/\.(mp4|m4v|mov|qt|webm|3gp|3gpp|mkv|avi|ts)$/i.test(name)) return false;
+  if (type.startsWith("video/")) return false;
+  if (type.startsWith("image/")) return true;
+  return /\.(jpe?g|png|gif|webp|heic|heif|bmp)$/i.test(name);
 }
 
 export default function NewReelPage() {
   const router = useRouter();
+  const previewEl = useRef<HTMLVideoElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState("");
   const [caption, setCaption] = useState("");
@@ -61,25 +31,26 @@ export default function NewReelPage() {
     if (preview) URL.revokeObjectURL(preview);
   }, [preview]);
 
-  const pick = async (next: File | null) => {
+  useEffect(() => {
+    armReelVideo(previewEl.current);
+  }, [preview]);
+
+  const pick = (next: File | null) => {
     setError("");
     if (preview) URL.revokeObjectURL(preview);
     setFile(null);
     setPreview("");
     if (!next) return;
-    if (!isVideoFile(next)) {
-      setError("Use an MP4, MOV or WebM video");
+    if (isPhotoFile(next)) {
+      setError("Use a video from the camera roll, not a photo");
       return;
     }
-    if (next.size > MAX_BYTES) {
-      setError("Video is too large. Use one under 80MB");
+    if (next.size > REEL_MAX_BYTES) {
+      setError("This reel could not post. Use a video under 250MB");
       return;
     }
-    const seconds = await readDuration(next);
-    if (seconds > MAX_SECONDS) {
-      setError("Keep the reel under 90 seconds");
-      return;
-    }
+    // Do not block on HTML5 duration. Some phones still report the old 90s
+    // limit or read HEVC/MOV length as milliseconds. Cloudinary trims to 3 min.
     setFile(next);
     setPreview(URL.createObjectURL(next));
   };
@@ -102,7 +73,7 @@ export default function NewReelPage() {
       });
       router.replace("/reels");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not post the reel");
+      setError(err instanceof Error ? err.message : "This reel could not post");
       setBusy(false);
     }
   };
@@ -117,7 +88,7 @@ export default function NewReelPage() {
             </Link>
             <div>
               <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Post a reel</h1>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>A short video of the place or stock</p>
+              <p className="text-sm" style={{ color: "var(--muted)" }}>Up to 3 minutes · 2:10 is OK · Android & iPhone</p>
             </div>
           </div>
         </header>
@@ -125,26 +96,31 @@ export default function NewReelPage() {
           <label className="block overflow-hidden rounded-[28px]" style={{ backgroundColor: "var(--ink-2)", minHeight: 360 }}>
             {preview ? (
               <video
+                ref={previewEl}
                 src={preview}
                 className="w-full h-[360px] object-cover"
                 controls
                 playsInline
+                muted
                 preload="metadata"
               />
             ) : (
-              <span className="h-[360px] flex flex-col items-center justify-center gap-2">
+              <span className="h-[360px] flex flex-col items-center justify-center gap-2 px-8 text-center">
                 <Clapperboard size={32} color="var(--gold)" />
                 <span className="text-sm" style={{ color: "#FFF6ED" }}>Tap to choose a video</span>
+                <span className="text-xs" style={{ color: "rgba(255,246,237,0.72)" }}>
+                  Any camera-roll video up to 3 minutes
+                </span>
               </span>
             )}
             <input
               type="file"
-              accept="video/*,video/mp4,video/quicktime,video/webm,.mp4,.mov,.m4v,.webm,.3gp"
+              accept="video/*"
               className="sr-only"
               onChange={(e) => {
                 const picked = e.target.files?.[0] || null;
                 e.target.value = "";
-                void pick(picked);
+                pick(picked);
               }}
             />
           </label>

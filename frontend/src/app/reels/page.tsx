@@ -207,12 +207,20 @@ function ReelSlide({
   const tap = useRef<{ y: number; t: number } | null>(null);
   const [paused, setPaused] = useState(false);
   const [ready, setReady] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [flash, setFlash] = useState<"play" | "pause" | null>(null);
   const flashTimer = useRef<number>(0);
+  const retries = useRef(0);
 
   useEffect(() => {
     if (!active) setPaused(false);
   }, [active]);
+
+  useEffect(() => {
+    setReady(false);
+    setFailed(false);
+    retries.current = 0;
+  }, [item.video_url]);
 
   useEffect(() => {
     const el = video.current;
@@ -291,6 +299,19 @@ function ReelSlide({
     showFlash(next ? "pause" : "play");
   };
 
+  const retryPlay = () => {
+    const el = video.current;
+    if (!el || retries.current >= 4) {
+      setFailed(true);
+      return;
+    }
+    retries.current += 1;
+    window.setTimeout(() => {
+      el.load();
+      el.play().catch(() => undefined);
+    }, 900 * retries.current);
+  };
+
   return (
     <section
       className="reel-slide relative snap-start snap-always"
@@ -315,11 +336,19 @@ function ReelSlide({
         loop
         muted={muted}
         preload={active ? "auto" : "metadata"}
+        controls={false}
+        disablePictureInPicture
         onLoadedData={() => setReady(true)}
         onCanPlay={() => setReady(true)}
         onPlaying={() => setReady(true)}
+        onError={() => retryPlay()}
       />
-      {!ready ? <ReelSkeleton /> : null}
+      {!ready && !failed ? <ReelSkeleton /> : null}
+      {failed ? (
+        <div className="reel-skeleton" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center" }}>
+          <p className="text-sm font-semibold" style={{ color: "#FFF6ED" }}>This reel could not play on this phone</p>
+        </div>
+      ) : null}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{ background: "linear-gradient(180deg, rgba(17,12,9,0.22) 0%, transparent 24%, transparent 62%, rgba(17,12,9,0.2) 100%)" }}
