@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
-  LayoutList, Inbox, Download, Receipt, CreditCard,
+  LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import ListingCard from "@/components/ListingCard";
@@ -20,6 +20,7 @@ const chips = [
   { href: "/airbnb", label: "Airbnb" },
   { href: "/maduka", label: "Shops" },
   { href: "/vifaa", label: "Materials" },
+  { href: "/kazi", label: "Kazi za Ujenzi" },
 ];
 
 const sideLinks = [
@@ -31,7 +32,8 @@ const sideLinks = [
   { label: "Favorites", href: "/favorites", icon: Bookmark },
   { label: "Saved photos", href: "/picha", icon: Download },
   { label: "Payments", href: "/malipo", icon: CreditCard },
-  { label: "My listings", href: "/matangazo-yangu", icon: LayoutList },
+  { label: "My Posts", href: "/mypost", icon: LayoutList },
+  { label: "Kazi za Ujenzi", href: "/kazi", icon: Hammer },
   { label: "My requests", href: "/maombi-yangu", icon: Inbox },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
@@ -232,7 +234,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        <div className="relative overflow-hidden mb-6" style={{ borderRadius: 28, height: 196 }}>
+        <div className="relative overflow-hidden mb-4" style={{ borderRadius: 28, height: 196 }}>
           <Image src="/real/apartment.jpg" alt="" fill className="object-cover" sizes="400px" priority />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.05))" }} />
           <div className="photo-dock">
@@ -240,6 +242,15 @@ export default function HomePage() {
             <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Real photos, clear prices.</p>
           </div>
         </div>
+
+        <Link href="/kazi" className="relative overflow-hidden mb-6 block" style={{ borderRadius: 28, height: 176 }}>
+          <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.58), rgba(var(--veil-rgb),0.08))" }} />
+          <div className="photo-dock">
+            <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Kazi za Ujenzi</h3>
+            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Rangi, tiles, dari, mabomba, umeme, ukarabati.</p>
+          </div>
+        </Link>
 
         <div className="flex items-end justify-between mb-3">
           <h3 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Near you</h3>

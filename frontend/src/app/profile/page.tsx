@@ -13,7 +13,7 @@ import AdminLink from "@/components/AdminLink";
 
 const menuItems = [
   { icon: FileText, label: "My requests", desc: "Requests you sent", href: "/maombi-yangu" },
-  { icon: Home, label: "My listings", desc: "Listings you posted", href: "/matangazo-yangu" },
+  { icon: Home, label: "My Posts", desc: "Rooms, Airbnb, shops, frames, materials and reels", href: "/mypost" },
   { icon: Heart, label: "Favorites", desc: "Listings you saved", href: "/favorites" },
   { icon: Settings, label: "Settings", desc: "Account and privacy", href: "/settings" },
 ];

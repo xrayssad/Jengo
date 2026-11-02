@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Clapperboard, Plus, MessageCircle, User } from "lucide-react";
+import { Home, Clapperboard, Plus, MessageCircle, User, LayoutList } from "lucide-react";
 import { useInboxLive } from "./MqttInbox";
 
 const items = [
   { href: "/home", label: "Home", icon: Home },
   { href: "/reels", label: "Reels", icon: Clapperboard },
+  { href: "/mypost", label: "Posts", icon: LayoutList },
   { href: "/messages", label: "Chat", icon: MessageCircle },
   { href: "/profile", label: "Profile", icon: User },
 ];
@@ -19,7 +20,12 @@ export default function BottomNav() {
 
   const link = (item: (typeof items)[number]) => {
     const Icon = item.icon;
-    const active = item.href === "/reels" ? path.startsWith("/reels") : path === item.href;
+    const active =
+      item.href === "/reels"
+        ? path.startsWith("/reels")
+        : item.href === "/mypost"
+          ? path === "/mypost" || path.startsWith("/mypost/")
+          : path === item.href;
     return (
       <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-0.5 h-full min-w-0">
         <span className="relative">
@@ -45,7 +51,7 @@ export default function BottomNav() {
         className="nav-island mx-auto h-[62px] px-1"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+          gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
           width: "100%",
           maxWidth: "100%",
           boxSizing: "border-box",
@@ -66,6 +72,7 @@ export default function BottomNav() {
         </div>
         {link(items[2])}
         {link(items[3])}
+        {link(items[4])}
       </div>
     </nav>
   );

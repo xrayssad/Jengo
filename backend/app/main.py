@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app import cloudinary_media, mqtt_bus, phone_auth, places, reels, social
+from app import cloudinary_media, jobs, mqtt_bus, phone_auth, places, posts, reels, social
 from app.uploads import save_listing_photo
 from app.security import (
     LOGIN_ERROR,
@@ -152,6 +152,32 @@ class ReelIn(BaseModel):
     video_url: str
     public_id: str
     thumb_url: str = ""
+
+
+class ClaimIn(BaseModel):
+    listing_ids: list[str] = Field(default_factory=list)
+    reel_ids: list[str] = Field(default_factory=list)
+
+
+class JobIn(BaseModel):
+    title: str
+    description: str = ""
+    location: str
+    city: str = ""
+    budget: float
+    deadline: str
+    images: list[str] = Field(default_factory=list)
+
+
+class JobOfferIn(BaseModel):
+    worker_name: str
+    contact: str
+    amount: float
+    message: str = ""
+
+
+class AwardIn(BaseModel):
+    offer_id: str
 
 
 def _save_row(table: str, row: dict, fallback: dict):
@@ -1060,7 +1086,7 @@ def list_listings(
     mine: bool = False,
     limit: int = 40,
 ):
-    cap = max(1, min(int(limit or 40), 100))
+    cap = max(1, min(int(limit or 40), 300 if mine else 100))
     if mine:
         user = current_user(request.headers.get("authorization"))
         query = db().table("listings").select("*").eq("owner_id", user.id)
@@ -1531,3 +1557,61 @@ def like_reel(reel_id: str, body: LikeIn, user=Depends(current_user)):
     if owner and owner != user.id:
         mqtt_bus.notify_users([owner], ping)
     return {"id": reel_id, "likes_count": out["likes_count"]}
+
+
+@app.get("/posts/mine")
+def my_posts(user=Depends(current_user)):
+    return posts.mine(user)
+
+
+@app.post("/posts/mine")
+def my_posts_with_claim(body: ClaimIn, user=Depends(current_user)):
+    return posts.mine(user, body.listing_ids, body.reel_ids)
+
+
+@app.post("/posts/claim")
+def claim_posts(body: ClaimIn, user=Depends(current_user)):
+    return posts.claim(user, body.listing_ids, body.reel_ids)
+
+
+@app.post("/jobs")
+def create_job(body: JobIn, user=Depends(current_user)):
+    limiter.check(f"job-create:{user.id}", 12)
+    return jobs.create_job(
+        user.id,
+        body.title,
+        body.description,
+        body.location,
+        body.city,
+        body.budget,
+        body.deadline,
+        body.images,
+    )
+
+
+@app.get("/jobs")
+def list_jobs(status: str | None = "open"):
+    return {"items": jobs.list_jobs(status)}
+
+
+@app.get("/jobs/{job_id}")
+def get_job(request: Request, job_id: str):
+    user_id = None
+    header = request.headers.get("authorization")
+    if header:
+        try:
+            user_id = current_user(header).id
+        except HTTPException:
+            user_id = None
+    return jobs.get_job(job_id, user_id)
+
+
+@app.post("/jobs/{job_id}/offers")
+def create_job_offer(job_id: str, body: JobOfferIn, user=Depends(current_user)):
+    limiter.check(f"job-offer:{user.id}", 20)
+    return jobs.create_offer(job_id, body.worker_name, body.contact, body.amount, body.message, user.id)
+
+
+@app.post("/jobs/{job_id}/award")
+def award_job(job_id: str, body: AwardIn, user=Depends(current_user)):
+    return jobs.award_job(job_id, body.offer_id, user.id)

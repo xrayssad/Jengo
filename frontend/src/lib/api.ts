@@ -472,55 +472,197 @@ export async function createReel(body: { caption: string; video_url: string; pub
   });
 }
 
+export const REEL_MAX_BYTES = 250 * 1024 * 1024;
+export const REEL_MAX_SECONDS = 180;
+const REEL_CHUNK = 6 * 1024 * 1024;
+
+export type ReelUploadSign = {
+  cloud_name: string;
+  api_key: string;
+  timestamp: number;
+  signature: string;
+  folder: string;
+  upload_url: string;
+  max_bytes: number;
+  max_seconds?: number;
+  eager?: string;
+  eager_async?: boolean;
+};
+
 export async function signReelUpload() {
-  return request<{
-    cloud_name: string;
-    api_key: string;
-    timestamp: number;
-    signature: string;
-    folder: string;
-    upload_url: string;
-    max_bytes: number;
-  }>("/reels/sign");
+  return request<ReelUploadSign>("/reels/sign");
 }
 
-export async function uploadReelVideo(file: File, onProgress?: (pct: number) => void) {
-  const sign = await signReelUpload();
-  if (file.size > (sign.max_bytes || 80 * 1024 * 1024)) {
-    throw new Error("Video is too large. Use one under 80MB");
+function reelUploadError(raw: string, status = 0) {
+  const text = (raw || "").toLowerCase();
+  if (text.includes("too large") || text.includes("file size") || status === 413) {
+    return "This reel could not post. Use a video under 250MB";
   }
+  if (text.includes("timeout") || text.includes("timed out") || status === 408) {
+    return "This reel could not post. Try again on a stronger network";
+  }
+  if (text.includes("signature")) {
+    return "This reel could not post. Check your connection and try again";
+  }
+  if (
+    text.includes("unsupported") ||
+    text.includes("codec") ||
+    text.includes("format") ||
+    text.includes("video file")
+  ) {
+    return "This reel could not post. Use an MP4 or MOV from the camera roll";
+  }
+  if (text.includes("duration") || text.includes("too long")) {
+    return "This reel could not post. Keep it under 3 minutes";
+  }
+  return "This reel could not post. Check your connection and try again";
+}
+
+function cloudinaryMessage(parsed: Record<string, unknown>, fallback: string) {
+  const err = parsed.error;
+  if (err && typeof err === "object" && "message" in err) {
+    return String((err as { message: unknown }).message || fallback);
+  }
+  if (typeof parsed.error === "string") return parsed.error;
+  return fallback;
+}
+
+function guessVideoName(file: File) {
+  const name = (file.name || "").trim();
+  if (name && /\.[a-z0-9]{2,5}$/i.test(name)) return name;
+  const type = (file.type || "").toLowerCase();
+  if (type.includes("quicktime") || type.includes("mov")) return "reel.mov";
+  if (type.includes("webm")) return "reel.webm";
+  if (type.includes("3gpp") || type.includes("3gp")) return "reel.3gp";
+  return "reel.mp4";
+}
+
+function normalizeReelFile(file: File) {
+  const type = (file.type || "").trim() || "video/mp4";
+  const name = guessVideoName(file);
+  if (file.type === type && file.name === name) return file;
+  return new File([file], name, { type, lastModified: file.lastModified });
+}
+
+function postCloudinaryChunk(opts: {
+  url: string;
+  body: FormData;
+  uploadId?: string;
+  range?: string;
+  onProgress?: (loaded: number, total: number) => void;
+}) {
+  return new Promise<Record<string, unknown>>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", opts.url);
+    if (opts.uploadId) xhr.setRequestHeader("X-Unique-Upload-Id", opts.uploadId);
+    if (opts.range) xhr.setRequestHeader("Content-Range", opts.range);
+    xhr.timeout = 120000;
+    xhr.upload.onprogress = (ev) => {
+      if (!opts.onProgress || !ev.lengthComputable) return;
+      opts.onProgress(ev.loaded, ev.total);
+    };
+    xhr.onerror = () => reject(new Error(reelUploadError("network")));
+    xhr.ontimeout = () => reject(new Error(reelUploadError("timeout", 408)));
+    xhr.onload = () => {
+      let parsed: Record<string, unknown> = {};
+      try {
+        parsed = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
+      } catch {
+        reject(new Error(reelUploadError("", xhr.status)));
+        return;
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(parsed);
+        return;
+      }
+      reject(new Error(reelUploadError(cloudinaryMessage(parsed, ""), xhr.status)));
+    };
+    xhr.send(opts.body);
+  });
+}
+
+function reelForm(sign: ReelUploadSign, chunk: Blob, filename: string) {
   const body = new FormData();
-  body.append("file", file);
+  body.append("file", chunk, filename);
   body.append("api_key", sign.api_key);
   body.append("timestamp", String(sign.timestamp));
   body.append("signature", sign.signature);
   body.append("folder", sign.folder);
-  const data = await new Promise<Record<string, unknown>>((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", sign.upload_url);
-    xhr.upload.onprogress = (ev) => {
-      if (!onProgress || !ev.lengthComputable) return;
-      onProgress(Math.round((ev.loaded / ev.total) * 100));
-    };
-    xhr.onerror = () => reject(new Error("Could not post the reel"));
-    xhr.onload = () => {
-      try {
-        const parsed = JSON.parse(xhr.responseText || "{}") as Record<string, unknown>;
-        if (xhr.status >= 200 && xhr.status < 300 && parsed.secure_url) {
-          resolve(parsed);
-          return;
-        }
-        reject(new Error("Could not post the reel"));
-      } catch {
-        reject(new Error("Could not post the reel"));
+  if (sign.eager) body.append("eager", sign.eager);
+  if (sign.eager_async) body.append("eager_async", "true");
+  return body;
+}
+
+async function sendReelChunk(
+  sign: ReelUploadSign,
+  chunk: Blob,
+  filename: string,
+  headers: { uploadId?: string; range?: string },
+  onProgress?: (loaded: number, total: number) => void,
+) {
+  let last: Error | undefined;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      return await postCloudinaryChunk({
+        url: sign.upload_url,
+        body: reelForm(sign, chunk, filename),
+        uploadId: headers.uploadId,
+        range: headers.range,
+        onProgress,
+      });
+    } catch (err) {
+      last = err instanceof Error ? err : new Error(reelUploadError("network"));
+      const msg = last.message.toLowerCase();
+      if (msg.includes("mp4 or mov") || msg.includes("under 250mb") || msg.includes("under 3 minutes")) {
+        throw last;
       }
-    };
-    xhr.send(body);
-  });
+      await new Promise((ok) => window.setTimeout(ok, 500 * (attempt + 1)));
+    }
+  }
+  throw last || new Error(reelUploadError("network"));
+}
+
+export async function uploadReelVideo(file: File, onProgress?: (pct: number) => void) {
+  const sign = await signReelUpload();
+  const cap = Math.max(Number(sign.max_bytes) || 0, REEL_MAX_BYTES);
+  if (file.size > cap) {
+    throw new Error("This reel could not post. Use a video under 250MB");
+  }
+  const ready = normalizeReelFile(file);
+  const mark = (pct: number) => onProgress?.(Math.max(0, Math.min(100, Math.round(pct))));
+  let data: Record<string, unknown>;
+  if (ready.size <= REEL_CHUNK) {
+    data = await sendReelChunk(sign, ready, ready.name, {}, (loaded, total) => {
+      mark((loaded / Math.max(total, 1)) * 100);
+    });
+  } else {
+    const uploadId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    let start = 0;
+    data = {};
+    while (start < ready.size) {
+      const end = Math.min(start + REEL_CHUNK, ready.size) - 1;
+      const slice = ready.slice(start, end + 1);
+      data = await sendReelChunk(
+        sign,
+        slice,
+        ready.name,
+        { uploadId, range: `bytes ${start}-${end}/${ready.size}` },
+        (loaded) => mark(((start + loaded) / ready.size) * 100),
+      );
+      start = end + 1;
+    }
+  }
+  if (!data.secure_url || !data.public_id) {
+    throw new Error(reelUploadError("network"));
+  }
+  const publicId = String(data.public_id);
+  const cloud = sign.cloud_name;
   return {
-    video_url: String(data.secure_url || ""),
-    public_id: String(data.public_id || ""),
-    thumb_url: String(data.secure_url || "").replace("/video/upload/", "/video/upload/so_0,w_720,h_1280,c_fill,q_auto,f_jpg/").replace(/\.[a-z0-9]+$/i, ".jpg"),
+    video_url: String(data.secure_url),
+    public_id: publicId,
+    thumb_url: cloud
+      ? `https://res.cloudinary.com/${cloud}/video/upload/c_fill,f_jpg,g_center,h_1280,q_auto,so_0,w_720/${publicId}.jpg`
+      : String(data.secure_url || "").replace("/video/upload/", "/video/upload/c_fill,f_jpg,g_center,h_1280,q_auto,so_0,w_720/").replace(/\.[a-z0-9]+$/i, ".jpg"),
   };
 }
 
@@ -634,6 +776,87 @@ export async function placeDetails(placeId: string) {
 
 export async function fetchMqttSession() {
   return request<{ url: string; topic: string; client_id: string; listing_prefix?: string }>("/realtime/mqtt");
+}
+
+export type JobOffer = {
+  id: string;
+  job_id?: string;
+  worker_name: string;
+  contact?: string;
+  amount: number | string;
+  message?: string;
+  status?: "submitted" | "awarded" | "rejected" | string;
+  created_at?: string;
+};
+
+export type Job = {
+  id: string;
+  owner_id?: string;
+  title: string;
+  description?: string;
+  location?: string;
+  city?: string;
+  budget: number | string;
+  deadline?: string;
+  status?: "open" | "closed" | "awarded" | string;
+  created_at?: string;
+  images?: string[];
+  connection_fee?: number | string;
+  fee_size?: string;
+  fee_label?: string;
+  fee_range?: string;
+  fee_status?: string;
+  offers_count?: number;
+  offers?: JobOffer[];
+};
+
+export type MyPostSkip = {
+  id: string;
+  kind?: string;
+  reason?: string;
+};
+
+export async function fetchMyPosts(listingIds?: string[], reelIds?: string[]) {
+  return request<{ listings: Listing[]; reels: Reel[]; jobs: Job[]; skipped?: MyPostSkip[] }>("/posts/mine", {
+    method: "POST",
+    body: JSON.stringify({ listing_ids: listingIds || [], reel_ids: reelIds || [] }),
+  });
+}
+
+export async function fetchJobs(status = "open") {
+  const sp = new URLSearchParams();
+  if (status) sp.set("status", status);
+  const data = await request<{ items?: Job[] }>(`/jobs?${sp}`);
+  return { items: data.items || [] };
+}
+
+export async function fetchJob(id: string) {
+  return request<Job>(`/jobs/${id}`);
+}
+
+export async function createJob(body: {
+  title: string;
+  description?: string;
+  location: string;
+  city?: string;
+  budget: number;
+  deadline: string;
+  images?: string[];
+}) {
+  return request<Job>("/jobs", { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function createJobOffer(jobId: string, body: {
+  worker_name: string;
+  contact: string;
+  amount: number;
+  message?: string;
+}) {
+  return request<JobOffer>(`/jobs/${jobId}/offers`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function awardJob(jobId: string, offerId: string) {
+  return request<Job>(`/jobs/${jobId}/award`, { method: "POST", body: JSON.stringify({ offer_id: offerId }) });
 }
 
 export async function uploadPhoto(file: File) {
