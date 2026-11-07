@@ -23,7 +23,7 @@ function ReelFavorite({ item }: { item: SavedPost }) {
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.72), transparent 55%)" }} />
         <div className="absolute left-3 right-3 bottom-3">
           <PosterName item={item} tone="photo" />
-          <p className="text-sm mt-1 truncate" style={{ color: "#FFF6ED" }}>{item.title}</p>
+          <p className="text-sm mt-1 truncate font-semibold" style={{ color: "#FFF6ED" }}>{item.title}</p>
         </div>
       </div>
     </Link>
@@ -50,14 +50,18 @@ export default function FavoritesPage() {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-5 py-4 glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Favorites</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Saved listings and reels</p>
+            <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Saved</p>
+            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Favorites</h1>
+            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Saved listings and reels</p>
           </div>
         </div>
       </header>
@@ -66,7 +70,7 @@ export default function FavoritesPage() {
         {ready && items.length === 0 && (
           <div className="text-center py-16">
             <Bookmark size={28} color="var(--caramel)" className="mx-auto mb-3" />
-            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No favorites yet</p>
+            <p className="text-2xl font-bold" style={{ color: "var(--ink)" }}>No favorites yet</p>
             <p className="text-sm mt-2 px-4" style={{ color: "var(--muted)" }}>Tap the bookmark on a listing or reel to see it here.</p>
           </div>
         )}

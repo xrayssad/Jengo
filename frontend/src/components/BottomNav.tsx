@@ -59,7 +59,7 @@ export default function BottomNav() {
             href="/weka-tangazo"
             aria-label="Post a listing"
             className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "var(--ink)", boxShadow: "0 8px 18px rgba(var(--veil-rgb),0.28)" }}
+            style={{ backgroundColor: "var(--ink)", boxShadow: "var(--shadow-float)", border: "none" }}
           >
             <Plus size={20} color="var(--paper)" strokeWidth={2.4} />
           </Link>

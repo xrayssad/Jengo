@@ -3,8 +3,20 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Phone } from "lucide-react";
-import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabel, listingPhones, phoneTelHref, phoneWaHref, type Listing } from "@/lib/api";
+import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
+import {
+  catLabel,
+  catShort,
+  fetchListing,
+  formatPrice,
+  listingPhones,
+  listingUnit,
+  periodLabel,
+  phoneTelHref,
+  timeAgo,
+  unitLabel,
+  type Listing,
+} from "@/lib/api";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -36,132 +48,172 @@ export default function DetailsClient({ id }: { id: string }) {
     };
   }, [id]);
 
+  const phones = item ? listingPhones(item) : [];
+  const callHref = phones[0] ? phoneTelHref(phones[0]) : "";
+  const ago = item ? timeAgo(item.created_at) : "";
+
   const specs = item
     ? [
-        { label: "Type", value: catLabel[item.category || ""] || item.category || "—" },
+        {
+          label: "Type",
+          value: catShort[item.category || ""] || catLabel[item.category || ""] || "—",
+        },
         {
           label: item.category === "vifaa" ? "Unit" : "Period",
-          value: item.category === "vifaa" ? (unitLabel(listingUnit(item)) || "—") : (periodLabel(item.period) || "—"),
+          value:
+            item.category === "vifaa"
+              ? unitLabel(listingUnit(item)) || "—"
+              : (periodLabel(item.period) || "—").replace(/^\//, "") || "—",
         },
         item.category === "vifaa" && item.stock != null
           ? { label: "Stock", value: String(item.stock) }
-          : { label: "Status", value: "Available" },
+          : { label: "Status", value: "Open" },
+        item.city || item.location
+          ? { label: "Area", value: item.city || String(item.location || "").split(",")[0] || "—" }
+          : { label: "Photos", value: String((item.images || []).filter(Boolean).length || 0) },
       ]
     : [];
+
+  const description =
+    item &&
+    (phones.length
+      ? item.description?.replace(/\n*(?:Simu|Phone):\s*.+$/m, "").trim()
+      : item.description?.trim());
 
   return (
     <main className="min-h-screen pb-28" style={{ backgroundColor: "var(--paper)" }}>
       {loading && <DetailSkeleton />}
       {!loading && error && (
         <div className="text-center py-16 px-5">
-          <p className="font-heading mb-2" style={{ color: "var(--error)" }}>{error}</p>
-          <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Back to Discover</Link>
+          <p className="text-lg font-semibold mb-2" style={{ color: "var(--error)" }}>{error}</p>
+          <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>
+            Back to Discover
+          </Link>
         </div>
       )}
       {!loading && item && (
         <>
-          <div className="relative">
+          <div className="relative detail-hero">
             <PhotoGallery
               images={item.images}
               fallback={
-                <div className="w-full flex items-center justify-center" style={{ height: "78vh", minHeight: 420, background: "linear-gradient(165deg, var(--ink-2), var(--ink))" }}>
-                  <span className="font-heading text-2xl" style={{ color: "var(--caramel)" }}>{catLabel[item.category || ""] || "Jengo"}</span>
+                <div
+                  className="w-full flex items-center justify-center detail-hero-fallback"
+                  style={{ background: "linear-gradient(165deg, var(--blush), var(--cream))" }}
+                >
+                  <span className="text-2xl font-semibold" style={{ color: "var(--mocha)" }}>
+                    {catShort[item.category || ""] || "Jengo"}
+                  </span>
                 </div>
               }
             />
             <button
               type="button"
               onClick={() => router.back()}
-              className="absolute top-4 left-4 z-20 w-10 h-10 rounded-full flex items-center justify-center icon-glass"
+              className="absolute top-4 left-4 z-20 soft-icon-btn"
+              aria-label="Back"
             >
               <ArrowLeft size={18} color="var(--ink)" />
             </button>
             <div className="absolute top-4 right-4 z-20">
-              <SaveButton
-                item={item}
-                className="w-10 h-10 rounded-full flex items-center justify-center icon-glass"
-              />
+              <SaveButton item={item} variant="heart" size={18} className="heart-fab" />
             </div>
           </div>
-          <div className="max-w-md mx-auto px-4 -mt-14 relative z-10">
-            <div className="sheet rounded-[28px] p-5">
-              <h1 className="font-heading text-[32px] leading-[1.05]" style={{ color: "var(--ink)" }}>{item.title}</h1>
-              <div className="mt-3">
-                <PosterName item={item} />
+
+          <div className="max-w-md mx-auto px-5 pt-5">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[28px] font-bold leading-none tracking-tight" style={{ color: "var(--ink)" }}>
+                  TZS {formatPrice(item.price)}
+                  <span className="text-sm font-medium ml-1.5" style={{ color: "var(--muted)" }}>
+                    {item.category === "vifaa"
+                      ? listingUnit(item)
+                        ? `/ ${unitLabel(listingUnit(item))}`
+                        : ""
+                      : periodLabel(item.period)}
+                  </span>
+                </p>
+                <p className="flex items-center gap-1.5 mt-2.5 text-[14px]" style={{ color: "var(--muted)" }}>
+                  <MapPin size={14} color="var(--mocha)" />
+                  <span className="line-clamp-2">
+                    {[item.location, item.city].filter(Boolean).join(", ") || "—"}
+                  </span>
+                </p>
               </div>
-              <p className="flex items-center gap-1.5 mt-2 text-sm" style={{ color: "var(--muted)" }}>
-                <MapPin size={14} color="var(--mocha)" />
-                {[item.location, item.city].filter(Boolean).join(", ") || "—"}
-              </p>
-              <p className="mt-3 font-heading text-3xl leading-none" style={{ color: "var(--ink)" }}>
-                TZS {formatPrice(item.price)}
-                <span className="text-sm font-normal ml-1" style={{ color: "var(--muted)" }}>
-                  {item.category === "vifaa"
-                    ? (listingUnit(item) ? ` / ${unitLabel(listingUnit(item))}` : "")
-                    : periodLabel(item.period)}
-                </span>
-              </p>
-              <div className="flex gap-2 mt-4">
-                {specs.map((spec) => (
-                  <div key={spec.label} className="spec-pill flex-1">
-                    <p className="text-[11px]" style={{ color: "var(--mocha)" }}>{spec.label}</p>
-                    <p className="text-sm mt-0.5" style={{ color: "var(--ink)" }}>{spec.value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="mt-4">
-                <SocialActions item={item} />
-              </div>
+              {ago ? <span className="time-pill shrink-0">{ago}</span> : null}
             </div>
-            {listingPhones(item).length > 0 && (
-              <div className="sheet rounded-[28px] p-5 mt-4">
-                <p className="text-sm" style={{ color: "var(--mocha)" }}>Contact</p>
-                <div className="mt-3 space-y-2">
-                  {listingPhones(item).map((n) => (
-                    <div key={n} className="flex items-center justify-between gap-3">
-                      <p className="flex items-center gap-2 text-sm" style={{ color: "var(--ink)" }}>
-                        <Phone size={14} color="var(--mocha)" />
-                        {n}
-                      </p>
-                      <div className="flex gap-2 shrink-0">
-                        <a href={phoneTelHref(n)} className="text-xs px-3 py-1.5 rounded-full" style={{ backgroundColor: "var(--ink)", color: "var(--paper)" }}>
-                          Call
-                        </a>
-                        <a href={phoneWaHref(n)} target="_blank" rel="noreferrer" className="text-xs px-3 py-1.5 rounded-full" style={{ border: "1px solid var(--gold)", color: "var(--ink)" }}>
-                          WhatsApp
-                        </a>
-                      </div>
-                    </div>
-                  ))}
+
+            <h1 className="mt-4 text-[20px] font-semibold leading-snug" style={{ color: "var(--ink)" }}>
+              {item.title}
+            </h1>
+            <div className="mt-2">
+              <PosterName item={item} />
+            </div>
+
+            <div className="grid grid-cols-4 gap-2 mt-5">
+              {specs.map((spec) => (
+                <div key={spec.label} className="stat-pill">
+                  <p className="stat-pill-value">{spec.value}</p>
+                  <p className="stat-pill-label">{spec.label}</p>
                 </div>
-              </div>
-            )}
-            <div className="sheet rounded-[28px] p-5 mt-4">
-              <p className="text-sm" style={{ color: "var(--mocha)" }}>Description</p>
-              <p className="text-sm leading-relaxed mt-2 whitespace-pre-wrap" style={{ color: "var(--muted)" }}>
-                {(listingPhones(item).length
-                  ? item.description?.replace(/\n*(?:Simu|Phone):\s*.+$/m, "").trim()
-                  : item.description?.trim()) || "No extra description."}
+              ))}
+            </div>
+
+            <div className="mt-4">
+              <SocialActions item={item} />
+            </div>
+
+            <div className="mt-6">
+              <p className="text-[15px] font-semibold" style={{ color: "var(--ink)" }}>
+                Listing information
+              </p>
+              <p className="text-[14px] leading-relaxed mt-2 whitespace-pre-wrap" style={{ color: "var(--muted)" }}>
+                {description || "No extra description."}
               </p>
             </div>
-          </div>
-          <div className="fixed bottom-0 left-0 right-0 z-30 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-            <div className="nav-island max-w-md mx-auto px-4 py-3">
-              {item.category === "vifaa" && (
+
+            {item.category === "vifaa" && (
+              <div className="mt-5">
+                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--mocha)" }}>
+                  Quantity
+                </label>
                 <input
                   value={qty}
                   onChange={(e) => setQty(e.target.value)}
                   inputMode="numeric"
-                  placeholder="Quantity"
-                  className="input-chocolate w-full mb-2 px-4 py-2.5 text-sm"
+                  placeholder="1"
+                  className="input-chocolate w-full px-4 py-3 text-sm"
                 />
-              )}
+              </div>
+            )}
+          </div>
+
+          <div
+            className="fixed bottom-0 left-0 right-0 z-30 px-4"
+            style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+          >
+            <div className="max-w-md mx-auto flex gap-2.5">
               <Link
-                href={`/tuma-ombi?listing=${item.id}&title=${encodeURIComponent(item.title)}&category=${encodeURIComponent(item.category || "")}&qty=${encodeURIComponent(qty)}`}
-                className="btn-primary flex items-center justify-center w-full py-3.5 rounded-full text-sm font-semibold"
+                href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
+                className="detail-cta flex-1"
               >
-                Send request
+                <Mail size={16} />
+                Message
               </Link>
+              {callHref ? (
+                <a href={callHref} className="detail-cta flex-1">
+                  <Phone size={16} />
+                  Call
+                </a>
+              ) : (
+                <Link
+                  href={`/tuma-ombi?listing=${item.id}&title=${encodeURIComponent(item.title)}&category=${encodeURIComponent(item.category || "")}&qty=${encodeURIComponent(qty)}`}
+                  className="detail-cta flex-1"
+                >
+                  <Phone size={16} />
+                  Request
+                </Link>
+              )}
             </div>
           </div>
         </>

@@ -86,29 +86,33 @@ export default function RisitiPage() {
 
   return (
     <main className="min-h-screen pb-24 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Receipts</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Accepted requests. Money is not taken here.</p>
+            <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Wallet</p>
+            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Receipts</h1>
+            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Accepted requests. Money is not taken here.</p>
           </div>
         </div>
       </header>
-      <div className="max-w-md mx-auto px-4 pt-5 space-y-4">
+      <div className="max-w-md mx-auto px-5 pt-5 space-y-4">
         {loading && <PaymentListSkeleton />}
         {error && <p className="text-sm text-center py-2 font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
-        {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "var(--ink)" }}>No receipts. Accept a request first.</p>}
+        {!loading && rows.length === 0 && <p className="text-center py-16 text-lg font-bold" style={{ color: "var(--ink)" }}>No receipts. Accept a request first.</p>}
         {rows.map((r) => (
-          <div key={r.id} className="sheet rounded-[28px] p-5">
-            <p className="text-sm" style={{ color: "var(--mocha)" }}>
+          <div key={r.id} className="sheet p-5">
+            <p className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>
               {r.status === "moved_in" ? "Moved in" : "Accepted"}
             </p>
-            <h2 className="font-heading mt-1" style={{ color: "var(--ink)" }}>{r.title}</h2>
+            <h2 className="text-lg font-bold mt-1" style={{ color: "var(--ink)" }}>{r.title}</h2>
             <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>{r.location}</p>
-            <p className="text-lg font-heading mt-2" style={{ color: "var(--ink)" }}>
+            <p className="text-lg font-bold mt-2" style={{ color: "var(--ink)" }}>
               TZS {r.price ? formatPrice(r.price) : "—"}
               <span className="text-sm font-normal" style={{ color: "var(--muted)" }}> {periodLabel(r.period || "")}</span>
             </p>

@@ -66,30 +66,38 @@ function SearchInner() {
 
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 pt-4 pb-3 glass" style={{ borderBottom: "1px solid rgba(var(--caramel-rgb),0.35)" }}>
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto">
-          <div className="flex items-center gap-3 mb-3">
-            <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass shrink-0">
+          <div className="flex items-center gap-3 mb-4">
+            <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
               <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
             </Link>
-            <div className="relative flex-1">
-              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 z-10" color="var(--mocha)" strokeWidth={2} />
-              <input
-                type="text"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search city or street"
-                autoFocus
-                className="input-chocolate w-full pl-10 pr-10 py-3 text-sm"
-              />
-              {query && (
-                <button type="button" onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <X size={16} color="var(--mocha)" />
-                </button>
-              )}
+            <div className="min-w-0">
+              <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Browse</p>
+              <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Search</h1>
             </div>
           </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex items-center gap-2 px-4 py-3.5 sheet rounded-full">
+            <Search size={16} color="var(--mocha)" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search city or street"
+              autoFocus
+              className="flex-1 bg-transparent text-sm outline-none"
+              style={{ color: "var(--ink)" }}
+            />
+            {query && (
+              <button type="button" onClick={() => setQuery("")} aria-label="Clear search">
+                <X size={16} color="var(--mocha)" />
+              </button>
+            )}
+          </div>
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
             {filters.map((f) => {
               const active = category === f.id;
               return (
@@ -97,8 +105,12 @@ function SearchInner() {
                   key={f.id || "zote"}
                   type="button"
                   onClick={() => setCategory(f.id)}
-                  className={`px-4 py-1.5 text-sm whitespace-nowrap ${active ? "rounded-full" : "chip"}`}
-                  style={active ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}
+                  className="px-3.5 py-2 text-[13px] font-medium shrink-0 rounded-full"
+                  style={
+                    active
+                      ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
+                      : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
+                  }
                 >
                   {f.label}
                 </button>
@@ -108,7 +120,7 @@ function SearchInner() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-4">
+      <div className="max-w-md mx-auto px-5 pt-5">
         <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
           {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
         </p>
@@ -122,7 +134,7 @@ function SearchInner() {
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16">
             <Search size={40} color="var(--caramel)" className="mx-auto mb-4 opacity-60" />
-            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>
+            <p className="text-2xl font-bold" style={{ color: "var(--ink)" }}>
               {query || category ? "No listings match this city or street" : "No listings yet"}
             </p>
             {!query && !category && (
@@ -153,7 +165,7 @@ export default function SearchPage() {
     <Suspense
       fallback={
         <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-          <div className="max-w-md mx-auto px-4 py-8">
+          <div className="max-w-md mx-auto px-5 py-8">
             <SearchSkeleton />
           </div>
         </main>

@@ -1,67 +1,76 @@
 "use client";
 
 import Link from "next/link";
-import { MapPin } from "lucide-react";
-import { catLabel, formatPrice, listingUnit, periodLabel, unitLabel, type Listing } from "@/lib/api";
-import PosterName from "./PosterName";
-import SocialActions from "./SocialActions";
+import { catShort, formatPrice, listingUnit, periodLabel, unitLabel, type Listing } from "@/lib/api";
+import SaveButton from "./SaveButton";
 
 export default function ListingCard({ item, eager }: { item: Listing; eager?: boolean }) {
   const place = [item.location, item.city].filter(Boolean).join(", ");
   const photos = (item.images || []).filter(Boolean);
+  const type = catShort[item.category || ""] || "Listing";
   const rate =
     item.category === "vifaa"
       ? listingUnit(item)
-        ? ` / ${unitLabel(listingUnit(item))}`
+        ? unitLabel(listingUnit(item))
         : ""
-      : periodLabel(item.period);
+      : (periodLabel(item.period) || "").replace(/^\//, "");
+
+  const specs = [
+    type,
+    rate || null,
+    item.category === "vifaa" && item.stock != null ? `${item.stock} in stock` : null,
+  ].filter(Boolean);
 
   return (
     <article className="estate-card">
-      <Link href={`/tangazo/${item.id}`} className="block relative">
-        {photos[0] ? (
-          <div className="w-full overflow-hidden" style={{ height: "min(72vw, 520px)", minHeight: 360, backgroundColor: "var(--ink-2)" }}>
-            <img
-              src={photos[0]}
-              alt=""
-              className="w-full h-full object-cover"
-              loading={eager ? "eager" : "lazy"}
-              decoding="async"
-            />
-          </div>
-        ) : (
-          <div className="w-full flex items-center justify-center" style={{ height: "min(72vw, 520px)", minHeight: 360, background: "linear-gradient(165deg, var(--ink-2), var(--ink))" }}>
-            <span className="font-heading text-xl" style={{ color: "var(--caramel)" }}>{catLabel[item.category || ""] || "Jengo"}</span>
-          </div>
-        )}
-        {photos.length > 1 && (
-          <span
-            className="absolute top-3 right-3 text-[11px] px-2 py-1"
-            style={{ backgroundColor: "rgba(var(--veil-rgb),0.72)", color: "var(--gold)" }}
-          >
-            {photos.length} photos
-          </span>
-        )}
-        <div className="absolute top-3 left-3 z-10 max-w-[70%]">
-          <PosterName item={item} tone="photo" />
+      <div className="relative">
+        <Link href={`/tangazo/${item.id}`} className="block">
+          {photos[0] ? (
+            <div className="estate-card-media">
+              <img
+                src={photos[0]}
+                alt=""
+                className="w-full h-full object-cover"
+                loading={eager ? "eager" : "lazy"}
+                decoding="async"
+              />
+            </div>
+          ) : (
+            <div className="estate-card-media flex items-center justify-center" style={{ background: "linear-gradient(165deg, var(--blush), var(--cream))" }}>
+              <span className="text-lg font-semibold" style={{ color: "var(--mocha)" }}>{type}</span>
+            </div>
+          )}
+        </Link>
+        <div className="absolute top-3 right-3 z-10">
+          <SaveButton
+            item={item}
+            variant="heart"
+            size={18}
+            className="heart-fab"
+          />
         </div>
-        <div className="photo-dock">
-          <p className="font-heading text-[28px] leading-none" style={{ color: "var(--ink)" }}>
+      </div>
+
+      <Link href={`/tangazo/${item.id}`} className="block px-4 pt-3.5 pb-4">
+        <div className="flex items-baseline justify-between gap-3">
+          <p className="text-[22px] font-bold leading-none tracking-tight" style={{ color: "var(--ink)" }}>
             TZS {formatPrice(item.price)}
-            <span className="text-sm font-normal ml-1" style={{ color: "var(--muted)" }}>{rate}</span>
           </p>
-          <h2 className="font-heading text-lg leading-snug mt-1.5" style={{ color: "var(--ink)" }}>{item.title}</h2>
           {place ? (
-            <p className="flex items-center gap-1 mt-1 text-sm" style={{ color: "var(--muted)" }}>
-              <MapPin size={13} color="var(--mocha)" />
+            <p className="text-[13px] text-right leading-snug line-clamp-1 min-w-0" style={{ color: "var(--muted)" }}>
               {place}
             </p>
           ) : null}
         </div>
+        <p className="mt-2 text-[13px] leading-snug line-clamp-1" style={{ color: "var(--mocha)" }}>
+          {item.title}
+        </p>
+        {specs.length > 0 ? (
+          <p className="mt-1.5 text-[12px] leading-snug" style={{ color: "var(--muted)" }}>
+            {specs.join("  ·  ")}
+          </p>
+        ) : null}
       </Link>
-      <div className="px-4 py-3">
-        <SocialActions item={item} />
-      </div>
     </article>
   );
 }

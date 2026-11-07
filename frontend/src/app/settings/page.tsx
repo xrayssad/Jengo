@@ -23,23 +23,29 @@ export default function SettingsPage() {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-5 py-4 glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
-          <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Settings</h1>
+          <div>
+            <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Account</p>
+            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Settings</h1>
+          </div>
         </div>
       </header>
       <div className="max-w-md mx-auto px-5 pt-6 space-y-4">
-        <div className="sheet rounded-[28px] p-5">
+        <div className="sheet p-5">
           <p className="text-xs font-semibold mb-3" style={{ color: "var(--mocha)" }}>Look</p>
           <ThemeToggle />
           <p className="text-xs mt-3" style={{ color: "var(--muted)" }}>
             Night mode keeps the cocoa palette, just after dark.
           </p>
         </div>
-        <form onSubmit={save} className="sheet rounded-[28px] p-5 space-y-4">
+        <form onSubmit={save} className="sheet p-5 space-y-4">
           <label className="block text-sm font-semibold" style={{ color: "var(--ink)" }}>Display name</label>
           <input value={name} onChange={(e) => { setName(e.target.value); setSaved(false); }} placeholder="Your name" className="input-chocolate w-full px-4 py-3.5 text-sm" />
           <button type="submit" className="btn-primary w-full py-3.5 rounded-full font-semibold text-sm">Save</button>

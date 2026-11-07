@@ -51,11 +51,14 @@ export default function DiscoverPage() {
 
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-5 pt-5 pb-3 glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto">
-          <p className="text-sm" style={{ color: "var(--mocha)" }}>Browse</p>
-          <h1 className="font-heading text-[34px] leading-[1.05]" style={{ color: "var(--ink)" }}>Discover</h1>
-          <div className="mt-4 flex items-center gap-2 px-4 py-3 sheet rounded-full">
+          <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Browse</p>
+          <h1 className="text-[34px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Discover</h1>
+          <div className="mt-4 flex items-center gap-2 px-4 py-3.5 sheet rounded-full">
             <Search size={16} color="var(--mocha)" />
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or area" className="flex-1 bg-transparent text-sm outline-none" style={{ color: "var(--ink)" }} />
           </div>
@@ -65,8 +68,12 @@ export default function DiscoverPage() {
                 key={c.id || "all"}
                 type="button"
                 onClick={() => setCat(c.id)}
-                className={`px-3.5 py-1.5 text-sm shrink-0 ${cat === c.id ? "rounded-full" : "chip"}`}
-                style={cat === c.id ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}
+                className="px-3.5 py-2 text-[13px] font-medium shrink-0 rounded-full"
+                style={
+                  cat === c.id
+                    ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
+                    : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
+                }
               >
                 {c.label}
               </button>
@@ -78,7 +85,7 @@ export default function DiscoverPage() {
         {loading && <ListingFeedSkeleton />}
         {!loading && shown.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No listings</p>
+            <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No listings</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}

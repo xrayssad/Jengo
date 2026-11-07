@@ -537,6 +537,31 @@ export const catLabel: Record<string, string> = {
   vifaa: "Building Materials",
 };
 
+/** Short type labels for card / stat chips */
+export const catShort: Record<string, string> = {
+  chumba_nyumba: "Room",
+  apartment_airbnb: "Airbnb",
+  store_godown: "Godown",
+  frame: "Shop",
+  vifaa: "Materials",
+};
+
+export function timeAgo(iso?: string | null) {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const mins = Math.max(0, Math.round((Date.now() - then) / 60000));
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  const weeks = Math.round(days / 7);
+  if (weeks < 5) return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
+
 export const shopCategories = ["frame"];
 
 export function listingPhones(item: { phones?: string[]; phone?: string; description?: string } | null | undefined): string[] {

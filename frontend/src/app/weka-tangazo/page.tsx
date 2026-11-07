@@ -119,14 +119,14 @@ export default function WekaTangazoPage() {
   if (done) {
     return (
       <AuthGate>
-      <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--paper)" }}>
-        <div className="sheet max-w-sm w-full text-center p-6 rounded-[28px]">
-          <h1 className="font-heading text-3xl mb-2" style={{ color: "var(--ink)" }}>Listing posted</h1>
+      <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "var(--paper)" }}>
+        <div className="sheet max-w-sm w-full text-center p-6">
+          <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--ink)" }}>Listing posted</h1>
           <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>It is live on Discover now.</p>
-          <button type="button" onClick={() => router.push("/discover")} className="btn-primary w-full py-3.5 rounded-[16px] font-semibold text-sm">
+          <button type="button" onClick={() => router.push("/discover")} className="btn-primary w-full py-3.5 rounded-full font-semibold text-sm">
             View Discover
           </button>
-          <button type="button" onClick={() => router.push("/home")} className="btn-secondary w-full mt-3 py-3.5 rounded-[16px] font-semibold text-sm">
+          <button type="button" onClick={() => router.push("/home")} className="btn-secondary w-full mt-3 py-3.5 rounded-full font-semibold text-sm">
             Back to Home
           </button>
         </div>
@@ -138,15 +138,21 @@ export default function WekaTangazoPage() {
   return (
     <AuthGate>
     <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3 glass">
-        <button type="button" onClick={() => router.push("/home")} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3 flex items-center gap-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
+        <button type="button" onClick={() => router.push("/home")} className="soft-icon-btn shrink-0" aria-label="Back">
           <ArrowLeft size={18} color="var(--ink)" />
         </button>
-        <h1 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Post a listing</h1>
+        <div>
+          <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Publish</p>
+          <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Post a listing</h1>
+        </div>
       </header>
 
-      <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5">
-      <div className="sheet rounded-[28px] p-5 space-y-4">
+      <form onSubmit={submit} className="max-w-md mx-auto px-5 pt-5">
+      <div className="sheet p-5 space-y-4">
         <div className="grid grid-cols-2 gap-2">
           {categories.map((c) => (
             <button
@@ -156,12 +162,12 @@ export default function WekaTangazoPage() {
                 setCategory(c.id);
                 if (c.id !== "vifaa") setPeriod(periods[c.id][0].id);
               }}
-              className="p-3 rounded-[18px] text-sm"
-              style={{
-                backgroundColor: category === c.id ? "var(--ink)" : "rgba(var(--paper-rgb),0.7)",
-                color: category === c.id ? "var(--paper)" : "var(--ink)",
-                border: "1px solid rgba(var(--caramel-rgb),0.45)",
-              }}
+              className="p-3 rounded-[18px] text-sm font-medium"
+              style={
+                category === c.id
+                  ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
+                  : { backgroundColor: "var(--surface)", color: "var(--ink)", border: "1px solid rgba(var(--caramel-rgb),0.28)", boxShadow: "var(--shadow-quiet)" }
+              }
             >
               {c.label}
             </button>
@@ -175,7 +181,17 @@ export default function WekaTangazoPage() {
           <>
             <div className="flex flex-wrap gap-2">
               {units.map((u) => (
-                <button key={u.id} type="button" onClick={() => setUnit(u.id)} className={`px-3 py-2 text-xs ${unit === u.id ? "rounded-full" : "chip"}`} style={unit === u.id ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}>
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => setUnit(u.id)}
+                  className="px-3.5 py-2 text-[13px] font-medium rounded-full"
+                  style={
+                    unit === u.id
+                      ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
+                      : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
+                  }
+                >
                   {u.label}
                 </button>
               ))}
@@ -185,7 +201,17 @@ export default function WekaTangazoPage() {
         ) : (
           <div className="flex flex-wrap gap-2">
             {periods[category].map((p) => (
-              <button key={p.id} type="button" onClick={() => setPeriod(p.id)} className={`px-3 py-2 text-xs ${period === p.id ? "rounded-full" : "chip"}`} style={period === p.id ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}>
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setPeriod(p.id)}
+                className="px-3.5 py-2 text-[13px] font-medium rounded-full"
+                style={
+                  period === p.id
+                    ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
+                    : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
+                }
+              >
                 {p.label}
               </button>
             ))}

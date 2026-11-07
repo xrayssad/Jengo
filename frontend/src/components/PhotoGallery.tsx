@@ -42,7 +42,7 @@ export default function PhotoGallery({
 
   return (
     <>
-      <div className="relative" style={{ height: "78vh", minHeight: 420 }}>
+      <div className="relative detail-hero" style={{ height: "min(52vh, 420px)", minHeight: 280 }}>
         <div
           ref={scroller}
           className="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
@@ -67,7 +67,7 @@ export default function PhotoGallery({
             </button>
           ))}
         </div>
-        <div className="absolute bottom-20 left-4 right-4 flex items-end justify-between">
+        <div className="absolute bottom-4 left-4 right-4 flex items-end justify-between">
           <div className="flex gap-1.5">
             {photos.length > 1 &&
               photos.map((_, n) => (
@@ -80,15 +80,20 @@ export default function PhotoGallery({
                     width: n === i ? 18 : 7,
                     height: 7,
                     borderRadius: 99,
-                    backgroundColor: n === i ? "var(--gold)" : "rgba(var(--paper-rgb),0.55)",
+                    backgroundColor: n === i ? "var(--foam)" : "rgba(var(--paper-rgb),0.45)",
                   }}
                   aria-label={`Photo ${n + 1}`}
                 />
               ))}
           </div>
-          <p className="text-sm px-2.5 py-1" style={{ color: "var(--foam)", backgroundColor: "rgba(var(--veil-rgb),0.55)" }}>
-            {i + 1} / {photos.length}
-          </p>
+          {photos.length > 1 ? (
+            <p
+              className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
+              style={{ color: "var(--ink)", backgroundColor: "rgba(var(--surface-rgb),0.88)" }}
+            >
+              {i + 1} / {photos.length}
+            </p>
+          ) : null}
         </div>
       </div>
 

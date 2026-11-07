@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, Hammer, Loader2, MapPin, Plus } from "lucide-react";
+import { ArrowLeft, Hammer, MapPin, Plus } from "lucide-react";
 import { fetchJobs, type Job } from "@/lib/api";
+import { ListingFeedSkeleton } from "@/components/Skeletons";
 
 function JobRow({ item }: { item: Job }) {
   const place = [item.location, item.city].filter(Boolean).join(", ");
@@ -71,24 +72,28 @@ export default function Page() {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-5 py-4 glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Construction Jobs</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs</p>
+            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Construction Jobs</h1>
+            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs</p>
           </div>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-        <div className="relative overflow-hidden" style={{ borderRadius: 28, height: 168 }}>
-          <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.08))" }} />
-          <div className="photo-dock">
-            <p className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Small home jobs</p>
+        <div className="estate-card">
+          <div className="relative" style={{ height: 168 }}>
+            <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
+          </div>
+          <div className="px-4 py-3.5">
+            <p className="text-[18px] font-bold leading-snug" style={{ color: "var(--ink)" }}>Small home jobs</p>
             <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Customers post a job, workers send an offer. Jengo fee after you accept.</p>
           </div>
         </div>
@@ -98,20 +103,16 @@ export default function Page() {
           Post a job
         </Link>
 
-        {loading && (
-          <div className="flex justify-center py-16">
-            <Loader2 className="animate-spin" color="var(--mocha)" />
-          </div>
-        )}
+        {loading && <ListingFeedSkeleton count={2} />}
         {!loading && error && (
           <div className="text-center py-12">
-            <p className="font-heading" style={{ color: "var(--ink)" }}>{error}</p>
+            <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{error}</p>
           </div>
         )}
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-12">
             <Hammer size={28} color="var(--caramel)" className="mx-auto mb-3" />
-            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No open jobs</p>
+            <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No open jobs</p>
             <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Post a small job like paint or repairs.</p>
           </div>
         )}

@@ -120,16 +120,17 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-30 px-5 py-3 glass">
+      <header className="sticky top-0 z-30 px-5 py-3" style={{ backgroundColor: "rgba(var(--paper-rgb),0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
         <div className="w-full max-w-md mx-auto flex items-center justify-between">
-          <button type="button" onClick={() => setOpen(true)} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+          <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn" aria-label="Menu">
             <Menu size={16} color="var(--ink)" />
           </button>
           <div className="text-center">
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Jengo</h1>
+            <p className="text-[11px] font-semibold tracking-wide" style={{ color: "var(--mocha)" }}>Jengo</p>
+            <h1 className="text-[22px] font-bold leading-none" style={{ color: "var(--ink)" }}>Home</h1>
             <AdminLink />
           </div>
-          <InboxLink className="w-10 h-10 rounded-full flex items-center justify-center icon-glass" />
+          <InboxLink className="soft-icon-btn" />
         </div>
       </header>
 
@@ -169,10 +170,10 @@ export default function HomePage() {
         </nav>
       </aside>
 
-      <div className="max-w-md mx-auto px-5 pt-5">
-        <p className="text-sm" style={{ color: "var(--mocha)" }}>Welcome</p>
-        <h2 className="font-heading text-[32px] leading-[1.08] mt-1 mb-5" style={{ color: "var(--ink)" }}>
-          Find a calm place to stay
+      <div className="max-w-md mx-auto px-5 pt-4 pb-2">
+        <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Browse</p>
+        <h2 className="text-[34px] font-bold leading-[1.05] mt-0.5 mb-4 tracking-tight" style={{ color: "var(--ink)" }}>
+          Near you
         </h2>
 
         <form
@@ -184,7 +185,7 @@ export default function HomePage() {
           }}
           className="relative mb-4"
         >
-          <div className="flex items-center gap-3 px-4 py-3 sheet rounded-full">
+          <div className="flex items-center gap-3 px-4 py-3.5 sheet rounded-full">
             <Search size={16} color="var(--mocha)" />
             <input
               name="q"
@@ -214,40 +215,35 @@ export default function HomePage() {
           )}
         </form>
 
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2 mb-5">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
           {chips.map((c, i) => (
             <Link
               key={c.href}
               href={c.href}
-              className={`px-4 py-1.5 text-sm shrink-0 ${i === 0 ? "rounded-full" : "chip"}`}
-              style={i === 0 ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}
+              className="px-4 py-2 text-[13px] font-medium shrink-0 rounded-full"
+              style={
+                i === 0
+                  ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
+                  : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
+              }
             >
               {c.label}
             </Link>
           ))}
         </div>
 
-        <Link href="/kazi" className="relative overflow-hidden mb-4 block" style={{ borderRadius: 28, height: 176 }}>
+        <Link href="/kazi" className="estate-card relative overflow-hidden mb-4 block" style={{ height: 168 }}>
           <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.58), rgba(var(--veil-rgb),0.08))" }} />
-          <div className="photo-dock">
-            <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Construction Jobs</h3>
-            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs.</p>
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.62), rgba(var(--veil-rgb),0.05))" }} />
+          <div className="absolute left-4 right-4 bottom-4">
+            <h3 className="text-lg font-bold leading-snug" style={{ color: "#FFF6ED" }}>Construction Jobs</h3>
+            <p className="text-xs mt-1" style={{ color: "rgba(255,246,237,0.78)" }}>Paint, tiles, ceiling, plumbing, electrical.</p>
           </div>
         </Link>
 
-        <div className="relative overflow-hidden mb-6" style={{ borderRadius: 28, height: 196 }}>
-          <Image src="/real/apartment.jpg" alt="" fill className="object-cover" sizes="400px" priority />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.05))" }} />
-          <div className="photo-dock">
-            <h3 className="font-heading text-xl leading-snug" style={{ color: "var(--ink)" }}>Places to live and work</h3>
-            <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>Real photos, clear prices.</p>
-          </div>
-        </div>
-
-        <div className="flex items-end justify-between mb-3">
-          <h3 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Near you</h3>
-          <Link href="/discover" className="text-sm" style={{ color: "var(--mocha)" }}>Discover</Link>
+        <div className="flex items-end justify-between mb-3 mt-2">
+          <h3 className="text-[20px] font-bold" style={{ color: "var(--ink)" }}>Listings</h3>
+          <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Discover</Link>
         </div>
         <div className="space-y-5">
           {waiting && items.length === 0 && <HomeFeedSkeleton />}

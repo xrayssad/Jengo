@@ -47,15 +47,18 @@ export default function CategoryListings({
 
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto">
           <div className="flex items-center gap-3">
-            <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+            <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
               <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
             </Link>
             <div>
-              <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>{title}</h1>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>
+              <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>{title}</h1>
+              <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>
                 {loading ? "Loading..." : `${items.length} available`}
               </p>
             </div>
@@ -72,7 +75,7 @@ export default function CategoryListings({
         {!loading && !error && items.length === 0 && (
           <div className="text-center py-16">
             <Icon size={40} color="var(--caramel)" className="mx-auto mb-3 opacity-60" />
-            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No listings yet</p>
+            <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No listings yet</p>
             <p className="text-sm mt-1 mb-4" style={{ color: "var(--muted)" }}>Be the first to post.</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block px-6 py-3 rounded-full text-sm font-semibold">
               Post a listing

@@ -56,17 +56,17 @@ function JobPost({ item }: { item: Job }) {
         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.55), transparent 50%)" }} />
         <div className="absolute left-3 right-3 bottom-3">
           <p className="text-[11px]" style={{ color: "var(--gold)" }}>Construction Jobs</p>
-          <p className="font-heading text-lg leading-snug" style={{ color: "#FFF6ED" }}>{item.title}</p>
+          <p className="text-lg font-bold leading-snug" style={{ color: "#FFF6ED" }}>{item.title}</p>
           {place ? <p className="text-xs mt-0.5" style={{ color: "rgba(255,246,237,0.8)" }}>{place}</p> : null}
         </div>
       </div>
       <div className="px-4 py-3 flex items-center justify-between">
         {item.deadline ? (
-          <p className="text-sm" style={{ color: "var(--ink)" }}>Deadline {item.deadline}</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Deadline {item.deadline}</p>
         ) : (
           <span />
         )}
-        <span className="text-[11px]" style={{ color: "var(--mocha)" }}>{item.status || "open"}</span>
+        <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ color: "var(--mocha)", background: "rgba(var(--caramel-rgb),0.18)" }}>{item.status || "open"}</span>
       </div>
     </Link>
   );
@@ -114,14 +114,18 @@ export default function Page() {
   return (
     <AuthGate>
       <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-        <header className="sticky top-0 z-20 px-5 py-4 glass">
+        <header
+          className="sticky top-0 z-20 px-5 pt-5 pb-3"
+          style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+        >
           <div className="max-w-md mx-auto flex items-center gap-3">
-            <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+            <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
               <ArrowLeft size={18} color="var(--ink)" />
             </Link>
             <div>
-              <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>My Posts</h1>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>Rooms, Airbnb, shops, frames, materials and reels</p>
+              <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Account</p>
+              <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>My Posts</h1>
+              <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Rooms, Airbnb, shops, frames, materials and reels</p>
             </div>
           </div>
         </header>
@@ -129,12 +133,12 @@ export default function Page() {
           {loading && <ListingFeedSkeleton />}
           {!loading && error && (
             <div className="text-center py-16">
-              <p className="font-heading" style={{ color: "var(--ink)" }}>{error}</p>
+              <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{error}</p>
             </div>
           )}
           {!loading && !error && rows.length === 0 && (
             <div className="text-center py-16">
-              <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No posts yet</p>
+              <p className="text-2xl font-bold" style={{ color: "var(--ink)" }}>No posts yet</p>
               <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Post a listing, reel or construction job.</p>
               <div className="flex flex-col items-center gap-2 mt-4">
                 <Link href="/weka-tangazo" className="btn-primary inline-block px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>

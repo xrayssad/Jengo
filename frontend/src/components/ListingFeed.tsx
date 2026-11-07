@@ -72,14 +72,17 @@ export default function ListingFeed({
 
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-5 py-4 glass">
+      <header
+        className="sticky top-0 z-20 px-5 pt-5 pb-3"
+        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
+      >
         <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>{title}</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>{subtitle}</p>
+            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>{title}</h1>
+            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>{subtitle}</p>
           </div>
         </div>
       </header>
@@ -87,7 +90,7 @@ export default function ListingFeed({
         {loading && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
-            <p className="font-heading" style={{ color: "var(--ink)" }}>No listings yet</p>
+            <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No listings yet</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}

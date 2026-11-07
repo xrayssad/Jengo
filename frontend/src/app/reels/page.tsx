@@ -568,8 +568,8 @@ export default function ReelsPage() {
       >
         <div className="w-full max-w-[480px] flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs" style={{ color: "rgba(255,246,237,0.72)" }}>Jengo</p>
-            <h1 className="font-heading text-3xl leading-none" style={{ color: "#FFF6ED" }}>Reels</h1>
+            <p className="text-xs font-semibold" style={{ color: "rgba(255,246,237,0.72)" }}>Jengo</p>
+            <h1 className="text-3xl font-bold leading-none tracking-tight" style={{ color: "#FFF6ED" }}>Reels</h1>
           </div>
           <Link
             href={signedIn ? "/reels/new" : "/login"}
@@ -592,7 +592,7 @@ export default function ReelsPage() {
       ) : items.length === 0 ? (
         <div className="h-full flex flex-col items-center justify-center px-8 text-center">
           <Clapperboard size={36} color="#C4A35A" />
-          <p className="font-heading text-3xl mt-4" style={{ color: "#FFF6ED" }}>No reels yet</p>
+          <p className="text-3xl font-bold mt-4 tracking-tight" style={{ color: "#FFF6ED" }}>No reels yet</p>
           <p className="text-sm mt-2" style={{ color: "rgba(255,246,237,0.72)" }}>Post a short walk-through of a room, shop or site.</p>
           <Link
             href={signedIn ? "/reels/new" : "/login"}

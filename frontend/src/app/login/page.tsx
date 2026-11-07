@@ -74,9 +74,9 @@ export default function LoginPage() {
         ))}
       </div>
       <div className="px-5 -mt-14 relative z-10 pb-12">
-        <div className="sheet max-w-sm mx-auto p-6 rounded-[28px] fade-up">
-          <p className="text-sm" style={{ color: "var(--mocha)" }}>Jengo</p>
-          <h1 className="font-heading text-[36px] leading-none mb-2" style={{ color: "var(--ink)" }}>Welcome back</h1>
+        <div className="sheet max-w-sm mx-auto p-6 fade-up">
+          <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Jengo</p>
+          <h1 className="text-[36px] font-bold leading-[1.05] tracking-tight mb-2" style={{ color: "var(--ink)" }}>Welcome back</h1>
           <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>Log in with your username or Google.</p>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

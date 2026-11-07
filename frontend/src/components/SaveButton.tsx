@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties, type MouseEvent } from "react";
-import { Bookmark } from "lucide-react";
+import { Bookmark, Heart } from "lucide-react";
 import type { Listing } from "@/lib/api";
 import { isSaved, toggleSaved } from "@/lib/social";
 
@@ -10,11 +10,13 @@ export default function SaveButton({
   className,
   style,
   size = 22,
+  variant = "bookmark",
 }: {
   item: Listing;
   className?: string;
   style?: CSSProperties;
   size?: number;
+  variant?: "bookmark" | "heart";
 }) {
   const [on, setOn] = useState(false);
   useEffect(() => setOn(isSaved(item.id)), [item.id]);
@@ -24,6 +26,10 @@ export default function SaveButton({
     e.stopPropagation();
     setOn(toggleSaved(item));
   };
+
+  const Icon = variant === "heart" ? Heart : Bookmark;
+  const stroke = variant === "heart" ? (on ? "var(--error)" : "var(--ink)") : "var(--ink)";
+  const fill = on ? (variant === "heart" ? "var(--error)" : "var(--ink)") : "none";
 
   return (
     <button
@@ -37,7 +43,7 @@ export default function SaveButton({
       className={className || "flex items-center gap-1"}
       style={style}
     >
-      <Bookmark size={size} color="var(--ink)" fill={on ? "var(--ink)" : "none"} />
+      <Icon size={size} color={stroke} fill={fill} strokeWidth={1.8} />
     </button>
   );
 }
