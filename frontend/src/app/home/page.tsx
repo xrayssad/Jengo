@@ -13,7 +13,8 @@ import ListingCard from "@/components/ListingCard";
 import { HomeFeedSkeleton } from "@/components/Skeletons";
 import ThemeToggle from "@/components/ThemeToggle";
 import { InboxLink } from "@/components/MqttInbox";
-import { clearAuth, fetchListings, readHomeListingsCache, suggestPlaces, writeHomeListingsCache, type Listing, type PlaceHit } from "@/lib/api";
+import { clearAuth, fetchListings, suggestPlaces, writeHomeListingsCache, type PlaceHit } from "@/lib/api";
+import { useListings } from "@/lib/useListings";
 
 const chips = [
   { href: "/nyumba", label: "Rooms & Houses" },
@@ -39,7 +40,7 @@ const sideLinks = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-const primed = typeof window === "undefined" ? null : fetchListings({ status: "active", limit: 8 });
+if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 });
 
 export default function HomePage() {
   const router = useRouter();
@@ -48,8 +49,7 @@ export default function HomePage() {
   const [hits, setHits] = useState<PlaceHit[]>([]);
   const [openHits, setOpenHits] = useState(false);
   const searchBox = useRef<HTMLFormElement>(null);
-  const [items, setItems] = useState<Listing[]>([]);
-  const [waiting, setWaiting] = useState(true);
+  const { items, setItems, loading: waiting } = useListings({ status: "active", limit: 40 });
 
   const goSearch = (q: string) => {
     const next = q.split(",")[0].trim() || q.trim();
@@ -62,22 +62,6 @@ export default function HomePage() {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
   }, [open]);
-
-  useEffect(() => {
-    const cached = readHomeListingsCache();
-    if (cached.length) {
-      setItems(cached);
-      setWaiting(false);
-    }
-    (primed || fetchListings({ status: "active", limit: 8 }))
-      .then((res) => {
-        const next = (res.items || []).slice(0, 8);
-        setItems(next);
-        writeHomeListingsCache(next);
-      })
-      .catch(() => {})
-      .finally(() => setWaiting(false));
-  }, []);
 
   useEffect(() => {
     const q = placeQ.trim();

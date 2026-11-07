@@ -4,9 +4,9 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
-import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "@/components/ListingCard";
 import { SearchSkeleton } from "@/components/Skeletons";
+import { useListings } from "@/lib/useListings";
 
 const filters = [
   { id: "", label: "All" },
@@ -26,9 +26,12 @@ function SearchInner() {
   const [query, setQuery] = useState(initialQ);
   const [debounced, setDebounced] = useState(initialQ.trim());
   const [category, setCategory] = useState(initialCat);
-  const [items, setItems] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const { items, loading, error } = useListings({
+    status: "active",
+    category: category || undefined,
+    q: debounced || undefined,
+    limit: 40,
+  });
 
   useEffect(() => {
     setQuery(initialQ);
@@ -39,30 +42,6 @@ function SearchInner() {
     const t = setTimeout(() => setDebounced(query.trim()), 300);
     return () => clearTimeout(t);
   }, [query]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetchListings({
-          status: "active",
-          category: category || undefined,
-          q: debounced || undefined,
-          limit: 100,
-        });
-        if (!cancelled) setItems(res.items || []);
-      } catch {
-        if (!cancelled) setError("Could not load listings. Check that the API is running.");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [debounced, category]);
 
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
@@ -125,7 +104,7 @@ function SearchInner() {
           {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
         </p>
 
-        {loading && <SearchSkeleton />}
+        {loading && items.length === 0 && <SearchSkeleton />}
 
         {!loading && error && (
           <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
@@ -148,10 +127,10 @@ function SearchInner() {
           </div>
         )}
 
-        {!loading && !error && (
+        {items.length > 0 && !error && (
           <div className="space-y-5">
-            {items.map((item) => (
-              <ListingCard key={item.id} item={item} />
+            {items.map((item, i) => (
+              <ListingCard key={item.id} item={item} eager={i < 2} />
             ))}
           </div>
         )}

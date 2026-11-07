@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { Send } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { ChatListSkeleton } from "@/components/Skeletons";
-import { fetchInbox, type ChatMessage } from "@/lib/api";
+import { fetchInbox, peekInbox, type ChatMessage } from "@/lib/api";
 import { useInboxLive } from "@/components/MqttInbox";
 
 export default function MessagesPage() {
@@ -14,8 +14,15 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const inbox = useInboxLive();
 
+  useLayoutEffect(() => {
+    const cached = peekInbox();
+    if (!cached.length) return;
+    setItems(cached);
+    setLoading(false);
+  }, []);
+
   const load = (opts?: { quiet?: boolean }) => {
-    if (!opts?.quiet) setLoading(true);
+    if (!opts?.quiet && peekInbox().length === 0) setLoading(true);
     fetchInbox()
       .then((res) => {
         setItems(res.items || []);
@@ -49,7 +56,7 @@ export default function MessagesPage() {
         </header>
         <div className="max-w-md mx-auto px-5 pt-5 space-y-3">
           {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
-          {loading && <ChatListSkeleton />}
+          {loading && items.length === 0 && <ChatListSkeleton />}
           {!loading && items.length === 0 && !error && (
             <div className="text-center py-16">
               <Send size={28} color="var(--caramel)" className="mx-auto mb-3" />
@@ -57,7 +64,7 @@ export default function MessagesPage() {
               <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>Open a listing, then send a direct message.</p>
             </div>
           )}
-          {!loading && items.map((c) => (
+          {items.map((c) => (
             <Link key={c.thread_key || c.id} href={c.href || "/messages"} className="sheet block p-4">
               <p className="text-xs font-semibold" style={{ color: "var(--mocha)" }}>
                 {c.kind === "booking" ? "Request" : "Direct message"}

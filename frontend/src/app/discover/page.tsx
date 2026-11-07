@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import ListingCard from "@/components/ListingCard";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
-import { fetchListings, shopCategories, type Listing } from "@/lib/api";
+import { shopCategories } from "@/lib/api";
+import { useListings } from "@/lib/useListings";
 
 const chips = [
   { id: "", label: "All" },
@@ -19,25 +20,9 @@ const chips = [
 const shop = new Set(shopCategories);
 
 export default function DiscoverPage() {
-  const [items, setItems] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { items, loading } = useListings({ status: "active", limit: 40 });
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
-
-  useEffect(() => {
-    let stop = false;
-    (async () => {
-      setLoading(true);
-      const res = await fetchListings({ status: "active" });
-      if (!stop) {
-        setItems(res.items || []);
-        setLoading(false);
-      }
-    })();
-    return () => {
-      stop = true;
-    };
-  }, []);
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -82,15 +67,15 @@ export default function DiscoverPage() {
         </div>
       </header>
       <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-        {loading && <ListingFeedSkeleton />}
+        {loading && items.length === 0 && <ListingFeedSkeleton />}
         {!loading && shown.length === 0 && (
           <div className="text-center py-16">
             <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No listings</p>
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}
-        {shown.map((item) => (
-          <ListingCard key={item.id} item={item} />
+        {shown.map((item, i) => (
+          <ListingCard key={item.id} item={item} eager={i < 2} />
         ))}
       </div>
     </main>

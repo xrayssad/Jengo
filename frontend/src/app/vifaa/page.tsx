@@ -1,30 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "@/components/ListingCard";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
+import { useListings } from "@/lib/useListings";
 
 export default function VifaaPage() {
-  const [items, setItems] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let stop = false;
-    (async () => {
-      setLoading(true);
-      const res = await fetchListings({ category: "vifaa", status: "active" });
-      if (!stop) {
-        setItems((res.items || []).filter((item) => item.category === "vifaa"));
-        setLoading(false);
-      }
-    })();
-    return () => {
-      stop = true;
-    };
-  }, []);
+  const { items, loading } = useListings({ category: "vifaa", status: "active", limit: 40 });
 
   return (
     <main className="min-h-screen pb-24" style={{ backgroundColor: "var(--paper)" }}>
@@ -44,7 +27,7 @@ export default function VifaaPage() {
       </header>
 
       <div className="max-w-md mx-auto px-5 pt-6 space-y-5">
-        {loading && <ListingFeedSkeleton />}
+        {loading && items.length === 0 && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
             <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No materials yet</p>

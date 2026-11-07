@@ -23,14 +23,24 @@ def load_env():
     return url, anon, service
 
 
+_db_client = None
+_anon_client = None
+
+
 def db():
-    url, _, service = load_env()
-    return create_client(url, service)
+    global _db_client
+    if _db_client is None:
+        url, _, service = load_env()
+        _db_client = create_client(url, service)
+    return _db_client
 
 
 def anon():
-    url, key, _ = load_env()
-    return create_client(url, key)
+    global _anon_client
+    if _anon_client is None:
+        url, key, _ = load_env()
+        _anon_client = create_client(url, key)
+    return _anon_client
 
 
 def current_user(authorization: str | None = Header(default=None)):

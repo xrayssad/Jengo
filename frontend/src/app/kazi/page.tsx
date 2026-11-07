@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Hammer, MapPin, Plus } from "lucide-react";
-import { fetchJobs, type Job } from "@/lib/api";
+import { fetchJobs, peekJobs, type Job } from "@/lib/api";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
 
 function JobRow({ item }: { item: Job }) {
@@ -49,6 +49,13 @@ export default function Page() {
   const [items, setItems] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useLayoutEffect(() => {
+    const cached = peekJobs();
+    if (!cached.length) return;
+    setItems(cached);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     let stop = false;
@@ -103,7 +110,7 @@ export default function Page() {
           Post a job
         </Link>
 
-        {loading && <ListingFeedSkeleton count={2} />}
+        {loading && items.length === 0 && <ListingFeedSkeleton count={2} />}
         {!loading && error && (
           <div className="text-center py-12">
             <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{error}</p>

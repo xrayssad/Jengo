@@ -1,35 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { fetchListings, type Listing } from "@/lib/api";
+import { useListings } from "@/lib/useListings";
 import ListingCard from "./ListingCard";
 import { ListingFeedSkeleton } from "./Skeletons";
 
 function asList(category: string | string[]) {
   const raw = Array.isArray(category) ? category : [category];
   return raw.map((c) => String(c || "").trim()).filter(Boolean);
-}
-
-async function loadCats(cats: string[]) {
-  if (cats.length <= 1) {
-    const res = await fetchListings({ category: cats[0], status: "active" });
-    return (res.items || []).filter((item) => !cats[0] || item.category === cats[0]);
-  }
-  const rows = await Promise.all(cats.map((c) => fetchListings({ category: c, status: "active" })));
-  const seen = new Set<string>();
-  const out: Listing[] = [];
-  for (const res of rows) {
-    for (const item of res.items || []) {
-      if (!item.id || seen.has(item.id)) continue;
-      if (item.category && !cats.includes(item.category)) continue;
-      seen.add(item.id);
-      out.push(item);
-    }
-  }
-  out.sort((a, b) => (b.created_at || "").localeCompare(a.created_at || ""));
-  return out;
 }
 
 export default function ListingFeed({
@@ -42,23 +22,11 @@ export default function ListingFeed({
   category: string | string[];
 }) {
   const cats = asList(category);
-  const [items, setItems] = useState<Listing[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let stop = false;
-    (async () => {
-      setLoading(true);
-      const next = await loadCats(cats);
-      if (!stop) {
-        setItems(next);
-        setLoading(false);
-      }
-    })();
-    return () => {
-      stop = true;
-    };
-  }, [cats.join(",")]);
+  const { items, setItems, loading } = useListings({
+    status: "active",
+    category: cats.join(","),
+    limit: 40,
+  });
 
   useEffect(() => {
     const onLike = (e: Event) => {
@@ -87,7 +55,7 @@ export default function ListingFeed({
         </div>
       </header>
       <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-        {loading && <ListingFeedSkeleton />}
+        {loading && items.length === 0 && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
             <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No listings yet</p>
@@ -95,7 +63,7 @@ export default function ListingFeed({
           </div>
         )}
         {items.map((item, i) => (
-          <ListingCard key={item.id} item={item} eager={i === 0} />
+          <ListingCard key={item.id} item={item} eager={i < 2} />
         ))}
       </div>
     </main>

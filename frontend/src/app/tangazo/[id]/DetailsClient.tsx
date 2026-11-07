@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   catShort,
   fetchListing,
   formatPrice,
+  peekListing,
   listingPhones,
   listingUnit,
   periodLabel,
@@ -30,15 +31,26 @@ export default function DetailsClient({ id }: { id: string }) {
   const [error, setError] = useState("");
   const [qty, setQty] = useState("1");
 
+  useLayoutEffect(() => {
+    const cached = peekListing(id);
+    if (!cached) return;
+    setItem(cached);
+    setLoading(false);
+  }, [id]);
+
   useEffect(() => {
     let stop = false;
+    const cached = peekListing(id);
+    if (!cached) setLoading(true);
     (async () => {
-      setLoading(true);
       try {
         const data = await fetchListing(id);
-        if (!stop) setItem(data);
+        if (!stop) {
+          setItem(data);
+          setError("");
+        }
       } catch (e) {
-        if (!stop) setError(e instanceof Error ? e.message : "Not available");
+        if (!stop && !cached) setError(e instanceof Error ? e.message : "Not available");
       } finally {
         if (!stop) setLoading(false);
       }

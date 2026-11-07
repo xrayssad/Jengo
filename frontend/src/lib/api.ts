@@ -439,28 +439,124 @@ export async function setAdminUserStatus(id: string, status: "active" | "suspend
   });
 }
 
-export async function fetchListings(params?: {
+export type ListingQuery = {
   category?: string;
   q?: string;
   sort?: string;
   status?: string;
   mine?: boolean;
   limit?: number;
-}): Promise<{ items: Listing[] }> {
-  const sp = new URLSearchParams();
-  if (params?.category) sp.set("category", params.category);
-  if (params?.q) sp.set("q", params.q);
-  if (params?.mine) sp.set("mine", "true");
-  else sp.set("status", params?.status || "active");
-  if (params?.sort) sp.set("sort", params.sort);
-  sp.set("limit", String(params?.limit || 40));
-  const data = await request<{ items?: Listing[] }>(`/listings?${sp}`);
-  return { items: data.items || [] };
+};
+
+const FEED_KEY = "jengo_feed_cache_v1";
+const feedMem = new Map<string, Listing[]>();
+const feedFlight = new Map<string, Promise<{ items: Listing[] }>>();
+const listingMem = new Map<string, Listing>();
+let feedHydrated = false;
+
+function feedKey(params?: ListingQuery) {
+  return [
+    params?.mine ? "mine" : params?.status || "active",
+    params?.category || "",
+    (params?.q || "").trim().toLowerCase(),
+    params?.sort || "",
+    String(params?.limit || 40),
+  ].join("|");
+}
+
+function slimListing(item: Listing): Listing {
+  return {
+    ...item,
+    description: item.description ? item.description.slice(0, 320) : item.description,
+    images: (item.images || []).filter(Boolean).slice(0, 6),
+  };
+}
+
+function hydrateFeeds() {
+  if (feedHydrated || typeof window === "undefined") return;
+  feedHydrated = true;
+  try {
+    const raw = localStorage.getItem(FEED_KEY);
+    const parsed = raw ? (JSON.parse(raw) as { feeds?: Record<string, Listing[]> }) : {};
+    const feeds = parsed.feeds || {};
+    for (const [key, items] of Object.entries(feeds)) {
+      if (!Array.isArray(items) || !items.length) continue;
+      feedMem.set(key, items);
+      for (const item of items) {
+        if (item?.id) listingMem.set(item.id, item);
+      }
+    }
+  } catch {
+    /* ignore broken cache */
+  }
+}
+
+function persistFeeds() {
+  if (typeof window === "undefined") return;
+  try {
+    const feeds: Record<string, Listing[]> = {};
+    for (const [key, items] of feedMem) feeds[key] = items.slice(0, 40).map(slimListing);
+    localStorage.setItem(FEED_KEY, JSON.stringify({ feeds }));
+  } catch {
+    /* quota */
+  }
+}
+
+function rememberListings(items: Listing[]) {
+  for (const item of items) {
+    if (item?.id) listingMem.set(item.id, slimListing(item));
+  }
+}
+
+export function peekListings(params?: ListingQuery): Listing[] {
+  hydrateFeeds();
+  const exact = feedMem.get(feedKey(params));
+  if (exact?.length) return exact;
+  if (params?.q || params?.mine || params?.category) return [];
+  const status = params?.status || "active";
+  let best: Listing[] = [];
+  for (const [key, items] of feedMem) {
+    if (!key.startsWith(`${status}|`) || key.split("|")[1] || key.split("|")[2]) continue;
+    if (items.length > best.length) best = items;
+  }
+  return best;
+}
+
+export function peekListing(id: string): Listing | null {
+  hydrateFeeds();
+  return listingMem.get(id) || null;
+}
+
+export async function fetchListings(params?: ListingQuery): Promise<{ items: Listing[] }> {
+  const key = feedKey(params);
+  const existing = feedFlight.get(key);
+  if (existing) return existing;
+  const job = (async () => {
+    const sp = new URLSearchParams();
+    if (params?.category) sp.set("category", params.category);
+    if (params?.q) sp.set("q", params.q);
+    if (params?.mine) sp.set("mine", "true");
+    else sp.set("status", params?.status || "active");
+    if (params?.sort) sp.set("sort", params.sort);
+    sp.set("limit", String(params?.limit || 40));
+    const data = await request<{ items?: Listing[] }>(`/listings?${sp}`);
+    const items = data.items || [];
+    feedMem.set(key, items);
+    rememberListings(items);
+    persistFeeds();
+    return { items };
+  })().finally(() => {
+    feedFlight.delete(key);
+  });
+  feedFlight.set(key, job);
+  return job;
 }
 
 const HOME_LISTINGS_KEY = "jengo_home_listings";
 
 export function readHomeListingsCache(): Listing[] {
+  const shared = peekListings({ status: "active", limit: 40 });
+  if (shared.length) return shared.slice(0, 8);
   if (typeof window === "undefined") return [];
   try {
     const raw = sessionStorage.getItem(HOME_LISTINGS_KEY);
@@ -478,10 +574,16 @@ export function writeHomeListingsCache(items: Listing[]) {
   } catch {
     /* quota */
   }
+  rememberListings(items);
 }
 
 export async function fetchListing(id: string): Promise<Listing> {
-  return request<Listing>(`/listings/${id}`);
+  const data = await request<Listing>(`/listings/${id}`);
+  if (data?.id) {
+    listingMem.set(data.id, data);
+    persistFeeds();
+  }
+  return data;
 }
 
 export async function setListingStatus(id: string, status: "active" | "hidden" | "rejected") {
@@ -919,8 +1021,27 @@ export type ChatMessage = {
   href?: string;
 };
 
+const INBOX_KEY = "jengo_inbox_cache";
+
+export function peekInbox(): ChatMessage[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(INBOX_KEY);
+    const items = raw ? (JSON.parse(raw) as ChatMessage[]) : [];
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchInbox() {
-  return request<{ items: ChatMessage[] }>("/inbox");
+  const data = await request<{ items: ChatMessage[] }>("/inbox");
+  try {
+    localStorage.setItem(INBOX_KEY, JSON.stringify(data.items || []));
+  } catch {
+    /* quota */
+  }
+  return data;
 }
 
 export async function fetchBookingMessages(bookingId: string) {
@@ -1013,11 +1134,30 @@ export async function fetchMyPosts(listingIds?: string[], reelIds?: string[]) {
   });
 }
 
+const JOBS_KEY = "jengo_jobs_cache";
+
+export function peekJobs(): Job[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(JOBS_KEY);
+    const items = raw ? (JSON.parse(raw) as Job[]) : [];
+    return Array.isArray(items) ? items : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function fetchJobs(status = "open") {
   const sp = new URLSearchParams();
   if (status) sp.set("status", status);
   const data = await request<{ items?: Job[] }>(`/jobs?${sp}`);
-  return { items: data.items || [] };
+  const items = data.items || [];
+  try {
+    if (status === "open") localStorage.setItem(JOBS_KEY, JSON.stringify(items));
+  } catch {
+    /* quota */
+  }
+  return { items };
 }
 
 export async function fetchJob(id: string) {
