@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "@/components/ListingCard";
+import { ListingFeedSkeleton } from "@/components/Skeletons";
 
 type Props = {
   title: string;
@@ -64,11 +65,7 @@ export default function CategoryListings({
       </header>
 
       <div className="max-w-md mx-auto px-4 py-5 space-y-5">
-        {loading && (
-          <div className="flex justify-center py-16">
-            <Loader2 size={32} color="var(--mocha)" className="animate-spin" />
-          </div>
-        )}
+        {loading && <ListingFeedSkeleton />}
         {!loading && error && (
           <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
         )}

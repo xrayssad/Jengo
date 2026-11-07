@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthUser, refreshAuth } from "@/lib/api";
+import { getAuthUser, hasUsableSession, refreshAuth } from "@/lib/api";
 
 export default function AuthGate({
   children,
@@ -16,9 +16,10 @@ export default function AuthGate({
 
   useEffect(() => {
     let stop = false;
+
     (async () => {
       const local = getAuthUser();
-      if (!local?.access_token) {
+      if (!local?.access_token && !local?.refresh_token) {
         router.replace("/login");
         return;
       }
@@ -28,41 +29,50 @@ export default function AuthGate({
       }
       if (admin && !local.is_admin) {
         // Confirm with the server before bouncing admins away.
-      } else {
+      } else if (local.access_token) {
+        // Show protected UI immediately when a stored access token exists.
         setOk(true);
       }
 
       try {
         const me = await refreshAuth();
         if (stop) return;
-        if (!me?.access_token) {
+        // Only bounce to login when the session is truly gone (definitive expiry cleared tokens,
+        // or there was never a usable local session). Transient renew/network failures keep tokens.
+        if (!hasUsableSession()) {
           router.replace("/login");
           return;
         }
-        if (me.needs_username) {
+        const live = me || getAuthUser();
+        if (!live) {
+          router.replace("/login");
+          return;
+        }
+        if (live.needs_username) {
           router.replace("/username");
           return;
         }
-        if (admin && !me.is_admin) {
+        if (admin && !live.is_admin) {
           router.replace("/home");
           return;
         }
         setOk(true);
       } catch (err) {
         if (stop) return;
-        // Keep the saved session on network errors; only leave when the token is gone.
-        if (!getAuthUser()?.access_token) {
+        if (!hasUsableSession()) {
           const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
           router.replace(admin && status !== 401 ? "/home" : "/login");
           return;
         }
-        if (admin && !getAuthUser()?.is_admin) {
+        const localAdmin = getAuthUser();
+        if (admin && !localAdmin?.is_admin) {
           router.replace("/home");
           return;
         }
         setOk(true);
       }
     })();
+
     return () => {
       stop = true;
     };

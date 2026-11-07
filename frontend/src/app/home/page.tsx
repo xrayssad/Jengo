@@ -10,17 +10,18 @@ import {
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import ListingCard from "@/components/ListingCard";
+import { HomeFeedSkeleton } from "@/components/Skeletons";
 import ThemeToggle from "@/components/ThemeToggle";
 import { InboxLink } from "@/components/MqttInbox";
 import { clearAuth, fetchListings, readHomeListingsCache, suggestPlaces, writeHomeListingsCache, type Listing, type PlaceHit } from "@/lib/api";
 
 const chips = [
-  { href: "/nyumba", label: "Houses/Rooms" },
+  { href: "/nyumba", label: "Rooms & Houses" },
   { href: "/kazi", label: "Construction Jobs" },
-  { href: "/godown", label: "Godown/Store" },
-  { href: "/airbnb", label: "Airbnb" },
-  { href: "/maduka", label: "Shops" },
-  { href: "/vifaa", label: "Materials" },
+  { href: "/godown", label: "Shops Store & Godown" },
+  { href: "/airbnb", label: "Apartment & Airbnb" },
+  { href: "/maduka", label: "Shop Frames" },
+  { href: "/vifaa", label: "Building Materials" },
 ];
 
 const sideLinks = [
@@ -37,14 +38,6 @@ const sideLinks = [
   { label: "My requests", href: "/maombi-yangu", icon: Inbox },
   { label: "Settings", href: "/settings", icon: Settings },
 ];
-
-function CardSkeleton() {
-  return (
-    <div className="estate-card">
-      <div className="w-full" style={{ height: "min(72vw, 520px)", minHeight: 360, background: "linear-gradient(165deg, var(--blush), var(--cream))" }} />
-    </div>
-  );
-}
 
 const primed = typeof window === "undefined" ? null : fetchListings({ status: "active", limit: 8 });
 
@@ -257,12 +250,7 @@ export default function HomePage() {
           <Link href="/discover" className="text-sm" style={{ color: "var(--mocha)" }}>Discover</Link>
         </div>
         <div className="space-y-5">
-          {waiting && items.length === 0 && (
-            <>
-              <CardSkeleton />
-              <CardSkeleton />
-            </>
-          )}
+          {waiting && items.length === 0 && <HomeFeedSkeleton />}
           {items.map((item, i) => (
             <ListingCard key={item.id} item={item} eager={i === 0} />
           ))}

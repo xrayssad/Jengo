@@ -2,18 +2,19 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Search, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
 import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "@/components/ListingCard";
+import { SearchSkeleton } from "@/components/Skeletons";
 
 const filters = [
   { id: "", label: "All" },
-  { id: "chumba_nyumba", label: "Houses / Rooms" },
+  { id: "chumba_nyumba", label: "Rooms & Houses" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "store_godown", label: "Godown / Store" },
-  { id: "frame", label: "Shop frames" },
-  { id: "vifaa", label: "Building materials" },
+  { id: "store_godown", label: "Shops Store & Godown" },
+  { id: "frame", label: "Shop Frames" },
+  { id: "vifaa", label: "Building Materials" },
 ];
 
 function SearchInner() {
@@ -112,11 +113,7 @@ function SearchInner() {
           {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
         </p>
 
-        {loading && (
-          <div className="flex justify-center py-16">
-            <Loader2 size={32} color="var(--mocha)" className="animate-spin" />
-          </div>
-        )}
+        {loading && <SearchSkeleton />}
 
         {!loading && error && (
           <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
@@ -155,9 +152,11 @@ export default function SearchPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--paper)" }}>
-          <Loader2 size={28} color="var(--mocha)" className="animate-spin" />
-        </div>
+        <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
+          <div className="max-w-md mx-auto px-4 py-8">
+            <SearchSkeleton />
+          </div>
+        </main>
       }
     >
       <SearchInner />

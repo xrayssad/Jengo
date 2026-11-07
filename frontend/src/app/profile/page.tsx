@@ -10,6 +10,7 @@ import Image from "next/image";
 import { clearAuth, getAuthUser } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
 import AdminLink from "@/components/AdminLink";
+import { ProfileSkeleton } from "@/components/Skeletons";
 
 const menuItems = [
   { icon: FileText, label: "My requests", desc: "Requests you sent", href: "/maombi-yangu" },
@@ -21,6 +22,7 @@ const menuItems = [
 export default function ProfilePage() {
   const [name, setName] = useState("User");
   const [email, setEmail] = useState("");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const user = getAuthUser();
@@ -28,6 +30,7 @@ export default function ProfilePage() {
       setName(user.username || user.full_name || user.email || "User");
       setEmail(user.email || "");
     }
+    setReady(true);
   }, []);
 
   return (
@@ -42,6 +45,9 @@ export default function ProfilePage() {
         </div>
       </header>
 
+      {!ready ? (
+        <ProfileSkeleton />
+      ) : (
       <div className="max-w-md mx-auto px-4 py-5 space-y-5">
         <div className="relative overflow-hidden rounded-[28px]" style={{ height: 168 }}>
           <Image src="/real/apartment.jpg" alt="" fill className="object-cover" />
@@ -107,6 +113,7 @@ export default function ProfilePage() {
           Log out
         </button>
       </div>
+      )}
     </main>
     </AuthGate>
   );

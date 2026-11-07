@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Clapperboard, Hammer, Loader2 } from "lucide-react";
+import { ArrowLeft, Clapperboard, Hammer } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import ListingCard from "@/components/ListingCard";
 import PosterName from "@/components/PosterName";
+import { ListingFeedSkeleton } from "@/components/Skeletons";
 import { catLabel, fetchMyPosts, type Job, type Listing, type Reel } from "@/lib/api";
 import { readIds } from "@/lib/mine";
 
@@ -125,11 +126,7 @@ export default function Page() {
           </div>
         </header>
         <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-          {loading && (
-            <div className="flex justify-center py-16">
-              <Loader2 className="animate-spin" color="var(--mocha)" />
-            </div>
-          )}
+          {loading && <ListingFeedSkeleton />}
           {!loading && error && (
             <div className="text-center py-16">
               <p className="font-heading" style={{ color: "var(--ink)" }}>{error}</p>
@@ -137,7 +134,7 @@ export default function Page() {
           )}
           {!loading && !error && rows.length === 0 && (
             <div className="text-center py-16">
-              <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Huna post bado</p>
+              <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No posts yet</p>
               <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Post a listing, reel or construction job.</p>
               <div className="flex flex-col items-center gap-2 mt-4">
                 <Link href="/weka-tangazo" className="btn-primary inline-block px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
@@ -150,7 +147,7 @@ export default function Page() {
             if (row.kind === "listing") {
               return (
                 <div key={`listing-${row.item.id}`}>
-                  <p className="text-[11px] mb-2" style={{ color: "var(--mocha)" }}>{catLabel[row.item.category || ""] || "Tangazo"}</p>
+                  <p className="text-[11px] mb-2" style={{ color: "var(--mocha)" }}>{catLabel[row.item.category || ""] || "Listing"}</p>
                   <ListingCard item={row.item} />
                 </div>
               );

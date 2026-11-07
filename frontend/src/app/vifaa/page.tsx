@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "@/components/ListingCard";
+import { ListingFeedSkeleton } from "@/components/Skeletons";
 
 export default function VifaaPage() {
   const [items, setItems] = useState<Listing[]>([]);
@@ -33,18 +34,14 @@ export default function VifaaPage() {
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Building materials</h1>
+            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Building Materials</h1>
             <p className="text-sm" style={{ color: "var(--muted)" }}>Cement, steel, bricks, sand</p>
           </div>
         </div>
       </header>
 
       <div className="max-w-md mx-auto px-5 pt-6 space-y-5">
-        {loading && (
-          <div className="flex justify-center py-16">
-            <Loader2 size={28} color="var(--mocha)" className="animate-spin" />
-          </div>
-        )}
+        {loading && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
             <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No materials yet</p>

@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CreditCard, Loader2 } from "lucide-react";
+import { ArrowLeft, CreditCard } from "lucide-react";
 import { fetchListing, formatPrice } from "@/lib/api";
 import { readBookings, type SavedBooking } from "@/lib/mine";
+import { PaymentListSkeleton } from "@/components/Skeletons";
 
 type Row = SavedBooking & { price?: number; period?: string };
 
@@ -61,7 +62,7 @@ export default function MalipoPage() {
           <p className="text-xs mt-2" style={{ color: "var(--cream)" }}>Status: unpaid. Pay when you meet the owner.</p>
         </div>
 
-        {loading && <div className="flex justify-center py-10"><Loader2 className="animate-spin" color="var(--mocha)" /></div>}
+        {loading && <PaymentListSkeleton />}
 
         {!loading && rows.length === 0 && (
           <div className="text-center py-12">

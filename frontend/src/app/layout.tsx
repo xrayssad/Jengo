@@ -21,7 +21,7 @@ const sourceSans = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: "Jengo",
-  description: "Rooms, houses, apartments, stores and shop frames",
+  description: "Rooms & Houses, Apartment & Airbnb, Shops Store & Godown, Shop Frames and Building Materials",
 };
 
 export default function RootLayout({

@@ -4,25 +4,32 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Send } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
+import { ChatListSkeleton } from "@/components/Skeletons";
 import { fetchInbox, type ChatMessage } from "@/lib/api";
 import { useInboxLive } from "@/components/MqttInbox";
 
 export default function MessagesPage() {
   const [items, setItems] = useState<ChatMessage[]>([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
   const inbox = useInboxLive();
 
-  const load = () => {
+  const load = (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
     fetchInbox()
-      .then((res) => setItems(res.items || []))
-      .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"));
+      .then((res) => {
+        setItems(res.items || []);
+        setError("");
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
     inbox.clear();
     const onPing = () => {
-      load();
+      load({ quiet: true });
       inbox.clear();
     };
     window.addEventListener("jengo-chat", onPing);
@@ -39,14 +46,15 @@ export default function MessagesPage() {
         </header>
         <div className="max-w-md mx-auto px-5 pt-5 space-y-3">
           {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
-          {items.length === 0 && !error && (
+          {loading && <ChatListSkeleton />}
+          {!loading && items.length === 0 && !error && (
             <div className="text-center py-16">
               <Send size={28} color="var(--caramel)" className="mx-auto mb-3" />
               <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No messages</p>
               <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>Open a listing, then send a direct message.</p>
             </div>
           )}
-          {items.map((c) => (
+          {!loading && items.map((c) => (
             <Link key={c.thread_key || c.id} href={c.href || "/messages"} className="sheet block p-4 rounded-[24px]">
               <p className="text-xs font-semibold" style={{ color: "var(--mocha)" }}>
                 {c.kind === "booking" ? "Request" : "Direct message"}

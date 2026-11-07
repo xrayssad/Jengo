@@ -3,11 +3,11 @@ import NextImage from "next/image";
 import SignedInHome from "@/components/SignedInHome";
 
 const categories = [
-  { href: "/nyumba", title: "Houses / Rooms", line: "Monthly or yearly stays", img: "/real/room.jpg" },
-  { href: "/godown", title: "Godown / Store", line: "Storage space, not shop frames", img: "/real/shop.jpg" },
-  { href: "/airbnb", title: "Airbnb", line: "Apartments by the night", img: "/real/apartment.jpg" },
-  { href: "/maduka", title: "Shop frames", line: "Shop frames for rent", img: "/real/shop.jpg" },
-  { href: "/vifaa", title: "Building materials", line: "Cement, steel, bricks", img: "/real/materials.jpg" },
+  { href: "/nyumba", title: "Rooms & Houses", line: "Monthly or yearly stays", img: "/real/room.jpg" },
+  { href: "/godown", title: "Shops Store & Godown", line: "Storage space, not shop frames", img: "/real/shop.jpg" },
+  { href: "/airbnb", title: "Apartment & Airbnb", line: "Apartments by the night", img: "/real/apartment.jpg" },
+  { href: "/maduka", title: "Shop Frames", line: "Shop frames for rent", img: "/real/shop.jpg" },
+  { href: "/vifaa", title: "Building Materials", line: "Cement, steel, bricks", img: "/real/materials.jpg" },
 ];
 
 export default function LandingPage() {

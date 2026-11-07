@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Bookmark, Clapperboard } from "lucide-react";
 import ListingCard from "@/components/ListingCard";
 import PosterName from "@/components/PosterName";
+import { ListingFeedSkeleton } from "@/components/Skeletons";
 import { type Listing } from "@/lib/api";
 import { readSaved, type SavedPost } from "@/lib/social";
 
@@ -31,9 +32,13 @@ function ReelFavorite({ item }: { item: SavedPost }) {
 
 export default function FavoritesPage() {
   const [items, setItems] = useState<SavedPost[]>([]);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    const sync = () => setItems(readSaved());
+    const sync = () => {
+      setItems(readSaved());
+      setReady(true);
+    };
     sync();
     window.addEventListener("storage", sync);
     window.addEventListener("jengo-saved", sync);
@@ -57,14 +62,15 @@ export default function FavoritesPage() {
         </div>
       </header>
       <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-        {items.length === 0 && (
+        {!ready && <ListingFeedSkeleton count={2} />}
+        {ready && items.length === 0 && (
           <div className="text-center py-16">
             <Bookmark size={28} color="var(--caramel)" className="mx-auto mb-3" />
             <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No favorites yet</p>
             <p className="text-sm mt-2 px-4" style={{ color: "var(--muted)" }}>Tap the bookmark on a listing or reel to see it here.</p>
           </div>
         )}
-        {items.map((item) =>
+        {ready && items.map((item) =>
           item.kind === "reel" ? (
             <ReelFavorite key={item.id} item={item} />
           ) : (

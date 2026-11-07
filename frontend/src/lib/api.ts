@@ -94,7 +94,16 @@ export function isSignedIn() {
   return Boolean(getAuthUser()?.access_token && getToken());
 }
 
+/** True when a local access or refresh token can still keep the user signed in. */
+export function hasUsableSession() {
+  const user = getAuthUser();
+  if (!user) return false;
+  return Boolean((user.access_token && getToken()) || user.refresh_token);
+}
+
 let renewing: Promise<AuthUser | null> | null = null;
+let silentRenewTimer: number | null = null;
+const SILENT_RENEW_MS = 48 * 60 * 1000;
 
 async function parseJson(text: string) {
   try {
@@ -114,6 +123,15 @@ function errorFrom(data: unknown, status: number) {
   return err;
 }
 
+function isInvalidRefresh(status: number, data: unknown) {
+  if (status === 401) return true;
+  const detail =
+    typeof data === "object" && data && "detail" in data
+      ? String((data as { detail: unknown }).detail).toLowerCase()
+      : "";
+  return status === 400 && (detail.includes("session expired") || detail.includes("invalid") || detail.includes("refresh"));
+}
+
 async function renewSession(): Promise<AuthUser | null> {
   const current = getAuthUser();
   const refresh = current?.refresh_token;
@@ -128,12 +146,13 @@ async function renewSession(): Promise<AuthUser | null> {
         });
         const data = await parseJson(await res.text());
         if (!res.ok) {
-          clearAuth();
+          // Only wipe the session on definitive refresh rejection — not on 5xx/network.
+          if (isInvalidRefresh(res.status, data)) clearAuth();
           return null;
         }
         const next = data as AuthUser;
         if (!next?.access_token) {
-          clearAuth();
+          // Soft failure: keep existing tokens so a later renew can succeed.
           return null;
         }
         const admin = next.role === "admin" || Boolean(next.is_admin);
@@ -148,6 +167,7 @@ async function renewSession(): Promise<AuthUser | null> {
         saveAuth(merged);
         return merged;
       } catch {
+        // Network/fetch blip — keep local session intact.
         return null;
       } finally {
         renewing = null;
@@ -155,6 +175,25 @@ async function renewSession(): Promise<AuthUser | null> {
     })();
   }
   return renewing;
+}
+
+/** Quietly refresh access tokens while a refresh_token is stored. */
+export function startSilentRenew() {
+  if (typeof window === "undefined") return () => {};
+  stopSilentRenew();
+  silentRenewTimer = window.setInterval(() => {
+    if (!getAuthUser()?.refresh_token) return;
+    void renewSession();
+  }, SILENT_RENEW_MS);
+  return stopSilentRenew;
+}
+
+export function stopSilentRenew() {
+  if (typeof window === "undefined") return;
+  if (silentRenewTimer != null) {
+    window.clearInterval(silentRenewTimer);
+    silentRenewTimer = null;
+  }
 }
 
 async function request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
@@ -228,8 +267,9 @@ export async function login(ident: string, password: string) {
     method: "POST",
     body: JSON.stringify({ username: ident, password }),
   });
+  // Email/password sessions must keep refresh_token for return visits.
   saveAuth(data);
-  return data;
+  return getAuthUser() || data;
 }
 
 const GOOGLE_OFF = "Google is not connected in Supabase. Turn on the Google provider, or log in with email.";
@@ -265,11 +305,13 @@ export async function adoptSession(accessToken: string, refreshToken?: string) {
       refresh_token: refreshToken || "",
     }),
   });
+  // Always persist Google/OAuth refresh when the client or server provides it.
   saveAuth({
     ...data,
+    access_token: data.access_token || accessToken,
     refresh_token: data.refresh_token || refreshToken || undefined,
   });
-  return data;
+  return getAuthUser() || data;
 }
 
 export async function setUsername(username: string, fullName?: string) {
@@ -292,9 +334,21 @@ export async function fetchMe() {
   return request<AuthUser>("/auth/me");
 }
 
-export async function refreshAuth(): Promise<AuthUser | null> {
+/**
+ * Keep the browsing session alive when possible.
+ * - If /auth/me works, merge profile and return.
+ * - On 401, try refresh; only return null after definitive auth death (tokens cleared).
+ * - On network/server blips, return the existing local session.
+ */
+export async function ensureFreshAuth(): Promise<AuthUser | null> {
   const current = getAuthUser();
-  if (!current?.access_token) return null;
+  if (!current?.access_token && !current?.refresh_token) return null;
+
+  if (!current.access_token && current.refresh_token) {
+    const renewed = await renewSession();
+    return renewed || getAuthUser();
+  }
+
   try {
     const data = await fetchMe();
     // Re-read after request() may have renewed the session mid-call.
@@ -304,7 +358,7 @@ export async function refreshAuth(): Promise<AuthUser | null> {
       ...latest,
       ...data,
       access_token: latest.access_token,
-      refresh_token: latest.refresh_token,
+      refresh_token: latest.refresh_token || current.refresh_token,
       role: admin ? "admin" : "user",
       is_admin: admin,
     };
@@ -313,11 +367,18 @@ export async function refreshAuth(): Promise<AuthUser | null> {
   } catch (err) {
     const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
     if (status === 401) {
-      return renewSession();
+      // request() already attempted renew; try once more, then keep local if still present.
+      const renewed = await renewSession();
+      if (renewed) return renewed;
+      return getAuthUser();
     }
     // Keep the local session if the network blips; stay signed in.
     return getAuthUser() || current;
   }
+}
+
+export async function refreshAuth(): Promise<AuthUser | null> {
+  return ensureFreshAuth();
 }
 
 export type AdminStats = {
@@ -469,11 +530,11 @@ export function periodLabel(period?: string) {
 }
 
 export const catLabel: Record<string, string> = {
-  chumba_nyumba: "Houses / Rooms",
+  chumba_nyumba: "Rooms & Houses",
   apartment_airbnb: "Apartment & Airbnb",
-  store_godown: "Godown / Store",
-  frame: "Shop frames",
-  vifaa: "Building materials",
+  store_godown: "Shops Store & Godown",
+  frame: "Shop Frames",
+  vifaa: "Building Materials",
 };
 
 export const shopCategories = ["frame"];

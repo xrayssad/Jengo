@@ -7,7 +7,15 @@ import { Clapperboard, Pause, Play, Plus, Volume2, VolumeX } from "lucide-react"
 import PosterName from "@/components/PosterName";
 import ReelActions from "@/components/ReelActions";
 import { fetchReels, getAuthUser, type Reel } from "@/lib/api";
-import { hushAllReels, hushVideo, watchReelVideo } from "@/lib/reelsMedia";
+import {
+  hushAllReels,
+  hushVideo,
+  reelPrefetchSrc,
+  watchReelDataSaver,
+  watchReelVideo,
+} from "@/lib/reelsMedia";
+
+type ReelMode = "play" | "prefetch" | "poster";
 
 function formatReelTime(sec: number) {
   if (!Number.isFinite(sec) || sec < 0) return "0:00";
@@ -192,13 +200,13 @@ function ReelSkeleton() {
 
 function ReelSlide({
   item,
-  active,
+  mode,
   live,
   muted,
   onMutedChange,
 }: {
   item: Reel;
-  active: boolean;
+  mode: ReelMode;
   live: boolean;
   muted: boolean;
   onMutedChange: (next: boolean) => void;
@@ -211,27 +219,92 @@ function ReelSlide({
   const [flash, setFlash] = useState<"play" | "pause" | null>(null);
   const flashTimer = useRef<number>(0);
   const retries = useRef(0);
+  const mountVideo = mode === "play" || mode === "prefetch";
+  const playing = mode === "play";
 
   useEffect(() => {
-    if (!active) setPaused(false);
-  }, [active]);
+    if (!playing) setPaused(false);
+  }, [playing]);
 
   useEffect(() => {
     setReady(false);
     setFailed(false);
     retries.current = 0;
-  }, [item.video_url]);
+  }, [item.video_url, mode]);
+
+  // Keep the element in the watch registry only while a player is mounted.
+  // Do not re-run on play↔prefetch so a warm buffer is not wiped mid-swipe.
+  useEffect(() => {
+    if (!mountVideo) return;
+    const el = video.current;
+    if (!el) return;
+    return watchReelVideo(el);
+  }, [mountVideo, item.id]);
 
   useEffect(() => {
     const el = video.current;
-    if (!el) return;
-    const unwatch = watchReelVideo(el);
+    if (!el || !mountVideo) return;
+
+    let alive = true;
+    el.volume = 1;
+
+    if (mode === "prefetch") {
+      const warm = reelPrefetchSrc(item.video_url);
+      el.muted = true;
+      el.defaultMuted = true;
+      el.preload = "auto";
+      el.loop = false;
+      if (el.getAttribute("src") !== warm) {
+        el.src = warm;
+        el.load();
+      }
+      const stopWarm = () => {
+        if (!alive) return;
+        hushVideo(el);
+        try {
+          el.preload = "none";
+        } catch {
+          /* ignore */
+        }
+      };
+      const onReady = () => {
+        stopWarm();
+        try {
+          if (el.currentTime > 0.05) el.currentTime = 0;
+        } catch {
+          /* ignore */
+        }
+      };
+      el.addEventListener("loadeddata", onReady);
+      el.addEventListener("canplay", onReady);
+      // Nudge some mobile browsers to actually fetch the short start.
+      el.play()
+        .then(() => {
+          if (!alive) return;
+          window.setTimeout(stopWarm, 120);
+        })
+        .catch(() => undefined);
+
+      return () => {
+        alive = false;
+        el.removeEventListener("loadeddata", onReady);
+        el.removeEventListener("canplay", onReady);
+        hushVideo(el);
+      };
+    }
+
+    // Active / play mode
     el.muted = muted;
     el.defaultMuted = muted;
-    el.volume = 1;
-    let alive = true;
+    el.loop = true;
+    el.preload = "auto";
+    const full = String(item.video_url || "").split("#")[0];
+    if (el.getAttribute("src") !== full) {
+      el.src = full;
+      el.load();
+    }
 
-    const shouldPlay = () => alive && live && active && !paused && !document.hidden;
+    const shouldPlay = () => alive && live && playing && !paused && !document.hidden;
 
     const playIfNeeded = () => {
       if (!shouldPlay()) {
@@ -245,7 +318,6 @@ function ReelSlide({
         .catch(() => undefined);
     };
 
-    if (!active || !live) el.currentTime = 0;
     playIfNeeded();
 
     const onHide = () => {
@@ -258,11 +330,10 @@ function ReelSlide({
     return () => {
       alive = false;
       hushVideo(el);
-      unwatch();
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", onHide);
     };
-  }, [active, live, muted, paused]);
+  }, [mode, mountVideo, live, muted, paused, playing, item.video_url]);
 
   useEffect(() => {
     return () => {
@@ -293,7 +364,7 @@ function ReelSlide({
   };
 
   const togglePlayback = () => {
-    if (!active || !live) return;
+    if (!playing || !live) return;
     const next = !paused;
     setPaused(next);
     showFlash(next ? "pause" : "play");
@@ -301,7 +372,7 @@ function ReelSlide({
 
   const retryPlay = () => {
     const el = video.current;
-    if (!el || retries.current >= 4) {
+    if (!el || !playing || retries.current >= 4) {
       setFailed(true);
       return;
     }
@@ -311,6 +382,8 @@ function ReelSlide({
       el.play().catch(() => undefined);
     }, 900 * retries.current);
   };
+
+  const videoVisible = playing && ready && !failed;
 
   return (
     <section
@@ -327,40 +400,68 @@ function ReelSlide({
         togglePlayback();
       }}
     >
-      <video
-        ref={video}
-        src={item.video_url}
-        poster={item.thumb_url || undefined}
-        className="reel-video pointer-events-none"
-        playsInline
-        loop
-        muted={muted}
-        preload={active ? "auto" : "metadata"}
-        controls={false}
-        disablePictureInPicture
-        onLoadedData={() => setReady(true)}
-        onCanPlay={() => setReady(true)}
-        onPlaying={() => setReady(true)}
-        onError={() => retryPlay()}
-      />
-      {!ready && !failed ? <ReelSkeleton /> : null}
-      {failed ? (
-        <div className="reel-skeleton" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center" }}>
+      {item.thumb_url ? (
+        <img
+          src={item.thumb_url}
+          alt=""
+          className="reel-video pointer-events-none"
+          decoding="async"
+          loading={mode === "poster" ? "lazy" : "eager"}
+          draggable={false}
+          style={{ zIndex: 0 }}
+        />
+      ) : (
+        <div className="reel-video pointer-events-none" style={{ zIndex: 0, background: "#110C09" }} aria-hidden />
+      )}
+
+      {mountVideo ? (
+        <video
+          ref={video}
+          className="reel-video pointer-events-none"
+          playsInline
+          loop={playing}
+          muted={playing ? muted : true}
+          preload="auto"
+          controls={false}
+          disablePictureInPicture
+          style={{
+            zIndex: 1,
+            opacity: videoVisible ? 1 : 0,
+            transition: "opacity 280ms ease",
+          }}
+          onLoadedData={() => {
+            if (playing) setReady(true);
+          }}
+          onCanPlay={() => {
+            if (playing) setReady(true);
+          }}
+          onPlaying={() => {
+            if (playing) setReady(true);
+          }}
+          onError={() => {
+            if (playing) retryPlay();
+          }}
+        />
+      ) : null}
+
+      {failed && playing ? (
+        <div className="reel-skeleton" style={{ display: "flex", alignItems: "center", justifyContent: "center", padding: 32, textAlign: "center", zIndex: 6 }}>
           <p className="text-sm font-semibold" style={{ color: "#FFF6ED" }}>This reel could not play on this phone</p>
         </div>
       ) : null}
+
       <div
         className="absolute inset-0 pointer-events-none"
-        style={{ background: "linear-gradient(180deg, rgba(17,12,9,0.22) 0%, transparent 24%, transparent 62%, rgba(17,12,9,0.2) 100%)" }}
+        style={{ zIndex: 2, background: "linear-gradient(180deg, rgba(17,12,9,0.22) 0%, transparent 24%, transparent 62%, rgba(17,12,9,0.2) 100%)" }}
       />
-      {flash ? (
+      {playing && flash ? (
         <div className="reel-flash" aria-hidden>
           <div className="reel-flash-icon">
             {flash === "pause" ? <Pause size={30} color="#FFF6ED" fill="#FFF6ED" /> : <Play size={30} color="#FFF6ED" fill="#FFF6ED" />}
           </div>
         </div>
       ) : null}
-      {paused && !flash ? (
+      {playing && paused && !flash ? (
         <div className="reel-flash" aria-hidden>
           <div className="reel-flash-icon reel-flash-hold">
             <Play size={30} color="#FFF6ED" fill="#FFF6ED" />
@@ -376,7 +477,7 @@ function ReelSlide({
             </p>
           ) : null}
           <p className="text-[11px] mt-2" style={{ color: "rgba(255,246,237,0.72)" }}>
-            {paused ? "Paused · tap to play" : "Tap to pause"}
+            {playing ? (paused ? "Paused · tap to play" : "Tap to pause") : "Swipe to play"}
           </p>
         </div>
         <div className="shrink-0">
@@ -386,13 +487,15 @@ function ReelSlide({
             onClick={toggleSound}
             className="mt-5 mx-auto flex flex-col items-center gap-1"
             aria-label={muted ? "Turn sound on" : "Turn sound off"}
+            disabled={!playing}
+            style={{ opacity: playing ? 1 : 0.55 }}
           >
             {muted ? <VolumeX size={26} color="#FFF6ED" /> : <Volume2 size={26} color="#FFF6ED" />}
             <span className="text-xs font-semibold" style={{ color: "#FFF6ED" }}>{muted ? "Muted" : "Sound"}</span>
           </button>
         </div>
       </div>
-      <ReelSeek video={video} active={active && live} />
+      {playing ? <ReelSeek video={video} active={playing && live} /> : null}
     </section>
   );
 }
@@ -403,13 +506,17 @@ export default function ReelsPage() {
   const [muted, setMuted] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [dataSaver, setDataSaver] = useState(false);
   const scroller = useRef<HTMLDivElement>(null);
   const path = usePathname() || "";
   const live = path === "/reels";
   const signedIn = Boolean(getAuthUser());
 
+  useEffect(() => watchReelDataSaver(setDataSaver), []);
+
   useEffect(() => {
     let stop = false;
+    // Metadata only — video bytes are fetched by the active/prefetch players below.
     fetchReels(40)
       .then((res) => {
         if (!stop) setItems(res.items || []);
@@ -446,6 +553,12 @@ export default function ReelsPage() {
     slides.forEach((el) => io.observe(el));
     return () => io.disconnect();
   }, [items.length]);
+
+  const modeFor = (i: number): ReelMode => {
+    if (i === active) return "play";
+    if (!dataSaver && i === active + 1) return "prefetch";
+    return "poster";
+  };
 
   return (
     <main className="reel-stage">
@@ -494,7 +607,7 @@ export default function ReelsPage() {
         <div ref={scroller} className="reel-scroller">
           {items.map((item, i) => (
             <div key={item.id} data-reel={i} className="h-full">
-              <ReelSlide item={item} active={i === active} live={live} muted={muted} onMutedChange={setMuted} />
+              <ReelSlide item={item} mode={modeFor(i)} live={live} muted={muted} onMutedChange={setMuted} />
             </div>
           ))}
         </div>

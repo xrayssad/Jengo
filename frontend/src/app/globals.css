@@ -118,20 +118,26 @@ h1, h2, h3, .font-heading {
 
 .market-card,
 .soft-card {
-  background: rgba(var(--surface-rgb), 0.78);
+  background: rgba(var(--surface-rgb), 0.86);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  border: 1px solid rgba(var(--caramel-rgb), 0.38);
+  border: 1px solid rgba(var(--caramel-rgb), 0.34);
   border-radius: 28px;
-  box-shadow: 0 18px 40px rgba(var(--veil-rgb), 0.07);
+  box-shadow:
+    0 1px 0 rgba(var(--paper-rgb), 0.45) inset,
+    0 14px 32px rgba(var(--veil-rgb), 0.07),
+    0 4px 10px rgba(var(--mocha-rgb), 0.05);
 }
 
 .estate-card {
   overflow: hidden;
   border-radius: 28px;
   background: var(--surface);
-  border: 1px solid rgba(var(--caramel-rgb), 0.32);
-  box-shadow: 0 16px 36px rgba(var(--veil-rgb), 0.08);
+  border: 1px solid rgba(var(--caramel-rgb), 0.28);
+  box-shadow:
+    0 1px 0 rgba(var(--paper-rgb), 0.4) inset,
+    0 16px 36px rgba(var(--veil-rgb), 0.08),
+    0 4px 12px rgba(var(--mocha-rgb), 0.05);
 }
 
 .photo-dock {
@@ -151,8 +157,12 @@ h1, h2, h3, .font-heading {
   background: rgba(var(--surface-rgb), 0.96);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(var(--caramel-rgb), 0.4);
-  box-shadow: 0 18px 40px rgba(var(--veil-rgb), 0.1);
+  border: 1px solid rgba(var(--caramel-rgb), 0.34);
+  border-radius: 28px;
+  box-shadow:
+    0 1px 0 rgba(var(--paper-rgb), 0.35) inset,
+    0 14px 34px rgba(var(--veil-rgb), 0.08),
+    0 3px 10px rgba(var(--mocha-rgb), 0.04);
 }
 
 .spec-pill {
@@ -178,12 +188,15 @@ h1, h2, h3, .font-heading {
 }
 
 .nav-island {
-  background: rgba(var(--surface-rgb), 0.84);
+  background: rgba(var(--surface-rgb), 0.88);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
-  border: 1.5px solid var(--ink-2);
+  border: 1.5px solid rgba(var(--ink-rgb), 0.78);
   border-radius: 28px;
-  box-shadow: 0 14px 34px rgba(var(--veil-rgb), 0.14);
+  box-shadow:
+    0 1px 0 rgba(var(--paper-rgb), 0.35) inset,
+    0 12px 28px rgba(var(--veil-rgb), 0.12),
+    0 3px 8px rgba(var(--mocha-rgb), 0.06);
 }
 
 .fade-up {
@@ -335,6 +348,38 @@ html.dark select.input-chocolate {
   background: linear-gradient(90deg, var(--stamp) 0%, var(--gold) 40%, var(--stamp) 80%);
   background-size: 200% 100%;
   animation: shimmer 2.5s ease-in-out 1;
+}
+
+@keyframes skel-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.skel-bone {
+  display: block;
+  border-radius: 14px;
+  background: linear-gradient(
+    105deg,
+    var(--blush) 0%,
+    var(--cream) 22%,
+    rgba(var(--caramel-rgb), 0.42) 48%,
+    var(--cream) 72%,
+    var(--blush) 100%
+  );
+  background-size: 220% 100%;
+  animation: skel-shimmer 1.35s ease-in-out infinite;
+}
+
+html.dark .skel-bone {
+  background: linear-gradient(
+    105deg,
+    var(--blush) 0%,
+    var(--cream) 24%,
+    rgba(var(--caramel-rgb), 0.28) 50%,
+    var(--cream) 74%,
+    var(--blush) 100%
+  );
+  background-size: 220% 100%;
 }
 
 .reel-stage {

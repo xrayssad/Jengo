@@ -11,11 +11,11 @@ import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
 import PhotoPicker from "@/components/PhotoPicker";
 
 const categories = [
-  { id: "chumba_nyumba", label: "Houses / Rooms" },
+  { id: "chumba_nyumba", label: "Rooms & Houses" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "store_godown", label: "Godown / Store" },
-  { id: "frame", label: "Shop frames" },
-  { id: "vifaa", label: "Building materials" },
+  { id: "store_godown", label: "Shops Store & Godown" },
+  { id: "frame", label: "Shop Frames" },
+  { id: "vifaa", label: "Building Materials" },
 ];
 
 const units = [

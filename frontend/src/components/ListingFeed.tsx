@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { fetchListings, type Listing } from "@/lib/api";
 import ListingCard from "./ListingCard";
+import { ListingFeedSkeleton } from "./Skeletons";
 
 function asList(category: string | string[]) {
   const raw = Array.isArray(category) ? category : [category];
@@ -83,7 +84,7 @@ export default function ListingFeed({
         </div>
       </header>
       <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-        {loading && <div className="flex justify-center py-16"><Loader2 size={28} color="var(--mocha)" className="animate-spin" /></div>}
+        {loading && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
             <p className="font-heading" style={{ color: "var(--ink)" }}>No listings yet</p>

@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect } from "react";
 import { usePathname } from "next/navigation";
-import { getAuthUser } from "@/lib/api";
+import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";
 import MqttInbox from "./MqttInbox";
@@ -39,6 +39,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     if (getAuthUser()?.needs_username) {
       window.location.replace("/username");
     }
+  }, [path]);
+
+  useEffect(() => {
+    if (!hasUsableSession()) return;
+    return startSilentRenew();
   }, [path]);
 
   useEffect(() => {

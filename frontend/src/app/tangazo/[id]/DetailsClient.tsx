@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Loader2, Phone } from "lucide-react";
+import { ArrowLeft, MapPin, Phone } from "lucide-react";
 import { fetchListing, formatPrice, periodLabel, catLabel, listingUnit, unitLabel, listingPhones, phoneTelHref, phoneWaHref, type Listing } from "@/lib/api";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
 import PosterName from "@/components/PosterName";
+import { DetailSkeleton } from "@/components/Skeletons";
 
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
@@ -50,7 +51,7 @@ export default function DetailsClient({ id }: { id: string }) {
 
   return (
     <main className="min-h-screen pb-28" style={{ backgroundColor: "var(--paper)" }}>
-      {loading && <div className="flex justify-center py-24"><Loader2 size={28} color="var(--mocha)" className="animate-spin" /></div>}
+      {loading && <DetailSkeleton />}
       {!loading && error && (
         <div className="text-center py-16 px-5">
           <p className="font-heading mb-2" style={{ color: "var(--error)" }}>{error}</p>

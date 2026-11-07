@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Send } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
+import { ChatThreadSkeleton } from "@/components/Skeletons";
 import { fetchListingDm, sendListingDm, type ChatMessage } from "@/lib/api";
 
 export default function ChatClient({ id, title, peer }: { id: string; title: string; peer?: string }) {
@@ -12,22 +13,26 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
   const [heading, setHeading] = useState(title);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  const load = () => {
+  const load = (opts?: { quiet?: boolean }) => {
+    if (!opts?.quiet) setLoading(true);
     fetchListingDm(id, peer)
       .then((res) => {
         setItems(res.items || []);
         if (res.title) setHeading(res.title);
+        setError("");
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"));
+      .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"))
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
     load();
-    const onPing = () => load();
+    const onPing = () => load({ quiet: true });
     window.addEventListener("jengo-chat", onPing);
     const t = window.setInterval(() => {
-      if (!window.__jengoMqtt) load();
+      if (!window.__jengoMqtt) load({ quiet: true });
     }, 12000);
     return () => {
       window.removeEventListener("jengo-chat", onPing);
@@ -61,22 +66,26 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
             <p className="text-xs" style={{ color: "var(--mocha)" }}>Direct message</p>
           </div>
         </header>
-        <div className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-2">
-          {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
-          {items.length === 0 && !error && (
-            <p className="text-sm text-center py-10" style={{ color: "var(--muted)" }}>Write a direct message to the listing owner.</p>
-          )}
-          {items.map((m) => (
-            <div key={m.id} className="flex" style={{ justifyContent: m.mine ? "flex-end" : "flex-start" }}>
-              <div
-                className="max-w-[80%] px-3.5 py-2.5 rounded-[18px] text-sm"
-                style={{ backgroundColor: m.mine ? "var(--ink)" : "rgba(var(--paper-rgb),0.86)", color: m.mine ? "var(--paper)" : "var(--ink)", border: m.mine ? "none" : "1px solid rgba(var(--caramel-rgb),0.4)" }}
-              >
-                {m.body}
+        {loading ? (
+          <ChatThreadSkeleton />
+        ) : (
+          <div className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-2">
+            {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
+            {items.length === 0 && !error && (
+              <p className="text-sm text-center py-10" style={{ color: "var(--muted)" }}>Write a direct message to the listing owner.</p>
+            )}
+            {items.map((m) => (
+              <div key={m.id} className="flex" style={{ justifyContent: m.mine ? "flex-end" : "flex-start" }}>
+                <div
+                  className="max-w-[80%] px-3.5 py-2.5 rounded-[18px] text-sm"
+                  style={{ backgroundColor: m.mine ? "var(--ink)" : "rgba(var(--paper-rgb),0.86)", color: m.mine ? "var(--paper)" : "var(--ink)", border: m.mine ? "none" : "1px solid rgba(var(--caramel-rgb),0.4)" }}
+                >
+                  {m.body}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
         <form onSubmit={submit} className="sticky bottom-0 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
           <div className="nav-island max-w-md w-full mx-auto px-3 py-2 flex gap-2">
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "var(--ink)" }} />

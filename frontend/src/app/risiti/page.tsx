@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { createReview, fetchBookings, fetchListing, formatPrice, periodLabel, setBookingStatus } from "@/lib/api";
+import { PaymentListSkeleton } from "@/components/Skeletons";
 
 type Row = {
   id: string;
@@ -97,7 +98,7 @@ export default function RisitiPage() {
         </div>
       </header>
       <div className="max-w-md mx-auto px-4 pt-5 space-y-4">
-        {loading && <p className="text-center py-10" style={{ color: "var(--muted)" }}>Loading...</p>}
+        {loading && <PaymentListSkeleton />}
         {error && <p className="text-sm text-center py-2 font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
         {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "var(--ink)" }}>No receipts. Accept a request first.</p>}
         {rows.map((r) => (

@@ -8,10 +8,10 @@ import { afterAuthPath, login as apiLogin, resendOtp, startGoogle } from "@/lib/
 import SignedInHome from "@/components/SignedInHome";
 
 const slides = [
-  { image: "/real/room.jpg", title: "Houses / Rooms" },
-  { image: "/real/warehouse.jpg", title: "Godown / Store" },
+  { image: "/real/room.jpg", title: "Rooms & Houses" },
+  { image: "/real/warehouse.jpg", title: "Shops Store & Godown" },
   { image: "/real/apartment.jpg", title: "Apartment & Airbnb" },
-  { image: "/real/shop.jpg", title: "Shop frames" },
+  { image: "/real/shop.jpg", title: "Shop Frames" },
 ];
 
 export default function LoginPage() {
