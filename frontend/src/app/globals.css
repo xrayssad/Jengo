@@ -26,6 +26,7 @@
   --caramel-rgb: 210, 166, 121;
   --gold: #C4A35A;
   --gold-rgb: 196, 163, 90;
+  --post-edge: #6B4423;
   --error: #A6452E;
   --success: #5E7F4F;
   --cream: #F5E6D3;
@@ -67,6 +68,7 @@ html.dark {
   --caramel-rgb: 184, 137, 92;
   --gold: #D4B56A;
   --gold-rgb: 212, 181, 106;
+  --post-edge: #C4A15A;
   --error: #E07A5F;
   --success: #8FBA7A;
   --cream: #241810;
@@ -203,6 +205,7 @@ h1, h2, h3 {
 .soft-card {
   background: var(--surface);
   border-radius: var(--radius-card);
+  border: 1px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
 }
 
@@ -210,6 +213,7 @@ h1, h2, h3 {
   overflow: hidden;
   border-radius: var(--radius-feature);
   background: var(--surface);
+  border: 1px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
 }
 
@@ -247,6 +251,7 @@ h1, h2, h3 {
   overflow: hidden;
   background: var(--surface);
   border-radius: var(--radius-card);
+  border: 1px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
   transition: transform var(--dur-micro) var(--ease-out), box-shadow var(--dur-std) var(--ease-out);
 }
@@ -721,6 +726,7 @@ a.sheet:active {
   overflow: hidden;
   height: 220px;
   border-radius: var(--radius-feature);
+  border: 1px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
 }
 
