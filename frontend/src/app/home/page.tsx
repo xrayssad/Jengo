@@ -154,7 +154,7 @@ export default function HomePage() {
         </nav>
       </aside>
 
-      <div className="canvas px-5 pt-5 pb-2">
+      <div className="canvas px-4 pt-6 pb-2">
         <h2 className="page-title mb-4">Near you</h2>
 
         <form
@@ -197,7 +197,7 @@ export default function HomePage() {
           )}
         </form>
 
-        <div className="cat-rail no-scrollbar mb-8">
+        <div className="cat-rail no-scrollbar mb-6">
           {chips.map((c) => {
             const Icon = c.icon;
             return (
@@ -211,7 +211,7 @@ export default function HomePage() {
           })}
         </div>
 
-        <Link href="/kazi" className="feature-card mb-8">
+        <Link href="/kazi" className="feature-card mb-6">
           <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="(min-width: 1100px) 1120px, 100vw" />
           <div className="feature-shade" />
           <div className="feature-glass">
@@ -220,7 +220,7 @@ export default function HomePage() {
           </div>
         </Link>
 
-        <div className="flex items-end justify-between mb-4">
+        <div className="flex items-end justify-between mb-3">
           <h3 className="section-title">Listings</h3>
           <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Discover</Link>
         </div>

@@ -42,12 +42,9 @@ export default function BottomNav() {
   };
 
   return (
-    <nav
-      className="fixed bottom-0 left-0 right-0 z-40 px-4"
-      style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
-    >
+    <nav className="bottom-nav">
       <div
-        className="nav-island mx-auto h-[68px] px-2"
+        className="nav-island mx-auto px-2"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
