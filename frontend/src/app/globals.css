@@ -12,10 +12,10 @@
 
 :root {
   color-scheme: light;
-  --paper: #F6F1EA;
-  --paper-rgb: 246, 241, 234;
-  --surface: #FFFcf8;
-  --surface-rgb: 255, 252, 248;
+  --paper: #E3EEDF;
+  --paper-rgb: 227, 238, 223;
+  --surface: #F7FBF4;
+  --surface-rgb: 247, 251, 244;
   --ink: #1A3A2A;
   --ink-rgb: 26, 58, 42;
   --ink-2: #2C3D32;
@@ -26,11 +26,11 @@
   --caramel-rgb: 232, 213, 196;
   --gold: #D4C4B0;
   --gold-rgb: 212, 196, 176;
-  --post-edge: #CDBEAE;
+  --post-edge: #2C6B45;
   --error: #8C3D32;
   --success: #3E6B4F;
-  --cream: #EFE6DA;
-  --blush: #E8D5C4;
+  --cream: #D4E5D2;
+  --blush: #C5D9C3;
   --foam: #F6F1EA;
   --stamp: #1A3A2A;
   --veil-rgb: 26, 58, 42;
@@ -66,7 +66,7 @@ html.dark {
   --caramel-rgb: 138, 123, 104;
   --gold: #D4C4B0;
   --gold-rgb: 212, 196, 176;
-  --post-edge: #3E4A42;
+  --post-edge: #8FB89A;
   --error: #E07A5F;
   --success: #8FBA7A;
   --cream: #24302A;
@@ -96,6 +96,11 @@ body {
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  background-image: radial-gradient(900px 480px at 50% -120px, rgba(44, 107, 69, 0.22), transparent 68%);
+}
+
+html.dark body {
+  background-image: radial-gradient(900px 480px at 50% -120px, rgba(143, 184, 154, 0.14), transparent 68%);
 }
 
 :focus-visible {
@@ -213,8 +218,13 @@ h1, h2, h3 {
   overflow: hidden;
   border-radius: var(--radius-feature);
   background: var(--surface);
-  border: 1px solid var(--post-edge);
+  border: 1.5px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
+}
+
+.estate-card-media,
+.post-frame {
+  box-shadow: inset 0 0 0 2px var(--post-edge);
 }
 
 .estate-card-media,
@@ -228,10 +238,15 @@ h1, h2, h3 {
   background: var(--cream);
 }
 
-.post-scrim {
+.post-scrim,
+.market-tile-media::after,
+.estate-card-media::after {
+  content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(26, 58, 42, 0.66), transparent 58%);
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(var(--veil-rgb), 0.72), rgba(var(--veil-rgb), 0.05) 62%);
 }
 
 .post-caption {
@@ -255,9 +270,9 @@ h1, h2, h3 {
 .market-tile {
   min-width: 0;
   overflow: hidden;
-  background: transparent;
+  background: var(--surface);
   border-radius: 0;
-  border: 0;
+  border: 1.5px solid var(--post-edge);
   box-shadow: none;
   transition: transform var(--dur-micro) var(--ease-out);
 }
@@ -277,6 +292,7 @@ h1, h2, h3 {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   background: var(--cream);
+  box-shadow: inset 0 0 0 2px var(--post-edge);
 }
 
 .market-tile-media img {
@@ -444,6 +460,7 @@ h1, h2, h3 {
 .sheet {
   background: var(--surface);
   border-radius: var(--radius-feature);
+  border: 1.5px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
   transition: transform var(--dur-micro) var(--ease-out);
 }
@@ -458,7 +475,7 @@ a.sheet:active {
   border-radius: 0;
   text-align: center;
   background: var(--surface);
-  border: 1px solid rgba(var(--caramel-rgb), 0.28);
+  border: 1.5px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
 }
 
@@ -473,7 +490,7 @@ a.sheet:active {
   border-radius: 0;
   text-align: center;
   background: var(--surface);
-  border: 1px solid rgba(var(--caramel-rgb), 0.22);
+  border: 1.5px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
 }
 
@@ -616,7 +633,7 @@ a.sheet:active {
   padding: 0 18px;
   background: var(--surface);
   border-radius: var(--radius-control);
-  border: 1.5px solid transparent;
+  border: 1.5px solid var(--post-edge);
   box-shadow: var(--shadow-quiet);
   transition: border-color var(--dur-micro) var(--ease-out), box-shadow var(--dur-std) var(--ease-out);
 }
@@ -731,8 +748,8 @@ a.sheet:active {
   height: min(70vw, 320px);
   min-height: 240px;
   border-radius: 0;
-  border: 0;
-  box-shadow: none;
+  border: 2px solid var(--post-edge);
+  box-shadow: 0 0 0 4px rgba(44, 107, 69, 0.14);
 }
 
 .feature-shade {
