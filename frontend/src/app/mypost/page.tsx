@@ -45,7 +45,7 @@ function stamp(value?: string) {
 function ReelPost({ item }: { item: Reel }) {
   return (
     <Link href="/reels" className="estate-card block overflow-hidden">
-      <div className="relative" style={{ height: 220, backgroundColor: "var(--ink-2)" }}>
+      <div className="post-frame" style={{ backgroundColor: "var(--ink-2)" }}>
         {item.thumb_url ? (
           <img src={item.thumb_url} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -53,10 +53,10 @@ function ReelPost({ item }: { item: Reel }) {
             <Clapperboard size={28} color="var(--gold)" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.72), transparent 55%)" }} />
-        <div className="absolute left-3 right-3 bottom-3">
+        <div className="post-scrim" />
+        <div className="absolute left-4 right-4 bottom-4">
           <PosterName item={item} tone="photo" />
-          <p className="text-sm mt-1 truncate" style={{ color: "#FFF6ED" }}>{item.caption || "Reel"}</p>
+          <p className="text-sm mt-1 truncate post-caption">{item.caption || "Reel"}</p>
         </div>
       </div>
     </Link>
@@ -68,7 +68,7 @@ function JobPost({ item }: { item: Job }) {
   const photo = (item.images || []).find(Boolean);
   return (
     <Link href={`/kazi/${item.id}`} className="estate-card block overflow-hidden">
-      <div className="relative" style={{ height: 180, backgroundColor: "var(--ink-2)" }}>
+      <div className="post-frame" style={{ backgroundColor: "var(--ink-2)" }}>
         {photo ? (
           <img src={photo} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -76,11 +76,11 @@ function JobPost({ item }: { item: Job }) {
             <Hammer size={28} color="var(--mocha)" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.55), transparent 50%)" }} />
-        <div className="absolute left-3 right-3 bottom-3">
+        <div className="post-scrim" />
+        <div className="absolute left-4 right-4 bottom-4">
           <p className="text-[11px]" style={{ color: "var(--gold)" }}>Construction Jobs</p>
-          <p className="text-lg font-bold leading-snug" style={{ color: "#FFF6ED" }}>{item.title}</p>
-          {place ? <p className="text-xs mt-0.5" style={{ color: "rgba(255,246,237,0.8)" }}>{place}</p> : null}
+          <p className="font-heading text-[26px] leading-none post-caption">{item.title}</p>
+          {place ? <p className="text-xs mt-1 post-caption" style={{ opacity: 0.86 }}>{place}</p> : null}
         </div>
       </div>
       <div className="px-4 py-3 flex items-center justify-between">

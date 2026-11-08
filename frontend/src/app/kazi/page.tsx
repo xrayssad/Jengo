@@ -12,7 +12,7 @@ function JobRow({ item }: { item: Job }) {
   const photo = (item.images || []).find(Boolean);
   return (
     <Link href={`/kazi/${item.id}`} className="estate-card block overflow-hidden">
-      <div className="relative" style={{ height: 168, backgroundColor: "var(--ink-2)" }}>
+      <div className="post-frame" style={{ backgroundColor: "var(--ink-2)" }}>
         {photo ? (
           <img src={photo} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -20,11 +20,11 @@ function JobRow({ item }: { item: Job }) {
             <Hammer size={28} color="var(--mocha)" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.5), transparent 55%)" }} />
-        <div className="absolute left-3 right-3 bottom-3">
-          <p className="font-heading text-xl leading-snug" style={{ color: "#FFF6ED" }}>{item.title}</p>
+        <div className="post-scrim" />
+        <div className="absolute left-4 right-4 bottom-4">
+          <p className="font-heading text-[28px] leading-none post-caption">{item.title}</p>
           {place ? (
-            <p className="flex items-center gap-1 mt-1 text-xs" style={{ color: "rgba(255,246,237,0.82)" }}>
+            <p className="flex items-center gap-1 mt-2 text-xs post-caption" style={{ opacity: 0.86 }}>
               <MapPin size={12} />
               {place}
             </p>
@@ -93,8 +93,8 @@ export default function Page() {
 
       <div className="canvas-read px-5 pt-6 space-y-5">
         <div className="estate-card">
-          <div className="relative" style={{ height: 168 }}>
-            <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
+          <div className="estate-card-media">
+            <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="720px" />
           </div>
           <div className="px-4 py-3.5">
             <p className="text-[18px] font-bold leading-snug" style={{ color: "var(--ink)" }}>Small home jobs</p>

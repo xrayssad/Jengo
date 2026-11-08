@@ -30,7 +30,7 @@ function groupSaved(items: SavedPost[]): SavedBlock[] {
 function ReelFavorite({ item }: { item: SavedPost }) {
   return (
     <Link href="/reels" className="estate-card block overflow-hidden">
-      <div className="relative" style={{ height: 220, backgroundColor: "var(--ink-2)" }}>
+      <div className="post-frame" style={{ backgroundColor: "var(--ink-2)" }}>
         {item.thumb_url || item.images?.[0] ? (
           <img src={item.thumb_url || item.images?.[0]} alt="" className="w-full h-full object-cover" />
         ) : (
@@ -38,10 +38,10 @@ function ReelFavorite({ item }: { item: SavedPost }) {
             <Clapperboard size={28} color="var(--gold)" />
           </div>
         )}
-        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(17,12,9,0.72), transparent 55%)" }} />
-        <div className="absolute left-3 right-3 bottom-3">
+        <div className="post-scrim" />
+        <div className="absolute left-4 right-4 bottom-4">
           <PosterName item={item} tone="photo" />
-          <p className="text-sm mt-1 truncate font-semibold" style={{ color: "#FFF6ED" }}>{item.title}</p>
+          <p className="text-sm mt-1 truncate font-semibold post-caption">{item.title}</p>
         </div>
       </div>
     </Link>

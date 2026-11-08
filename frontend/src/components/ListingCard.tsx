@@ -16,11 +16,11 @@ const periodShort: Record<string, string> = {
 };
 
 const wash: Record<string, string> = {
-  chumba_nyumba: "linear-gradient(165deg, #F6E7D8, #E4C7A8)",
-  apartment_airbnb: "linear-gradient(165deg, #F8EBDD, #D2A679)",
-  store_godown: "linear-gradient(165deg, #EFE0CE, #C4A35A)",
-  frame: "linear-gradient(165deg, #F7E8D6, #C9A07A)",
-  vifaa: "linear-gradient(165deg, #EAD6C4, #8B5E3C)",
+  chumba_nyumba: "linear-gradient(165deg, #F6F1EA, #E8D5C4)",
+  apartment_airbnb: "linear-gradient(165deg, #EFE6DA, #D4C4B0)",
+  store_godown: "linear-gradient(165deg, #E7EFE8, #C9D5CC)",
+  frame: "linear-gradient(165deg, #F3EBE1, #DCCFBE)",
+  vifaa: "linear-gradient(165deg, #E4EBE6, #B7C4BA)",
 };
 
 function placeLine(item: Listing) {
@@ -85,11 +85,11 @@ export default function ListingCard({
       </div>
 
       <Link href={`/tangazo/${item.id}`} className="market-body">
+        <p className="market-title">{item.title}</p>
         <p className="market-price">
           <span>TZS {formatPrice(item.price)}</span>
           {rate ? <span className="market-rate">{rate}</span> : null}
         </p>
-        <p className="market-title">{item.title}</p>
         <p className="market-place">
           <MapPin size={12} color="var(--mocha)" aria-hidden />
           <span>{place || type}</span>
