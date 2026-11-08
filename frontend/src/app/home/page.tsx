@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
+  Home, Warehouse, Building2, Store, Boxes,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import ListingCard from "@/components/ListingCard";
@@ -17,12 +18,12 @@ import { clearAuth, fetchListings, suggestPlaces, writeHomeListingsCache, type P
 import { useListings } from "@/lib/useListings";
 
 const chips = [
-  { href: "/nyumba", label: "Rooms & Houses" },
-  { href: "/kazi", label: "Construction Jobs" },
-  { href: "/godown", label: "Shops Store & Godown" },
-  { href: "/airbnb", label: "Apartment & Airbnb" },
-  { href: "/maduka", label: "Shop Frames" },
-  { href: "/vifaa", label: "Building Materials" },
+  { href: "/nyumba", label: "Rooms & Houses", icon: Home },
+  { href: "/kazi", label: "Construction Jobs", icon: Hammer },
+  { href: "/godown", label: "Shops & Godown", icon: Warehouse },
+  { href: "/airbnb", label: "Apartment & Airbnb", icon: Building2 },
+  { href: "/maduka", label: "Shop Frames", icon: Store },
+  { href: "/vifaa", label: "Materials", icon: Boxes },
 ];
 
 const sideLinks = [
@@ -104,14 +105,13 @@ export default function HomePage() {
 
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-30 px-5 py-3" style={{ backgroundColor: "rgba(var(--paper-rgb),0.92)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}>
-        <div className="w-full max-w-md mx-auto flex items-center justify-between">
+      <header className="topbar">
+        <div className="canvas flex items-center justify-between gap-3 px-5">
           <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn" aria-label="Menu">
-            <Menu size={16} color="var(--ink)" />
+            <Menu size={18} color="var(--ink)" />
           </button>
-          <div className="text-center">
-            <p className="text-[11px] font-semibold tracking-wide" style={{ color: "var(--mocha)" }}>Jengo</p>
-            <h1 className="text-[22px] font-bold leading-none" style={{ color: "var(--ink)" }}>Home</h1>
+          <div className="text-center min-w-0">
+            <h1 className="font-heading text-[30px] leading-none" style={{ color: "var(--ink)" }}>Jengo</h1>
             <AdminLink />
           </div>
           <InboxLink className="soft-icon-btn" />
@@ -154,11 +154,8 @@ export default function HomePage() {
         </nav>
       </aside>
 
-      <div className="max-w-md mx-auto px-5 pt-4 pb-2">
-        <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Browse</p>
-        <h2 className="text-[34px] font-bold leading-[1.05] mt-0.5 mb-4 tracking-tight" style={{ color: "var(--ink)" }}>
-          Near you
-        </h2>
+      <div className="canvas px-5 pt-5 pb-2">
+        <h2 className="page-title mb-4">Near you</h2>
 
         <form
           ref={searchBox}
@@ -167,19 +164,20 @@ export default function HomePage() {
             e.preventDefault();
             goSearch(placeQ);
           }}
-          className="relative mb-4"
+          className="relative mb-6"
         >
-          <div className="flex items-center gap-3 px-4 py-3.5 sheet rounded-full">
-            <Search size={16} color="var(--mocha)" />
+          <div className="search-field">
+            <Search size={18} color="var(--mocha)" />
             <input
               name="q"
               value={placeQ}
               onChange={(e) => setPlaceQ(e.target.value)}
               onFocus={() => hits.length && setOpenHits(true)}
-              placeholder="Search city or street"
-              className="flex-1 bg-transparent outline-none text-sm min-w-0"
+              placeholder="City or street"
+              className="flex-1 bg-transparent outline-none text-[15px] min-w-0"
               style={{ color: "var(--ink)" }}
               autoComplete="off"
+              aria-label="Search by city or street"
             />
           </div>
           {openHits && hits.length > 0 && (
@@ -199,41 +197,38 @@ export default function HomePage() {
           )}
         </form>
 
-        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 mb-5">
-          {chips.map((c, i) => (
-            <Link
-              key={c.href}
-              href={c.href}
-              className="px-4 py-2 text-[13px] font-medium shrink-0 rounded-full"
-              style={
-                i === 0
-                  ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
-                  : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
-              }
-            >
-              {c.label}
-            </Link>
-          ))}
+        <div className="cat-rail no-scrollbar mb-8">
+          {chips.map((c) => {
+            const Icon = c.icon;
+            return (
+              <Link key={c.href} href={c.href} className="cat-tile">
+                <span className="cat-tile-icon">
+                  <Icon size={22} strokeWidth={1.75} />
+                </span>
+                <span className="cat-tile-label">{c.label}</span>
+              </Link>
+            );
+          })}
         </div>
 
-        <Link href="/kazi" className="estate-card relative overflow-hidden mb-4 block" style={{ height: 168 }}>
-          <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.62), rgba(var(--veil-rgb),0.05))" }} />
-          <div className="absolute left-4 right-4 bottom-4">
-            <h3 className="text-lg font-bold leading-snug" style={{ color: "#FFF6ED" }}>Construction Jobs</h3>
-            <p className="text-xs mt-1" style={{ color: "rgba(255,246,237,0.78)" }}>Paint, tiles, ceiling, plumbing, electrical.</p>
+        <Link href="/kazi" className="feature-card mb-8">
+          <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="(min-width: 1100px) 1120px, 100vw" />
+          <div className="feature-shade" />
+          <div className="feature-glass">
+            <h3>Construction Jobs</h3>
+            <p>Paint, tiles, ceiling, plumbing, electrical.</p>
           </div>
         </Link>
 
-        <div className="flex items-end justify-between mb-3 mt-2">
-          <h3 className="text-[20px] font-bold" style={{ color: "var(--ink)" }}>Listings</h3>
+        <div className="flex items-end justify-between mb-4">
+          <h3 className="section-title">Listings</h3>
           <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Discover</Link>
         </div>
         {waiting && items.length === 0 && <HomeFeedSkeleton />}
         {items.length > 0 && (
           <div className="listing-grid">
             {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 2} />
+              <ListingCard key={item.id} item={item} eager={i < 4} delay={Math.min(i, 5) * 45} />
             ))}
           </div>
         )}

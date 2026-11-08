@@ -19,12 +19,14 @@ export default function SaveButton({
   variant?: "bookmark" | "heart";
 }) {
   const [on, setOn] = useState(false);
+  const [pulse, setPulse] = useState(0);
   useEffect(() => setOn(isSaved(item.id)), [item.id]);
 
   const press = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     setOn(toggleSaved(item));
+    setPulse((n) => n + 1);
   };
 
   const Icon = variant === "heart" ? Heart : Bookmark;
@@ -43,7 +45,9 @@ export default function SaveButton({
       className={className || "flex items-center gap-1"}
       style={style}
     >
-      <Icon size={size} color={stroke} fill={fill} strokeWidth={1.8} />
+      <span className={pulse > 0 ? "heart-pop" : undefined} key={pulse}>
+        <Icon size={size} color={stroke} fill={fill} strokeWidth={1.8} />
+      </span>
     </button>
   );
 }

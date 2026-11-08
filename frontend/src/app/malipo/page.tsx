@@ -43,24 +43,20 @@ export default function MalipoPage() {
 
   return (
     <main className="min-h-screen pb-24" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <div className="max-w-md mx-auto flex items-center gap-3">
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
-          <div>
-            <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Wallet</p>
-            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Payments</h1>
-            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Your requests and prices. Money is not taken here yet.</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Payments</h1>
+            <p className="page-note">Your requests and prices. Money is not taken here yet.</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-5 pt-5 space-y-3">
-        <div className="p-5 rounded-[28px]" style={{ backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-float)" }}>
+      <div className="canvas-read px-5 pt-6 space-y-3">
+        <div className="p-5 rounded-[24px]" style={{ backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-float)" }}>
           <p className="text-sm" style={{ color: "var(--caramel)" }}>Request total</p>
           <p className="text-3xl font-bold mt-1">TZS {formatPrice(total)}</p>
           <p className="text-xs mt-2" style={{ color: "var(--cream)" }}>Status: unpaid. Pay when you meet the owner.</p>

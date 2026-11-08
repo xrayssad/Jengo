@@ -10,7 +10,7 @@ export default function DisplayName() {
   }, []);
 
   return (
-    <div className="max-w-md mx-auto px-4 pt-4">
+    <div className="canvas-read px-5 pt-4">
       <div className="p-4 sheet rounded-[24px]">
         <p className="text-sm" style={{ color: "var(--mocha)" }}>Your name</p>
         <p className="font-heading text-xl mt-1" style={{ color: "var(--ink)" }}>{name || "No name yet"}</p>

@@ -132,7 +132,7 @@ export default function DetailsClient({ id }: { id: string }) {
             </div>
           </div>
 
-          <div className="max-w-md mx-auto px-5 pt-5">
+          <div className="canvas-read px-5 pt-6">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[28px] font-bold leading-none tracking-tight" style={{ color: "var(--ink)" }}>
@@ -201,10 +201,13 @@ export default function DetailsClient({ id }: { id: string }) {
           </div>
 
           <div
-            className="fixed bottom-0 left-0 right-0 z-30 px-4"
-            style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+            className="fixed bottom-0 left-0 right-0 z-30 px-5 pt-3"
+            style={{
+              paddingBottom: "max(14px, env(safe-area-inset-bottom))",
+              background: "linear-gradient(to top, rgba(var(--paper-rgb), 0.96) 62%, rgba(var(--paper-rgb), 0))",
+            }}
           >
-            <div className="max-w-md mx-auto flex gap-2.5">
+            <div className="canvas-read flex gap-2.5">
               <Link
                 href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
                 className="detail-cta flex-1"

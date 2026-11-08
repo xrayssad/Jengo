@@ -137,17 +137,17 @@ function AdminDesk() {
 
   return (
     <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--paper)", color: "var(--ink)" }}>
-      <header className="sticky top-0 z-20 glass" style={{ borderBottom: "1px solid rgba(var(--ink-rgb),0.1)" }}>
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-end justify-between gap-4">
-          <div>
-            <p className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Desk</p>
-            <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>Users, listings, requests</p>
+      <header className="topbar">
+        <div className="max-w-5xl mx-auto px-5 flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="page-title">Desk</h1>
+            <p className="page-note">Users, listings, requests</p>
           </div>
           <Link href="/home" className="text-sm font-semibold pb-0.5" style={{ color: "var(--mocha)" }}>
             Back to market
           </Link>
         </div>
-        <div className="max-w-5xl mx-auto px-4 flex gap-1 overflow-x-auto no-scrollbar">
+        <div className="max-w-5xl mx-auto px-5 mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {TABS.map((item) => {
             const on = tab === item.id;
             return (
@@ -155,11 +155,8 @@ function AdminDesk() {
                 key={item.id}
                 type="button"
                 onClick={() => setTab(item.id)}
-                className="px-3 py-2.5 text-sm font-semibold"
-                style={{
-                  color: on ? "var(--ink)" : "var(--muted)",
-                  borderBottom: on ? "2px solid var(--ink)" : "2px solid transparent",
-                }}
+                className={on ? "filter-chip is-on" : "filter-chip"}
+                aria-pressed={on}
               >
                 {item.label}
               </button>

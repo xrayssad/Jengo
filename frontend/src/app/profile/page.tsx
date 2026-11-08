@@ -36,25 +36,19 @@ export default function ProfilePage() {
   return (
     <AuthGate>
     <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <div className="max-w-md mx-auto flex items-center gap-3">
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
           </Link>
-          <div>
-            <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Account</p>
-            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Profile</h1>
-          </div>
+          <h1 className="page-title">Profile</h1>
         </div>
       </header>
 
       {!ready ? (
         <ProfileSkeleton />
       ) : (
-      <div className="max-w-md mx-auto px-5 py-5 space-y-5">
+      <div className="canvas-read px-5 py-6 space-y-5">
         <div className="estate-card relative overflow-hidden" style={{ height: 168 }}>
           <Image src="/real/apartment.jpg" alt="" fill className="object-cover" />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.12))" }} />

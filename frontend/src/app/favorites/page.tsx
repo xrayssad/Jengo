@@ -68,28 +68,24 @@ export default function FavoritesPage() {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <div className="max-w-md mx-auto flex items-center gap-3">
+      <header className="topbar">
+        <div className="canvas flex items-center gap-3 px-5">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
-          <div>
-            <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Saved</p>
-            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Favorites</h1>
-            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Saved listings and reels</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Favorites</h1>
+            <p className="page-note">Saved listings and reels</p>
           </div>
         </div>
       </header>
-      <div className="max-w-md mx-auto px-4 pt-5 space-y-5">
+      <div className="canvas px-4 pt-6 space-y-5">
         {!ready && <ListingFeedSkeleton count={4} />}
         {ready && items.length === 0 && (
-          <div className="text-center py-16">
+          <div className="empty-panel">
             <Bookmark size={28} color="var(--caramel)" className="mx-auto mb-3" />
-            <p className="text-2xl font-bold" style={{ color: "var(--ink)" }}>No favorites yet</p>
-            <p className="text-sm mt-2 px-4" style={{ color: "var(--muted)" }}>Tap the bookmark on a listing or reel to see it here.</p>
+            <p className="lead">No favorites yet</p>
+            <p className="hint">Tap the heart on a listing, or save a reel, to see it here.</p>
           </div>
         )}
         {ready && groupSaved(items).map((block) =>

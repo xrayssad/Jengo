@@ -14,10 +14,7 @@ export default function LandingPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
       <SignedInHome />
-      <header
-        className="sticky top-0 z-20 px-5 py-4"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
+      <header className="topbar px-5">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
           <p className="text-[22px] font-bold leading-none tracking-tight" style={{ color: "var(--ink)" }}>
             Jengo

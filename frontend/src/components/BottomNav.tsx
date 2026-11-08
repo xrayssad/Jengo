@@ -21,9 +21,14 @@ export default function BottomNav() {
     const Icon = item.icon;
     const active = item.href === "/reels" ? path.startsWith("/reels") : path === item.href;
     return (
-      <Link key={item.href} href={item.href} className="flex flex-col items-center justify-center gap-0.5 h-full min-w-0">
-        <span className="relative">
-          <Icon size={20} color={active ? "var(--ink)" : "var(--mocha)"} strokeWidth={active ? 2.2 : 1.7} />
+      <Link
+        key={item.href}
+        href={item.href}
+        className={active ? "nav-item is-active" : "nav-item"}
+        aria-current={active ? "page" : undefined}
+      >
+        <span className="relative inline-flex">
+          <Icon size={20} color="currentColor" strokeWidth={active ? 2.2 : 1.75} />
           {item.href === "/messages" && chatUnread && (
             <span
               className="absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full"
@@ -31,23 +36,23 @@ export default function BottomNav() {
             />
           )}
         </span>
-        <span className="text-[10px] leading-none" style={{ color: active ? "var(--ink)" : "var(--mocha)" }}>{item.label}</span>
+        <span>{item.label}</span>
       </Link>
     );
   };
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-40 px-3"
-      style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}
+      className="fixed bottom-0 left-0 right-0 z-40 px-4"
+      style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}
     >
       <div
-        className="nav-island mx-auto h-[62px] px-1"
+        className="nav-island mx-auto h-[68px] px-2"
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
           width: "100%",
-          maxWidth: "100%",
+          maxWidth: 560,
           boxSizing: "border-box",
           alignItems: "center",
         }}
@@ -55,13 +60,8 @@ export default function BottomNav() {
         {link(items[0])}
         {link(items[1])}
         <div className="flex items-center justify-center min-w-0">
-          <Link
-            href="/weka-tangazo"
-            aria-label="Post a listing"
-            className="w-10 h-10 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "var(--ink)", boxShadow: "var(--shadow-float)", border: "none" }}
-          >
-            <Plus size={20} color="var(--paper)" strokeWidth={2.4} />
+          <Link href="/weka-tangazo" aria-label="Post a listing" className="nav-add">
+            <Plus size={22} color="var(--paper)" strokeWidth={2.4} />
           </Link>
         </div>
         {link(items[2])}

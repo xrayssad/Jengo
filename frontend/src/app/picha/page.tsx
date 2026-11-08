@@ -11,22 +11,22 @@ export default function SavedImagesPage() {
 
   return (
     <main className="min-h-screen pb-24" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+      <header className="topbar">
+        <div className="canvas flex items-center gap-3 px-5">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
-          <div>
-            <h1 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Saved photos</h1>
-            <p className="text-xs" style={{ color: "var(--muted)" }}>Photos you saved from a post</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Saved photos</h1>
+            <p className="page-note">Photos you saved from a post</p>
           </div>
         </div>
       </header>
-      <div className="max-w-md mx-auto px-4 pt-4 grid grid-cols-2 gap-3">
+      <div className="canvas px-4 pt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
         {items.length === 0 && (
-          <div className="col-span-2 text-center py-16">
+          <div className="col-span-full empty-panel">
             <Download size={32} color="var(--caramel)" className="mx-auto mb-3" />
-            <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>No photos yet</p>
+            <p className="lead">No photos yet</p>
           </div>
         )}
         {items.map((img) => (

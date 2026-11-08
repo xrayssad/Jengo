@@ -38,20 +38,24 @@ export default function IncomingPage() {
   return (
     <AuthGate>
     <main className="min-h-screen pb-24 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
-          <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Requests I received</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Accept or decline</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Requests I received</h1>
+            <p className="page-note">Accept or decline</p>
           </div>
         </div>
       </header>
-      <div className="max-w-md mx-auto px-4 pt-5 space-y-4">
+      <div className="canvas-read px-5 pt-6 space-y-4">
         {loading && <p className="text-center py-10" style={{ color: "var(--muted)" }}>Loading...</p>}
-        {!loading && rows.length === 0 && <p className="text-center py-16 font-heading" style={{ color: "var(--ink)" }}>No requests</p>}
+        {!loading && rows.length === 0 && (
+          <div className="empty-panel">
+            <p className="lead">No requests</p>
+          </div>
+        )}
         {rows.map((r) => (
           <div key={r.id} className="sheet rounded-[28px] p-5">
             <h2 className="font-heading" style={{ color: "var(--ink)" }}>{r.title}</h2>
@@ -62,16 +66,16 @@ export default function IncomingPage() {
             <p className="text-xs mt-2 font-semibold" style={{ color: "var(--mocha)" }}>{r.status || "pending"}</p>
             {r.status !== "accepted" && r.status !== "rejected" && r.status !== "moved_in" && (
               <div className="flex gap-2 mt-3">
-                <button type="button" onClick={() => decide(r.id, "accepted")} className="btn-primary flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[14px] text-sm font-semibold">
+                <button type="button" onClick={() => decide(r.id, "accepted")} className="btn-primary flex-1 flex items-center justify-center gap-1 py-2.5 text-sm">
                   <Check size={16} /> Accept
                 </button>
-                <button type="button" onClick={() => decide(r.id, "rejected")} className="btn-secondary flex-1 flex items-center justify-center gap-1 py-2.5 rounded-[14px] text-sm font-semibold">
+                <button type="button" onClick={() => decide(r.id, "rejected")} className="btn-secondary flex-1 flex items-center justify-center gap-1 py-2.5 text-sm">
                   <X size={16} /> Decline
                 </button>
               </div>
             )}
             {r.status === "accepted" && (
-              <Link href={`/bookings/${r.id}/chat`} className="btn-primary mt-4 inline-flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold">
+              <Link href={`/bookings/${r.id}/chat`} className="btn-primary mt-4 inline-flex items-center gap-2 px-4 py-2.5 text-sm">
                 Write a message
               </Link>
             )}

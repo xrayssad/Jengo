@@ -46,22 +46,20 @@ export default function MessagesPage() {
   return (
     <AuthGate>
       <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-        <header
-          className="px-5 pt-6 pb-2 max-w-md mx-auto"
-          style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)" }}
-        >
-          <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Inbox</p>
-          <h1 className="text-[34px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Messages</h1>
-          <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Direct messages and request chats</p>
+        <header className="topbar">
+          <div className="canvas-read px-5">
+            <h1 className="page-title">Messages</h1>
+            <p className="page-note">Direct messages and request chats</p>
+          </div>
         </header>
-        <div className="max-w-md mx-auto px-5 pt-5 space-y-3">
+        <div className="canvas-read px-5 pt-5 space-y-3">
           {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
           {loading && items.length === 0 && <ChatListSkeleton />}
           {!loading && items.length === 0 && !error && (
-            <div className="text-center py-16">
+            <div className="empty-panel">
               <Send size={28} color="var(--caramel)" className="mx-auto mb-3" />
-              <p className="text-2xl font-bold" style={{ color: "var(--ink)" }}>No messages</p>
-              <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>Open a listing, then send a direct message.</p>
+              <p className="lead">No messages</p>
+              <p className="hint">Open a listing, then send a direct message.</p>
             </div>
           )}
           {items.map((c) => (

@@ -24,10 +24,10 @@ export function ListingCardSkeleton({ wide = false }: { wide?: boolean }) {
       <div className="market-tile-media">
         <Bone className="absolute inset-0 rounded-none" />
       </div>
-      <div className="px-0.5 pt-2 space-y-2">
+      <div className="px-3 pt-3 pb-3.5 space-y-2">
         <Bone className="h-4 w-24" />
-        <Bone className="h-3 w-full" />
-        <Bone className="h-3 w-16" />
+        <Bone className="h-3.5 w-full" />
+        <Bone className="h-3 w-20" />
       </div>
     </div>
   );
@@ -55,7 +55,7 @@ export function DetailSkeleton() {
         <Bone className="absolute top-4 left-4 h-10 w-10 rounded-full" />
         <Bone className="absolute top-4 right-4 h-10 w-10 rounded-full" />
       </div>
-      <div className="max-w-md mx-auto px-5 pt-5 space-y-4">
+      <div className="canvas-read px-5 pt-6 space-y-4">
         <div className="flex items-start justify-between gap-3">
           <div className="space-y-2 flex-1">
             <Bone className="h-8 w-44" />
@@ -95,7 +95,7 @@ export function ChatListSkeleton({ count = 4 }: { count?: number }) {
 
 export function ChatThreadSkeleton() {
   return (
-    <div className="flex-1 max-w-md w-full mx-auto px-4 py-4 space-y-3" aria-busy="true" aria-label="Loading chat">
+    <div className="flex-1 canvas-read w-full px-5 py-4 space-y-3" aria-busy="true" aria-label="Loading chat">
       <div className="flex justify-start">
         <Bone className="h-10 w-44 rounded-[18px]" />
       </div>
@@ -117,7 +117,7 @@ export function ChatThreadSkeleton() {
 
 export function ProfileSkeleton() {
   return (
-    <div className="max-w-md mx-auto px-4 py-5 space-y-5" aria-busy="true" aria-label="Loading profile">
+    <div className="canvas-read px-5 py-6 space-y-5" aria-busy="true" aria-label="Loading profile">
       <div className="relative overflow-hidden rounded-[28px]" style={{ height: 168 }}>
         <Bone className="absolute inset-0 rounded-none" />
         <div className="absolute left-4 right-4 bottom-4 space-y-2">

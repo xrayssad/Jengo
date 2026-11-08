@@ -118,27 +118,27 @@ export default function JobClient({ id }: { id: string }) {
 
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/kazi" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
+          <Link href="/kazi" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div className="min-w-0">
-            <h1 className="font-heading text-2xl leading-none truncate" style={{ color: "var(--ink)" }}>{job?.title || "Job"}</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Construction Jobs</p>
+            <h1 className="page-title truncate">{job?.title || "Job"}</h1>
+            <p className="page-note">Construction Jobs</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
+      <div className="canvas-read px-5 pt-6 space-y-4">
         {loading && (
           <div className="flex justify-center py-16">
             <Loader2 className="animate-spin" color="var(--mocha)" />
           </div>
         )}
         {!loading && error && (
-          <div className="text-center py-16">
-            <p className="font-heading" style={{ color: "var(--ink)" }}>{error}</p>
+          <div className="empty-panel">
+            <p className="lead">{error}</p>
           </div>
         )}
         {job && (
@@ -184,7 +184,7 @@ export default function JobClient({ id }: { id: string }) {
                       <button
                         type="button"
                         onClick={() => setPick(offer)}
-                        className="btn-primary w-full mt-3 py-2.5 rounded-full text-sm font-semibold"
+                        className="btn-primary w-full mt-3 py-2.5 text-sm"
                       >
                         Choose worker
                       </button>
@@ -204,7 +204,7 @@ export default function JobClient({ id }: { id: string }) {
                 <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Phone" inputMode="tel" className="input-chocolate w-full px-4 py-3.5 text-sm" />
                 <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount (TSh)" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
                 <textarea value={message} onChange={(e) => setMessage(e.target.value)} rows={3} placeholder="Short message" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
-                <button type="submit" disabled={busy} className="btn-primary w-full py-3.5 rounded-full text-sm font-semibold" style={{ opacity: busy ? 0.7 : 1 }}>
+                <button type="submit" disabled={busy} className="btn-primary w-full py-3.5 text-sm" style={{ opacity: busy ? 0.7 : 1 }}>
                   {busy ? "Sending..." : "Send offer"}
                 </button>
               </form>
@@ -215,8 +215,8 @@ export default function JobClient({ id }: { id: string }) {
 
       {pick && job && (
         <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-4" style={{ backgroundColor: "rgba(26,15,8,0.55)" }} onClick={() => setPick(null)}>
-          <div className="w-full max-w-sm sheet rounded-[28px] p-5" onClick={(e) => e.stopPropagation()}>
-            <h2 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Confirm worker</h2>
+          <div className="sheet-pop w-full max-w-sm sheet p-5" onClick={(e) => e.stopPropagation()}>
+            <h2 className="section-title">Confirm worker</h2>
             <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>
               {pick.worker_name} · TSh {formatPrice(pick.amount)}
             </p>
@@ -224,10 +224,10 @@ export default function JobClient({ id }: { id: string }) {
             <p className="text-xs mt-2" style={{ color: "var(--muted)" }}>
               The Jengo fee is paid after you accept. Not a percent, not escrow, not a contract.
             </p>
-            <button type="button" disabled={busy} onClick={confirmAward} className="btn-primary w-full mt-4 py-3.5 rounded-full text-sm font-semibold">
+            <button type="button" disabled={busy} onClick={confirmAward} className="btn-primary w-full mt-4 py-3.5 text-sm">
               {busy ? "Saving..." : "Accept and choose"}
             </button>
-            <button type="button" onClick={() => setPick(null)} className="btn-secondary w-full mt-2 py-3.5 rounded-full text-sm font-semibold">
+            <button type="button" onClick={() => setPick(null)} className="btn-secondary w-full mt-2 py-3.5 text-sm">
               Cancel
             </button>
           </div>

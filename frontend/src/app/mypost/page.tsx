@@ -137,22 +137,18 @@ export default function Page() {
   return (
     <AuthGate>
       <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-        <header
-          className="sticky top-0 z-20 px-5 pt-5 pb-3"
-          style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-        >
-          <div className="max-w-md mx-auto flex items-center gap-3">
+        <header className="topbar">
+          <div className="canvas flex items-center gap-3 px-5">
             <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
               <ArrowLeft size={18} color="var(--ink)" />
             </Link>
-            <div>
-              <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Account</p>
-              <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>My Posts</h1>
-              <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Rooms, Airbnb, shops, frames, materials and reels</p>
+            <div className="min-w-0">
+              <h1 className="page-title">My Posts</h1>
+              <p className="page-note">Rooms, Airbnb, shops, frames, materials and reels</p>
             </div>
           </div>
         </header>
-        <div className="max-w-md mx-auto px-4 pt-5 space-y-5">
+        <div className="canvas px-4 pt-6 space-y-5">
           {loading && <ListingFeedSkeleton />}
           {!loading && error && (
             <div className="text-center py-16">

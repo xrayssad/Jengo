@@ -84,27 +84,27 @@ function TumaOmbiForm() {
   if (done) {
     return (
       <main className="min-h-screen flex items-center justify-center px-4" style={{ backgroundColor: "var(--paper)" }}>
-        <div className="sheet max-w-sm w-full text-center p-6 rounded-[28px]">
+        <div className="sheet-pop sheet max-w-sm w-full text-center p-6">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4"
             style={{ backgroundColor: "var(--ink)" }}
           >
             <CheckCircle2 size={32} color="var(--paper)" />
           </div>
-          <h1 className="font-heading text-3xl mb-2" style={{ color: "var(--ink)" }}>Request sent</h1>
+          <h1 className="page-title mb-2">Request sent</h1>
           <p className="text-sm mb-8" style={{ color: "var(--muted)" }}>
             Your request about “{title}” was received.
           </p>
           <div className="space-y-3">
             <Link
               href={backHref}
-              className="btn-primary block w-full py-3.5 rounded-full font-semibold text-sm"
+              className="btn-primary block w-full py-3.5 text-sm"
             >
               Back to listing
             </Link>
             <Link
               href="/home"
-              className="btn-secondary block w-full py-3 rounded-full font-semibold text-sm"
+              className="btn-secondary block w-full py-3 text-sm"
             >
               Back to Home
             </Link>
@@ -116,20 +116,19 @@ function TumaOmbiForm() {
 
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3 glass">
-        <Link
-          href={backHref}
-          className="w-10 h-10 rounded-full flex items-center justify-center icon-glass"
-        >
-          <ArrowLeft size={18} color="var(--ink)" />
-        </Link>
-        <div>
-          <h1 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Send request</h1>
-          <p className="text-xs truncate max-w-[220px]" style={{ color: "var(--mocha)" }}>{title}</p>
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
+          <Link href={backHref} className="soft-icon-btn shrink-0" aria-label="Back">
+            <ArrowLeft size={18} color="var(--ink)" />
+          </Link>
+          <div className="min-w-0">
+            <h1 className="page-title">Send request</h1>
+            <p className="page-note truncate">{title}</p>
+          </div>
         </div>
       </header>
 
-      <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-6">
+      <form onSubmit={submit} className="canvas-read px-5 pt-6">
       <div className="sheet rounded-[28px] p-5 space-y-5">
         <p className="text-sm" style={{ color: "var(--muted)" }}>
           Write a short message to the owner.
@@ -160,7 +159,7 @@ function TumaOmbiForm() {
         <button
           type="submit"
           disabled={loading}
-          className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm"
+          className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-sm"
           style={{ opacity: loading ? 0.7 : 1 }}
         >
           {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}

@@ -81,18 +81,18 @@ export default function NewReelPage() {
   return (
     <AuthGate>
       <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-        <header className="sticky top-0 z-20 px-5 py-4 glass">
-          <div className="max-w-md mx-auto flex items-center gap-3">
-            <Link href="/reels" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+        <header className="topbar">
+          <div className="canvas-read flex items-center gap-3 px-5">
+            <Link href="/reels" className="soft-icon-btn shrink-0" aria-label="Back">
               <ArrowLeft size={18} color="var(--ink)" />
             </Link>
-            <div>
-              <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Post a reel</h1>
-              <p className="text-sm" style={{ color: "var(--muted)" }}>Up to 3 minutes · 2:10 is OK · Android & iPhone</p>
+            <div className="min-w-0">
+              <h1 className="page-title">Post a reel</h1>
+              <p className="page-note">Up to 3 minutes · 2:10 is OK · Android & iPhone</p>
             </div>
           </div>
         </header>
-        <div className="max-w-md mx-auto px-5 pt-5 pb-8 space-y-4">
+        <div className="canvas-read px-5 pt-6 pb-8 space-y-4">
           <label className="block overflow-hidden rounded-[28px]" style={{ backgroundColor: "var(--ink-2)", minHeight: 360 }}>
             {preview ? (
               <video
@@ -147,7 +147,7 @@ export default function NewReelPage() {
               <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Uploading {pct}%</p>
             </div>
           ) : null}
-          <button type="button" disabled={busy} onClick={submit} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
+          <button type="button" disabled={busy} onClick={submit} className="btn-primary w-full py-4 text-sm">
             {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Uploading {pct}%</span> : "Post reel"}
           </button>
         </div>

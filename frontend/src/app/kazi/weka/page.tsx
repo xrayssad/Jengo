@@ -58,14 +58,16 @@ export default function Page() {
   return (
     <AuthGate>
       <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-        <header className="sticky top-0 z-20 px-4 py-3.5 flex items-center gap-3 glass">
-          <button type="button" onClick={() => router.push("/kazi")} className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
-            <ArrowLeft size={18} color="var(--ink)" />
-          </button>
-          <h1 className="font-heading text-2xl" style={{ color: "var(--ink)" }}>Post a job</h1>
+        <header className="topbar">
+          <div className="canvas-read flex items-center gap-3 px-5">
+            <button type="button" onClick={() => router.push("/kazi")} className="soft-icon-btn shrink-0" aria-label="Back">
+              <ArrowLeft size={18} color="var(--ink)" />
+            </button>
+            <h1 className="page-title">Post a job</h1>
+          </div>
         </header>
 
-        <form onSubmit={submit} className="max-w-md mx-auto px-4 pt-5">
+        <form onSubmit={submit} className="canvas-read px-5 pt-6">
           <div className="sheet rounded-[28px] p-5 space-y-4">
             <p className="text-sm" style={{ color: "var(--muted)" }}>Examples of small jobs</p>
             <div className="flex flex-wrap gap-2">
@@ -74,8 +76,8 @@ export default function Page() {
                   key={name}
                   type="button"
                   onClick={() => setTitle(name)}
-                  className={`px-3 py-2 text-xs ${title === name ? "rounded-full" : "chip"}`}
-                  style={title === name ? { backgroundColor: "var(--ink)", color: "var(--paper)" } : { color: "var(--ink)" }}
+                  className={title === name ? "filter-chip is-on" : "filter-chip"}
+                  aria-pressed={title === name}
                 >
                   {name}
                 </button>
@@ -98,7 +100,7 @@ export default function Page() {
             <p className="text-xs" style={{ color: "var(--muted)" }}>
               The connection fee is shown after a worker offers, before you choose. No fee if nobody offers.
             </p>
-            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
+            <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
               {loading ? <Loader2 size={18} className="animate-spin" /> : null}
               {loading ? "Saving..." : "Post job"}
             </button>

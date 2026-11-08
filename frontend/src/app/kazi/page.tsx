@@ -79,22 +79,19 @@ export default function Page() {
 
   return (
     <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <div className="max-w-md mx-auto flex items-center gap-3">
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Construction Jobs</h1>
-            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Paint, tiles, ceiling, plumbing, electrical, repairs</p>
+            <h1 className="page-title">Construction Jobs</h1>
+            <p className="page-note">Paint, tiles, ceiling, plumbing, electrical, repairs</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
+      <div className="canvas-read px-5 pt-6 space-y-5">
         <div className="estate-card">
           <div className="relative" style={{ height: 168 }}>
             <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="400px" />

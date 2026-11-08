@@ -13,23 +13,19 @@ const methods = [
 export default function PaymentsPage() {
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <div className="max-w-md mx-auto flex items-center gap-3">
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
           </Link>
-          <div>
-            <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Wallet</p>
-            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Payments</h1>
-            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Methods and history</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Payments</h1>
+            <p className="page-note">Methods and history</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-5 pt-5 space-y-6">
+      <div className="canvas-read px-5 pt-6 space-y-6">
         <div>
           <h2 className="text-xl font-bold mb-3" style={{ color: "var(--ink)" }}>Payment methods</h2>
           <div className="space-y-2">

@@ -45,29 +45,24 @@ function SearchInner() {
 
   return (
     <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <div className="max-w-md mx-auto">
+      <header className="topbar">
+        <div className="canvas px-5">
           <div className="flex items-center gap-3 mb-4">
             <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
               <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
             </Link>
-            <div className="min-w-0">
-              <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Browse</p>
-              <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Search</h1>
-            </div>
+            <h1 className="page-title">Search</h1>
           </div>
-          <div className="flex items-center gap-2 px-4 py-3.5 sheet rounded-full">
-            <Search size={16} color="var(--mocha)" />
+          <div className="search-field">
+            <Search size={18} color="var(--mocha)" />
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search city or street"
+              placeholder="City or street"
               autoFocus
-              className="flex-1 bg-transparent text-sm outline-none"
+              aria-label="Search by city or street"
+              className="flex-1 bg-transparent text-[15px] outline-none"
               style={{ color: "var(--ink)" }}
             />
             {query && (
@@ -76,7 +71,7 @@ function SearchInner() {
               </button>
             )}
           </div>
-          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar">
+          <div className="flex gap-2 mt-3 overflow-x-auto no-scrollbar pb-1">
             {filters.map((f) => {
               const active = category === f.id;
               return (
@@ -84,12 +79,8 @@ function SearchInner() {
                   key={f.id || "zote"}
                   type="button"
                   onClick={() => setCategory(f.id)}
-                  className="px-3.5 py-2 text-[13px] font-medium shrink-0 rounded-full"
-                  style={
-                    active
-                      ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
-                      : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
-                  }
+                  className={active ? "filter-chip is-on" : "filter-chip"}
+                  aria-pressed={active}
                 >
                   {f.label}
                 </button>
@@ -99,7 +90,7 @@ function SearchInner() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 pt-5">
+      <div className="canvas px-4 pt-6">
         <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
           {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
         </p>
@@ -111,15 +102,15 @@ function SearchInner() {
         )}
 
         {!loading && !error && items.length === 0 && (
-          <div className="text-center py-16">
-            <Search size={40} color="var(--caramel)" className="mx-auto mb-4 opacity-60" />
-            <p className="text-2xl font-bold" style={{ color: "var(--ink)" }}>
+          <div className="empty-panel">
+            <Search size={32} color="var(--caramel)" className="mx-auto mb-3" />
+            <p className="lead">
               {query || category ? "No listings match this city or street" : "No listings yet"}
             </p>
             {!query && !category && (
               <Link
                 href="/weka-tangazo"
-                className="btn-primary inline-block mt-4 px-6 py-3 rounded-full text-sm font-semibold"
+                className="btn-primary inline-block mt-4 px-6 py-3 text-sm"
               >
                 Post a listing
               </Link>
@@ -130,7 +121,7 @@ function SearchInner() {
         {items.length > 0 && !error && (
           <div className="listing-grid">
             {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 2} />
+              <ListingCard key={item.id} item={item} eager={i < 4} delay={Math.min(i, 5) * 45} />
             ))}
           </div>
         )}
@@ -144,7 +135,7 @@ export default function SearchPage() {
     <Suspense
       fallback={
         <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
-          <div className="max-w-md mx-auto px-5 py-8">
+          <div className="canvas px-5 py-8">
             <SearchSkeleton />
           </div>
         </main>

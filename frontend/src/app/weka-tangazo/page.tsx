@@ -138,20 +138,16 @@ export default function WekaTangazoPage() {
   return (
     <AuthGate>
     <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3 flex items-center gap-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <button type="button" onClick={() => router.push("/home")} className="soft-icon-btn shrink-0" aria-label="Back">
-          <ArrowLeft size={18} color="var(--ink)" />
-        </button>
-        <div>
-          <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Publish</p>
-          <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Post a listing</h1>
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
+          <button type="button" onClick={() => router.push("/home")} className="soft-icon-btn shrink-0" aria-label="Back">
+            <ArrowLeft size={18} color="var(--ink)" />
+          </button>
+          <h1 className="page-title">Post a listing</h1>
         </div>
       </header>
 
-      <form onSubmit={submit} className="max-w-md mx-auto px-5 pt-5">
+      <form onSubmit={submit} className="canvas-read px-5 pt-6">
       <div className="sheet p-5 space-y-4">
         <div className="grid grid-cols-2 gap-2">
           {categories.map((c) => (
@@ -162,12 +158,8 @@ export default function WekaTangazoPage() {
                 setCategory(c.id);
                 if (c.id !== "vifaa") setPeriod(periods[c.id][0].id);
               }}
-              className="p-3 rounded-[18px] text-sm font-medium"
-              style={
-                category === c.id
-                  ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
-                  : { backgroundColor: "var(--surface)", color: "var(--ink)", border: "1px solid rgba(var(--caramel-rgb),0.28)", boxShadow: "var(--shadow-quiet)" }
-              }
+              className={category === c.id ? "choice is-on" : "choice"}
+              aria-pressed={category === c.id}
             >
               {c.label}
             </button>
@@ -185,12 +177,8 @@ export default function WekaTangazoPage() {
                   key={u.id}
                   type="button"
                   onClick={() => setUnit(u.id)}
-                  className="px-3.5 py-2 text-[13px] font-medium rounded-full"
-                  style={
-                    unit === u.id
-                      ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
-                      : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
-                  }
+                  className={unit === u.id ? "filter-chip is-on" : "filter-chip"}
+                  aria-pressed={unit === u.id}
                 >
                   {u.label}
                 </button>
@@ -205,12 +193,8 @@ export default function WekaTangazoPage() {
                 key={p.id}
                 type="button"
                 onClick={() => setPeriod(p.id)}
-                className="px-3.5 py-2 text-[13px] font-medium rounded-full"
-                style={
-                  period === p.id
-                    ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
-                    : { color: "var(--ink)", background: "var(--surface)", border: "1px solid rgba(var(--caramel-rgb),0.32)", boxShadow: "var(--shadow-quiet)" }
-                }
+                className={period === p.id ? "filter-chip is-on" : "filter-chip"}
+                aria-pressed={period === p.id}
               >
                 {p.label}
               </button>

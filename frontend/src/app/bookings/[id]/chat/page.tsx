@@ -55,22 +55,21 @@ function Thread() {
 
   return (
     <main className="min-h-screen flex flex-col" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 py-3.5 flex items-center gap-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <button type="button" onClick={() => router.back()} className="soft-icon-btn shrink-0" aria-label="Back">
-          <ArrowLeft size={18} color="var(--ink)" />
-        </button>
-        <div>
-          <h1 className="text-lg font-bold" style={{ color: "var(--ink)" }}>Write a message</h1>
-          <p className="text-xs" style={{ color: "var(--mocha)" }}>Buyer and seller only</p>
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
+          <button type="button" onClick={() => router.back()} className="soft-icon-btn shrink-0" aria-label="Back">
+            <ArrowLeft size={18} color="var(--ink)" />
+          </button>
+          <div className="min-w-0">
+            <h1 className="text-lg font-bold" style={{ color: "var(--ink)" }}>Write a message</h1>
+            <p className="page-note">Buyer and seller only</p>
+          </div>
         </div>
       </header>
       {loading ? (
         <ChatThreadSkeleton />
       ) : (
-        <div className="flex-1 max-w-md w-full mx-auto px-5 py-4 space-y-2">
+        <div className="flex-1 canvas-read w-full px-5 py-4 space-y-2">
           {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
           {items.length === 0 && !error && (
             <p className="text-sm text-center py-10" style={{ color: "var(--muted)" }}>Start this request chat.</p>
@@ -92,7 +91,7 @@ function Thread() {
         </div>
       )}
       <form onSubmit={submit} className="sticky bottom-0 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-        <div className="nav-island max-w-md w-full mx-auto px-3 py-2 flex gap-2">
+        <div className="nav-island canvas-read w-full px-3 py-2 flex gap-2">
           <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "var(--ink)" }} />
           <button type="submit" className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--ink)", boxShadow: "var(--shadow-float)" }} aria-label="Send message">
             <Send size={18} color="var(--paper)" />

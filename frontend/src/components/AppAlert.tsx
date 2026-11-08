@@ -31,7 +31,7 @@ export default function AppAlert({ open, kind = "info", title, message, onClose 
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-[22px] overflow-hidden shadow-xl"
+        className="sheet-pop w-full max-w-sm rounded-[22px] overflow-hidden shadow-xl"
         style={{ backgroundColor: "var(--paper)", border: "1px solid rgba(var(--caramel-rgb),0.45)" }}
         onClick={(e) => e.stopPropagation()}
       >

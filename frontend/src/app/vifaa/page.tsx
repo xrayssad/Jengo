@@ -11,27 +11,24 @@ export default function VifaaPage() {
 
   return (
     <main className="min-h-screen pb-24" style={{ backgroundColor: "var(--paper)" }}>
-      <header
-        className="sticky top-0 z-20 px-5 pt-5 pb-3"
-        style={{ backgroundColor: "rgba(var(--paper-rgb),0.94)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)" }}
-      >
-        <div className="max-w-md mx-auto flex items-center gap-3">
+      <header className="topbar">
+        <div className="canvas flex items-center gap-3 px-5">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} color="var(--ink)" />
           </Link>
-          <div>
-            <h1 className="text-[28px] font-bold leading-[1.05] tracking-tight" style={{ color: "var(--ink)" }}>Building Materials</h1>
-            <p className="text-sm mt-0.5" style={{ color: "var(--muted)" }}>Cement, steel, bricks, sand</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Building Materials</h1>
+            <p className="page-note">Cement, steel, bricks, sand</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 pt-5">
+      <div className="canvas px-4 pt-6">
         {loading && items.length === 0 && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
-          <div className="text-center py-16">
-            <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>No materials yet</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">
+          <div className="empty-panel">
+            <p className="lead">No materials yet</p>
+            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 text-sm">
               Post a listing
             </Link>
           </div>

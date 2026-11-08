@@ -6,30 +6,27 @@ import Link from "next/link";
 export default function MnadaPage() {
   return (
     <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="sticky top-0 z-20 px-4 py-3.5 glass">
-        <div className="max-w-md mx-auto flex items-center gap-3">
-          <Link href="/home" className="w-10 h-10 rounded-full flex items-center justify-center icon-glass">
+      <header className="topbar">
+        <div className="canvas-read flex items-center gap-3 px-5">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
             <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
           </Link>
-          <div>
-            <h1 className="font-heading text-2xl leading-none" style={{ color: "var(--ink)" }}>Auction</h1>
-            <p className="text-sm" style={{ color: "var(--muted)" }}>Not in Jengo now</p>
+          <div className="min-w-0">
+            <h1 className="page-title">Auction</h1>
+            <p className="page-note">Not in Jengo now</p>
           </div>
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-16 text-center">
-        <Gavel size={40} color="var(--caramel)" className="mx-auto mb-3 opacity-60" />
-        <p className="font-heading text-2xl" style={{ color: "var(--ink)" }}>This service has not started</p>
-        <p className="text-sm mt-1 mb-4" style={{ color: "var(--muted)" }}>
-          Jengo is rooms, houses, apartments, stores and shop frames.
-        </p>
-        <Link
-          href="/home"
-          className="btn-primary inline-block px-6 py-3 rounded-full text-sm font-semibold"
-        >
-          Back to Home
-        </Link>
+      <div className="canvas-read px-5">
+        <div className="empty-panel">
+          <Gavel size={32} color="var(--caramel)" className="mx-auto mb-3" />
+          <p className="lead">This service has not started</p>
+          <p className="hint">Jengo is rooms, houses, apartments, stores and shop frames.</p>
+          <Link href="/home" className="btn-primary inline-block mt-4 px-6 py-3 text-sm">
+            Back to Home
+          </Link>
+        </div>
       </div>
     </main>
   );
