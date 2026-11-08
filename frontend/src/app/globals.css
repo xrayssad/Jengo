@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  --color-cream: #F6F1EA;
+  --color-cream: #E4D3C0;
   --color-caramel: #E8D5C4;
   --color-mocha: #3F5348;
   --color-espresso: #1A3A2A;
@@ -12,10 +12,10 @@
 
 :root {
   color-scheme: light;
-  --paper: #E3EEDF;
-  --paper-rgb: 227, 238, 223;
-  --surface: #F7FBF4;
-  --surface-rgb: 247, 251, 244;
+  --paper: #E4D3C0;
+  --paper-rgb: 228, 211, 192;
+  --surface: #FBF6F0;
+  --surface-rgb: 251, 246, 240;
   --ink: #1A3A2A;
   --ink-rgb: 26, 58, 42;
   --ink-2: #2C3D32;
@@ -29,8 +29,8 @@
   --post-edge: #2C6B45;
   --error: #8C3D32;
   --success: #3E6B4F;
-  --cream: #D4E5D2;
-  --blush: #C5D9C3;
+  --cream: #D7C2A8;
+  --blush: #E8D5C4;
   --foam: #F6F1EA;
   --stamp: #1A3A2A;
   --veil-rgb: 26, 58, 42;
@@ -52,10 +52,10 @@
 
 html.dark {
   color-scheme: dark;
-  --paper: #101612;
-  --paper-rgb: 16, 22, 18;
-  --surface: #1A2420;
-  --surface-rgb: 26, 36, 32;
+  --paper: #1A1410;
+  --paper-rgb: 26, 20, 16;
+  --surface: #261C16;
+  --surface-rgb: 38, 28, 22;
   --ink: #F3EEE6;
   --ink-rgb: 243, 238, 230;
   --ink-2: #E4DDD2;
@@ -69,8 +69,8 @@ html.dark {
   --post-edge: #8FB89A;
   --error: #E07A5F;
   --success: #8FBA7A;
-  --cream: #24302A;
-  --blush: #2A3830;
+  --cream: #3A2C22;
+  --blush: #2E241C;
   --foam: #F6F1EA;
   --stamp: #1A3A2A;
   --veil-rgb: 16, 22, 18;
@@ -96,11 +96,6 @@ body {
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  background-image: radial-gradient(900px 480px at 50% -120px, rgba(44, 107, 69, 0.22), transparent 68%);
-}
-
-html.dark body {
-  background-image: radial-gradient(900px 480px at 50% -120px, rgba(143, 184, 154, 0.14), transparent 68%);
 }
 
 :focus-visible {
