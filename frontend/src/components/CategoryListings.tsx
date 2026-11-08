@@ -67,7 +67,7 @@ export default function CategoryListings({
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-4 py-5 space-y-5">
+      <div className="max-w-md mx-auto px-4 py-5">
         {loading && <ListingFeedSkeleton />}
         {!loading && error && (
           <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
@@ -82,9 +82,13 @@ export default function CategoryListings({
             </Link>
           </div>
         )}
-        {!loading && !error && items.map((item) => (
-          <ListingCard key={item.id} item={item} />
-        ))}
+        {!loading && !error && items.length > 0 && (
+          <div className="listing-grid">
+            {items.map((item, i) => (
+              <ListingCard key={item.id} item={item} eager={i < 2} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

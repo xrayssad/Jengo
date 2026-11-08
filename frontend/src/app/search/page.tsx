@@ -99,7 +99,7 @@ function SearchInner() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-5 pt-5">
+      <div className="max-w-md mx-auto px-4 pt-5">
         <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
           {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
         </p>
@@ -128,7 +128,7 @@ function SearchInner() {
         )}
 
         {items.length > 0 && !error && (
-          <div className="space-y-5">
+          <div className="listing-grid">
             {items.map((item, i) => (
               <ListingCard key={item.id} item={item} eager={i < 2} />
             ))}

@@ -54,7 +54,7 @@ export default function ListingFeed({
           </div>
         </div>
       </header>
-      <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
+      <div className="max-w-md mx-auto px-4 pt-5">
         {loading && items.length === 0 && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
@@ -62,9 +62,13 @@ export default function ListingFeed({
             <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 rounded-full text-sm font-semibold">Post a listing</Link>
           </div>
         )}
-        {items.map((item, i) => (
-          <ListingCard key={item.id} item={item} eager={i < 2} />
-        ))}
+        {items.length > 0 && (
+          <div className="listing-grid">
+            {items.map((item, i) => (
+              <ListingCard key={item.id} item={item} eager={i < 2} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

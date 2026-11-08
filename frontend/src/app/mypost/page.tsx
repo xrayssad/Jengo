@@ -7,13 +7,36 @@ import AuthGate from "@/components/AuthGate";
 import ListingCard from "@/components/ListingCard";
 import PosterName from "@/components/PosterName";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
-import { catLabel, fetchMyPosts, type Job, type Listing, type Reel } from "@/lib/api";
+import { fetchMyPosts, type Job, type Listing, type Reel } from "@/lib/api";
 import { readIds } from "@/lib/mine";
 
 type Row =
   | { kind: "listing"; at: string; item: Listing }
   | { kind: "reel"; at: string; item: Reel }
   | { kind: "job"; at: string; item: Job };
+
+type Block =
+  | { kind: "listings"; key: string; items: Listing[] }
+  | { kind: "reel"; key: string; item: Reel }
+  | { kind: "job"; key: string; item: Job };
+
+function groupRows(rows: Row[]): Block[] {
+  const blocks: Block[] = [];
+  for (const row of rows) {
+    if (row.kind === "listing") {
+      const last = blocks[blocks.length - 1];
+      if (last?.kind === "listings") last.items.push(row.item);
+      else blocks.push({ kind: "listings", key: row.item.id, items: [row.item] });
+      continue;
+    }
+    if (row.kind === "reel") {
+      blocks.push({ kind: "reel", key: row.item.id, item: row.item });
+      continue;
+    }
+    blocks.push({ kind: "job", key: row.item.id, item: row.item });
+  }
+  return blocks;
+}
 
 function stamp(value?: string) {
   return value || "";
@@ -129,7 +152,7 @@ export default function Page() {
             </div>
           </div>
         </header>
-        <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
+        <div className="max-w-md mx-auto px-4 pt-5 space-y-5">
           {loading && <ListingFeedSkeleton />}
           {!loading && error && (
             <div className="text-center py-16">
@@ -147,27 +170,28 @@ export default function Page() {
               </div>
             </div>
           )}
-          {rows.map((row) => {
-            if (row.kind === "listing") {
+          {groupRows(rows).map((block) => {
+            if (block.kind === "listings") {
               return (
-                <div key={`listing-${row.item.id}`}>
-                  <p className="text-[11px] mb-2" style={{ color: "var(--mocha)" }}>{catLabel[row.item.category || ""] || "Listing"}</p>
-                  <ListingCard item={row.item} />
+                <div key={`listings-${block.key}`} className="listing-grid">
+                  {block.items.map((item, i) => (
+                    <ListingCard key={item.id} item={item} eager={i < 2} />
+                  ))}
                 </div>
               );
             }
-            if (row.kind === "reel") {
+            if (block.kind === "reel") {
               return (
-                <div key={`reel-${row.item.id}`}>
+                <div key={`reel-${block.key}`}>
                   <p className="text-[11px] mb-2" style={{ color: "var(--mocha)" }}>Reel</p>
-                  <ReelPost item={row.item} />
+                  <ReelPost item={block.item} />
                 </div>
               );
             }
             return (
-              <div key={`job-${row.item.id}`}>
+              <div key={`job-${block.key}`}>
                 <p className="text-[11px] mb-2" style={{ color: "var(--mocha)" }}>Construction Jobs</p>
-                <JobPost item={row.item} />
+                <JobPost item={block.item} />
               </div>
             );
           })}

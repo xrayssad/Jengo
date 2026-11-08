@@ -4,37 +4,47 @@ function Bone({ className = "", style }: { className?: string; style?: CSSProper
   return <span className={`skel-bone ${className}`.trim()} style={style} />;
 }
 
-export function ListingCardSkeleton() {
-  return (
-    <div className="estate-card" aria-hidden>
-      <div className="relative estate-card-media">
-        <Bone className="absolute inset-0 rounded-none" />
-        <Bone className="absolute top-3 right-3 h-10 w-10 rounded-full" />
-      </div>
-      <div className="px-4 pt-3.5 pb-4 space-y-2">
-        <div className="flex items-center justify-between gap-3">
-          <Bone className="h-7 w-36" />
-          <Bone className="h-4 w-24" />
+export function ListingCardSkeleton({ wide = false }: { wide?: boolean }) {
+  if (wide) {
+    return (
+      <div className="estate-card" aria-hidden>
+        <div className="relative estate-card-media">
+          <Bone className="absolute inset-0 rounded-none" />
         </div>
-        <Bone className="h-4 w-48" />
-        <Bone className="h-3 w-40" />
+        <div className="px-4 pt-3.5 pb-4 space-y-2">
+          <Bone className="h-6 w-36" />
+          <Bone className="h-4 w-48" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="market-tile" aria-hidden>
+      <div className="market-tile-media">
+        <Bone className="absolute inset-0 rounded-none" />
+      </div>
+      <div className="px-0.5 pt-2 space-y-2">
+        <Bone className="h-4 w-24" />
+        <Bone className="h-3 w-full" />
+        <Bone className="h-3 w-16" />
       </div>
     </div>
   );
 }
 
-export function ListingFeedSkeleton({ count = 3 }: { count?: number }) {
+export function ListingFeedSkeleton({ count = 4, wide = false }: { count?: number; wide?: boolean }) {
   return (
-    <div className="space-y-5" aria-busy="true" aria-label="Loading listings">
+    <div className={wide ? "space-y-5" : "listing-grid"} aria-busy="true" aria-label="Loading listings">
       {Array.from({ length: count }).map((_, i) => (
-        <ListingCardSkeleton key={i} />
+        <ListingCardSkeleton key={i} wide={wide} />
       ))}
     </div>
   );
 }
 
 export function HomeFeedSkeleton() {
-  return <ListingFeedSkeleton count={2} />;
+  return <ListingFeedSkeleton count={4} />;
 }
 
 export function DetailSkeleton() {
@@ -134,7 +144,7 @@ export function ProfileSkeleton() {
 export function SearchSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading search">
-      <ListingFeedSkeleton count={3} />
+      <ListingFeedSkeleton count={4} />
     </div>
   );
 }

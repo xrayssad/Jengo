@@ -110,7 +110,7 @@ export default function Page() {
           Post a job
         </Link>
 
-        {loading && items.length === 0 && <ListingFeedSkeleton count={2} />}
+        {loading && items.length === 0 && <ListingFeedSkeleton count={2} wide />}
         {!loading && error && (
           <div className="text-center py-12">
             <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{error}</p>

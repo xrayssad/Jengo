@@ -9,6 +9,24 @@ import { ListingFeedSkeleton } from "@/components/Skeletons";
 import { type Listing } from "@/lib/api";
 import { readSaved, type SavedPost } from "@/lib/social";
 
+type SavedBlock =
+  | { kind: "listings"; key: string; items: SavedPost[] }
+  | { kind: "reel"; key: string; item: SavedPost };
+
+function groupSaved(items: SavedPost[]): SavedBlock[] {
+  const blocks: SavedBlock[] = [];
+  for (const item of items) {
+    if (item.kind === "reel") {
+      blocks.push({ kind: "reel", key: item.id, item });
+      continue;
+    }
+    const last = blocks[blocks.length - 1];
+    if (last?.kind === "listings") last.items.push(item);
+    else blocks.push({ kind: "listings", key: item.id, items: [item] });
+  }
+  return blocks;
+}
+
 function ReelFavorite({ item }: { item: SavedPost }) {
   return (
     <Link href="/reels" className="estate-card block overflow-hidden">
@@ -65,8 +83,8 @@ export default function FavoritesPage() {
           </div>
         </div>
       </header>
-      <div className="max-w-md mx-auto px-5 pt-5 space-y-5">
-        {!ready && <ListingFeedSkeleton count={2} />}
+      <div className="max-w-md mx-auto px-4 pt-5 space-y-5">
+        {!ready && <ListingFeedSkeleton count={4} />}
         {ready && items.length === 0 && (
           <div className="text-center py-16">
             <Bookmark size={28} color="var(--caramel)" className="mx-auto mb-3" />
@@ -74,11 +92,15 @@ export default function FavoritesPage() {
             <p className="text-sm mt-2 px-4" style={{ color: "var(--muted)" }}>Tap the bookmark on a listing or reel to see it here.</p>
           </div>
         )}
-        {ready && items.map((item) =>
-          item.kind === "reel" ? (
-            <ReelFavorite key={item.id} item={item} />
+        {ready && groupSaved(items).map((block) =>
+          block.kind === "reel" ? (
+            <ReelFavorite key={block.key} item={block.item} />
           ) : (
-            <ListingCard key={item.id} item={item as Listing} />
+            <div key={block.key} className="listing-grid">
+              {block.items.map((item, i) => (
+                <ListingCard key={item.id} item={item as Listing} eager={i < 2} />
+              ))}
+            </div>
           ),
         )}
       </div>

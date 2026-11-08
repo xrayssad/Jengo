@@ -229,12 +229,14 @@ export default function HomePage() {
           <h3 className="text-[20px] font-bold" style={{ color: "var(--ink)" }}>Listings</h3>
           <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Discover</Link>
         </div>
-        <div className="space-y-5">
-          {waiting && items.length === 0 && <HomeFeedSkeleton />}
-          {items.map((item, i) => (
-            <ListingCard key={item.id} item={item} eager={i === 0} />
-          ))}
-        </div>
+        {waiting && items.length === 0 && <HomeFeedSkeleton />}
+        {items.length > 0 && (
+          <div className="listing-grid">
+            {items.map((item, i) => (
+              <ListingCard key={item.id} item={item} eager={i < 2} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

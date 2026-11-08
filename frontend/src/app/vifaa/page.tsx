@@ -26,7 +26,7 @@ export default function VifaaPage() {
         </div>
       </header>
 
-      <div className="max-w-md mx-auto px-5 pt-6 space-y-5">
+      <div className="max-w-md mx-auto px-4 pt-5">
         {loading && items.length === 0 && <ListingFeedSkeleton />}
         {!loading && items.length === 0 && (
           <div className="text-center py-16">
@@ -36,9 +36,13 @@ export default function VifaaPage() {
             </Link>
           </div>
         )}
-        {items.map((item) => (
-          <ListingCard key={item.id} item={item} />
-        ))}
+        {items.length > 0 && (
+          <div className="listing-grid">
+            {items.map((item, i) => (
+              <ListingCard key={item.id} item={item} eager={i < 2} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

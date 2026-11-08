@@ -1,75 +1,84 @@
 "use client";
 
 import Link from "next/link";
-import { catShort, formatPrice, listingUnit, periodLabel, unitLabel, type Listing } from "@/lib/api";
+import { Heart } from "lucide-react";
+import { catShort, formatPrice, listingUnit, unitLabel, type Listing } from "@/lib/api";
 import SaveButton from "./SaveButton";
 
+const periodShort: Record<string, string> = {
+  mwezi: "/mo",
+  miezi_3: "/3 mo",
+  miezi_6: "/6 mo",
+  mwaka: "/yr",
+  usiku: "/night",
+  siku: "/day",
+  wiki: "/wk",
+};
+
+function placeLine(item: Listing) {
+  const city = (item.city || "").trim();
+  const location = (item.location || "").trim();
+  if (location && city && location.toLowerCase().includes(city.toLowerCase())) return location;
+  return [location, city].filter(Boolean).join(", ");
+}
+
 export default function ListingCard({ item, eager }: { item: Listing; eager?: boolean }) {
-  const place = [item.location, item.city].filter(Boolean).join(", ");
+  const place = placeLine(item);
   const photos = (item.images || []).filter(Boolean);
   const type = catShort[item.category || ""] || "Listing";
   const rate =
     item.category === "vifaa"
       ? listingUnit(item)
-        ? unitLabel(listingUnit(item))
+        ? `/${unitLabel(listingUnit(item))}`
         : ""
-      : (periodLabel(item.period) || "").replace(/^\//, "");
-
-  const specs = [
-    type,
-    rate || null,
-    item.category === "vifaa" && item.stock != null ? `${item.stock} in stock` : null,
-  ].filter(Boolean);
+      : periodShort[item.period || ""] || "";
+  const likes = item.likes_count || 0;
+  const stock =
+    likes > 0 || item.category !== "vifaa" || item.stock == null ? "" : `${item.stock} left`;
 
   return (
-    <article className="estate-card">
-      <div className="relative">
-        <Link href={`/tangazo/${item.id}`} className="block">
+    <article className="market-tile">
+      <div className="market-tile-media">
+        <Link href={`/tangazo/${item.id}`} className="block h-full w-full" aria-label={item.title}>
           {photos[0] ? (
-            <div className="estate-card-media">
-              <img
-                src={photos[0]}
-                alt=""
-                className="w-full h-full object-cover"
-                loading={eager ? "eager" : "lazy"}
-                decoding="async"
-              />
-            </div>
+            <img
+              src={photos[0]}
+              alt=""
+              loading={eager ? "eager" : "lazy"}
+              decoding="async"
+            />
           ) : (
-            <div className="estate-card-media flex items-center justify-center" style={{ background: "linear-gradient(165deg, var(--blush), var(--cream))" }}>
-              <span className="text-lg font-semibold" style={{ color: "var(--mocha)" }}>{type}</span>
+            <div
+              className="flex h-full w-full items-center justify-center px-2 text-center"
+              style={{ background: "linear-gradient(165deg, var(--blush), var(--cream))" }}
+            >
+              <span className="text-[13px] font-semibold" style={{ color: "var(--mocha)" }}>{type}</span>
             </div>
           )}
         </Link>
-        <div className="absolute top-3 right-3 z-10">
-          <SaveButton
-            item={item}
-            variant="heart"
-            size={18}
-            className="heart-fab"
-          />
+        {item.verified ? <span className="market-verified">Verified</span> : null}
+        <div className="absolute top-2 right-2 z-10">
+          <SaveButton item={item} variant="heart" size={15} className="heart-fab heart-fab-sm" />
         </div>
       </div>
 
-      <Link href={`/tangazo/${item.id}`} className="block px-4 pt-3.5 pb-4">
-        <div className="flex items-baseline justify-between gap-3">
-          <p className="text-[22px] font-bold leading-none tracking-tight" style={{ color: "var(--ink)" }}>
-            TZS {formatPrice(item.price)}
-          </p>
-          {place ? (
-            <p className="text-[13px] text-right leading-snug line-clamp-1 min-w-0" style={{ color: "var(--muted)" }}>
-              {place}
-            </p>
-          ) : null}
-        </div>
-        <p className="mt-2 text-[13px] leading-snug line-clamp-1" style={{ color: "var(--mocha)" }}>
-          {item.title}
+      <Link href={`/tangazo/${item.id}`} className="block px-0.5 pt-2">
+        <p className="market-price">
+          <span>TZS {formatPrice(item.price)}</span>
+          {rate ? <span className="market-rate">{rate}</span> : null}
         </p>
-        {specs.length > 0 ? (
-          <p className="mt-1.5 text-[12px] leading-snug" style={{ color: "var(--muted)" }}>
-            {specs.join("  ·  ")}
-          </p>
-        ) : null}
+        <p className="market-title">{item.title}</p>
+        <p className="market-meta">
+          <span>{place || type}</span>
+          {likes > 0 ? (
+            <span className="market-meta-aside">
+              <Heart size={11} strokeWidth={2} aria-hidden />
+              {likes}
+            </span>
+          ) : stock ? (
+            <span className="market-meta-aside">{stock}</span>
+          ) : null}
+        </p>
       </Link>
     </article>
   );
