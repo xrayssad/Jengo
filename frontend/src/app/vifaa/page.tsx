@@ -36,7 +36,7 @@ export default function VifaaPage() {
         {items.length > 0 && (
           <div className="listing-grid">
             {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 2} />
+              <ListingCard key={item.id} item={item} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
             ))}
           </div>
         )}

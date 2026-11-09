@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion } from "motion/react";
 import { Home, Clapperboard, Plus, MessageCircle, User } from "lucide-react";
+import { moveSpring, usePrefersReducedMotion } from "@/lib/motion";
 import { useInboxLive } from "./MqttInbox";
 
 const items = [
@@ -14,6 +16,7 @@ const items = [
 
 export default function BottomNav() {
   const path = usePathname();
+  const reduce = usePrefersReducedMotion();
   const inbox = useInboxLive();
   const chatUnread = inbox.unread && path !== "/messages";
 
@@ -27,7 +30,14 @@ export default function BottomNav() {
         className={active ? "nav-item is-active" : "nav-item"}
         aria-current={active ? "page" : undefined}
       >
-        <span className="relative inline-flex">
+        {active ? (
+          reduce ? (
+            <span className="nav-pill" />
+          ) : (
+            <motion.span layoutId="nav-pill" className="nav-pill" transition={moveSpring} />
+          )
+        ) : null}
+        <span className="nav-ico relative inline-flex">
           <Icon size={20} color="currentColor" strokeWidth={active ? 2.2 : 1.75} />
           {item.href === "/messages" && chatUnread && (
             <span
@@ -36,7 +46,7 @@ export default function BottomNav() {
             />
           )}
         </span>
-        <span>{item.label}</span>
+        <span className="nav-label">{item.label}</span>
       </Link>
     );
   };

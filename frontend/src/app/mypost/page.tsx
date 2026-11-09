@@ -171,7 +171,7 @@ export default function Page() {
               return (
                 <div key={`listings-${block.key}`} className="listing-grid">
                   {block.items.map((item, i) => (
-                    <ListingCard key={item.id} item={item} eager={i < 2} />
+                    <ListingCard key={item.id} item={item} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
                   ))}
                 </div>
               );

@@ -1,5 +1,6 @@
 "use client";
 
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { Heart, Images, MapPin } from "lucide-react";
 import { catShort, formatPrice, listingUnit, unitLabel, type Listing } from "@/lib/api";
@@ -33,7 +34,7 @@ function placeLine(item: Listing) {
 export default function ListingCard({
   item,
   eager,
-  delay = 0,
+  delay = -1,
 }: {
   item: Listing;
   eager?: boolean;
@@ -51,40 +52,48 @@ export default function ListingCard({
   const likes = item.likes_count || 0;
   const stock =
     likes > 0 || item.category !== "vifaa" || item.stock == null ? "" : `${item.stock} left`;
+  const enter = delay >= 0;
 
   return (
-    <article className="market-tile rise" style={{ animationDelay: `${Math.min(delay, 280)}ms` }}>
-      <div className="market-tile-media">
-        <Link href={`/tangazo/${item.id}`} className="block h-full w-full" aria-label={item.title}>
-          {photos[0] ? (
-            <img
-              src={photos[0]}
-              alt=""
-              loading={eager ? "eager" : "lazy"}
-              decoding="async"
-            />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center px-3 text-center"
-              style={{ background: wash[item.category || ""] || "linear-gradient(165deg, var(--blush), var(--cream))" }}
-            >
-              <span className="text-[13px] font-semibold" style={{ color: "var(--mocha)" }}>{type}</span>
-            </div>
-          )}
-        </Link>
-        {item.verified ? <span className="market-verified">Verified</span> : null}
-        {photos.length > 1 ? (
-          <span className="market-count">
-            <Images size={12} strokeWidth={2} aria-hidden />
-            {photos.length}
-          </span>
-        ) : null}
+    <article
+      className={enter ? "market-tile card-enter" : "market-tile"}
+      style={enter ? { animationDelay: `${delay}ms` } : undefined}
+    >
+      <div className="listing-media">
+        <ViewTransition name={`listing-${item.id}`} share="listing-morph" default="none">
+          <div className="market-tile-media">
+            <Link href={`/tangazo/${item.id}`} transitionTypes={["nav-forward"]} className="block h-full w-full" aria-label={item.title}>
+              {photos[0] ? (
+                <img
+                  src={photos[0]}
+                  alt=""
+                  loading={eager ? "eager" : "lazy"}
+                  decoding="async"
+                />
+              ) : (
+                <div
+                  className="flex h-full w-full items-center justify-center px-3 text-center"
+                  style={{ background: wash[item.category || ""] || "linear-gradient(165deg, var(--blush), var(--cream))" }}
+                >
+                  <span className="text-[13px] font-semibold" style={{ color: "var(--mocha)" }}>{type}</span>
+                </div>
+              )}
+            </Link>
+            {item.verified ? <span className="market-verified">Verified</span> : null}
+            {photos.length > 1 ? (
+              <span className="market-count">
+                <Images size={12} strokeWidth={2} aria-hidden />
+                {photos.length}
+              </span>
+            ) : null}
+          </div>
+        </ViewTransition>
         <div className="absolute top-2 right-2 z-10">
           <SaveButton item={item} variant="heart" size={16} className="heart-fab heart-fab-sm" />
         </div>
       </div>
 
-      <Link href={`/tangazo/${item.id}`} className="market-body">
+      <Link href={`/tangazo/${item.id}`} transitionTypes={["nav-forward"]} className="market-body">
         <p className="market-title">{item.title}</p>
         <p className="market-price">
           <span>TZS {formatPrice(item.price)}</span>

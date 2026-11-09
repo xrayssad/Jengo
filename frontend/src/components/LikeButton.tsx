@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type MouseEvent } from "react";
-import { Heart } from "lucide-react";
 import { likeListing } from "@/lib/api";
+import { haptic } from "@/lib/motion";
 import { isLiked, setLiked } from "@/lib/social";
+import HeartMark from "./HeartMark";
 import { useInboxLive } from "./MqttInbox";
 
 type LikePing = { listing_id?: string; likes_count?: number };
@@ -11,6 +12,7 @@ type LikePing = { listing_id?: string; likes_count?: number };
 export default function LikeButton({ id, count }: { id: string; count?: number }) {
   const [on, setOn] = useState(false);
   const [n, setN] = useState(count || 0);
+  const [burst, setBurst] = useState<"like" | "unlike" | null>(null);
   const skipProps = useRef(false);
   const { watchListing } = useInboxLive();
 
@@ -25,6 +27,12 @@ export default function LikeButton({ id, count }: { id: string; count?: number }
   }, [count]);
 
   useEffect(() => watchListing(id), [id, watchListing]);
+
+  useEffect(() => {
+    if (!burst) return;
+    const t = window.setTimeout(() => setBurst(null), 420);
+    return () => window.clearTimeout(t);
+  }, [burst]);
 
   useEffect(() => {
     const onLike = (e: Event) => {
@@ -42,6 +50,8 @@ export default function LikeButton({ id, count }: { id: string; count?: number }
     const next = !on;
     skipProps.current = true;
     setOn(next);
+    setBurst(next ? "like" : "unlike");
+    if (next) haptic(10);
     setLiked(id, next);
     const nextCount = Math.max(0, n + (next ? 1 : -1));
     setN(nextCount);
@@ -57,7 +67,7 @@ export default function LikeButton({ id, count }: { id: string; count?: number }
 
   return (
     <button type="button" onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }} onClick={press} className="flex items-center gap-1.5" aria-label="Like">
-      <Heart size={20} color={on ? "var(--error)" : "currentColor"} fill={on ? "var(--error)" : "none"} />
+      <HeartMark on={on} burst={burst} size={20} />
       <span className="text-[13px] font-semibold" style={{ color: "var(--text)" }}>{n}</span>
     </button>
   );

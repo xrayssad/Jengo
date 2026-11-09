@@ -24,10 +24,9 @@ export function ListingCardSkeleton({ wide = false }: { wide?: boolean }) {
       <div className="market-tile-media">
         <Bone className="absolute inset-0 rounded-none" />
       </div>
-      <div className="px-3 pt-3 pb-3.5 space-y-2">
-        <Bone className="h-4 w-24" />
-        <Bone className="h-3.5 w-full" />
-        <Bone className="h-3 w-20" />
+      <div className="market-body space-y-2">
+        <Bone className="h-3.5 w-3/4" />
+        <Bone className="h-3.5 w-1/2" />
       </div>
     </div>
   );

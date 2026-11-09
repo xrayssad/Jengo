@@ -7,11 +7,11 @@ import { ArrowLeft, Hammer, MapPin, Plus } from "lucide-react";
 import { fetchJobs, formatPrice, peekJobs, type Job } from "@/lib/api";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
 
-function JobRow({ item }: { item: Job }) {
+function JobRow({ item, index }: { item: Job; index: number }) {
   const place = [item.location, item.city].filter(Boolean).join(", ");
   const photo = (item.images || []).find(Boolean);
   return (
-    <Link href={`/kazi/${item.id}`} className="market-tile block">
+    <Link href={`/kazi/${item.id}`} className={index < 8 ? "market-tile block card-enter" : "market-tile block"} style={index < 8 ? { animationDelay: `${index * 50}ms` } : undefined}>
       <div className="market-tile-media">
         {photo ? (
           <img src={photo} alt="" />
@@ -112,8 +112,8 @@ export default function Page() {
         )}
         {items.length > 0 && (
           <div className="listing-grid mt-6">
-            {items.map((item) => (
-              <JobRow key={item.id} item={item} />
+            {items.map((item, index) => (
+              <JobRow key={item.id} item={item} index={index} />
             ))}
           </div>
         )}

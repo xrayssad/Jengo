@@ -94,7 +94,7 @@ export default function FavoritesPage() {
           ) : (
             <div key={block.key} className="listing-grid">
               {block.items.map((item, i) => (
-                <ListingCard key={item.id} item={item as Listing} eager={i < 2} />
+                <ListingCard key={item.id} item={item as Listing} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
               ))}
             </div>
           ),

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useState } from "react";
+import { ViewTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
@@ -40,10 +41,15 @@ function shownPlace(location?: string | null, city?: string | null) {
   return unique.join(", ") || "—";
 }
 
+function cachedListing(id: string) {
+  if (typeof window === "undefined") return null;
+  return peekListing(id);
+}
+
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
-  const [item, setItem] = useState<Listing | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [item, setItem] = useState<Listing | null>(() => cachedListing(id));
+  const [loading, setLoading] = useState(() => !cachedListing(id));
   const [error, setError] = useState("");
   const [qty, setQty] = useState("1");
 
@@ -123,6 +129,7 @@ export default function DetailsClient({ id }: { id: string }) {
       {!loading && item && (
         <>
           <div className="relative">
+            <ViewTransition name={`listing-${item.id}`} share="listing-morph" default="none">
             <PhotoGallery
               images={item.images}
               fallback={
@@ -136,6 +143,7 @@ export default function DetailsClient({ id }: { id: string }) {
                 </div>
               }
             />
+            </ViewTransition>
             <button
               type="button"
               onClick={() => router.back()}
@@ -151,6 +159,8 @@ export default function DetailsClient({ id }: { id: string }) {
           </div>
 
           <div className="canvas-read px-4 pt-5">
+            <ViewTransition enter="detail-copy" default="none">
+            <div>
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="detail-price">
@@ -172,6 +182,8 @@ export default function DetailsClient({ id }: { id: string }) {
             </div>
 
             <h1 className="detail-title">{item.title}</h1>
+            </div>
+            </ViewTransition>
             <div className="seller-card">
               <PosterName item={item} />
             </div>

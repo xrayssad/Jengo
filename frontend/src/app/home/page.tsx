@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import FeatureHero from "@/components/FeatureHero";
 import {
   Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
@@ -211,23 +212,23 @@ export default function HomePage() {
           </div>
         </div>
 
-        <Link href="/kazi" className="feature-card">
-          <div className="feature-copy">
-            <p className="feature-kicker">Featured</p>
-            <h3>Construction Jobs</h3>
-            <p className="feature-sub">Paint, tiles, ceiling, plumbing, electrical.</p>
-            <span className="feature-cta">Browse jobs</span>
-          </div>
-          <div className="feature-photo">
-            <Image src="/real/materials.jpg" alt="" fill priority className="object-cover" sizes="180px" />
-          </div>
-        </Link>
+        <FeatureHero
+          copy={
+            <div className="feature-copy">
+              <p className="feature-kicker">Featured</p>
+              <h3>Construction Jobs</h3>
+              <p className="feature-sub">Paint, tiles, ceiling, plumbing, electrical.</p>
+              <span className="feature-cta">Browse jobs</span>
+            </div>
+          }
+          photo={<Image src="/real/materials.jpg" alt="" fill priority className="object-cover" sizes="180px" />}
+        />
 
         <div ref={railRef} className="cat-rail no-scrollbar">
-          {chips.map((c) => {
+          {chips.map((c, i) => {
             const Icon = c.icon;
             return (
-              <Link key={c.href} href={c.href} className="cat-tile" aria-label={c.label}>
+              <Link key={c.href} href={c.href} className="cat-tile cat-pop" style={{ animationDelay: `${i * 40}ms` }} aria-label={c.label}>
                 <span className="cat-tile-icon">
                   <Icon size={28} strokeWidth={1.6} />
                 </span>
@@ -245,7 +246,7 @@ export default function HomePage() {
         {items.length > 0 && (
           <div className="listing-grid">
             {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={Math.min(i, 5) * 45} />
+              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 50 : -1} />
             ))}
           </div>
         )}

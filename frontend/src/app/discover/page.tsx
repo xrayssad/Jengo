@@ -69,7 +69,7 @@ export default function DiscoverPage() {
         {shown.length > 0 && (
           <div className="listing-grid">
             {shown.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={Math.min(i, 5) * 45} />
+              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 50 : -1} />
             ))}
           </div>
         )}

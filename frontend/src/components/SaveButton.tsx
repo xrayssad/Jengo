@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState, type CSSProperties, type MouseEvent } from "react";
-import { Bookmark, Heart } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import type { Listing } from "@/lib/api";
+import { haptic } from "@/lib/motion";
 import { isSaved, toggleSaved } from "@/lib/social";
+import HeartMark from "./HeartMark";
 
 export default function SaveButton({
   item,
@@ -19,19 +21,28 @@ export default function SaveButton({
   variant?: "bookmark" | "heart";
 }) {
   const [on, setOn] = useState(false);
-  const [pulse, setPulse] = useState(0);
+  const [burst, setBurst] = useState<"like" | "unlike" | null>(null);
   useEffect(() => setOn(isSaved(item.id)), [item.id]);
+  useEffect(() => {
+    if (!burst) return;
+    const t = window.setTimeout(() => setBurst(null), 420);
+    return () => window.clearTimeout(t);
+  }, [burst]);
 
   const press = (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setOn(toggleSaved(item));
-    setPulse((n) => n + 1);
+    const next = toggleSaved(item);
+    setOn(next);
+    if (variant === "heart") {
+      setBurst(next ? "like" : "unlike");
+      if (next) haptic(10);
+    }
   };
 
-  const Icon = variant === "heart" ? Heart : Bookmark;
-  const stroke = variant === "heart" ? (on ? "var(--error)" : "currentColor") : "currentColor";
-  const fill = on ? (variant === "heart" ? "var(--error)" : "currentColor") : "none";
+  const Icon = Bookmark;
+  const stroke = "currentColor";
+  const fill = on ? "currentColor" : "none";
 
   return (
     <button
@@ -45,9 +56,11 @@ export default function SaveButton({
       className={className || "flex items-center gap-1"}
       style={style}
     >
-      <span className={pulse > 0 ? "heart-pop" : undefined} key={pulse}>
+      {variant === "heart" ? (
+        <HeartMark on={on} burst={burst} size={size} />
+      ) : (
         <Icon size={size} color={stroke} fill={fill} strokeWidth={1.8} />
-      </span>
+      )}
     </button>
   );
 }
