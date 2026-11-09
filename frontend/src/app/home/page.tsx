@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import {
   Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
-  Home, Warehouse, Building2, Store, Boxes,
+  Home, Warehouse, Building2, Store, Boxes, SlidersHorizontal,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import ListingCard from "@/components/ListingCard";
@@ -18,12 +18,12 @@ import { clearAuth, fetchListings, suggestPlaces, writeHomeListingsCache, type P
 import { useListings } from "@/lib/useListings";
 
 const chips = [
-  { href: "/nyumba", label: "Rooms & Houses", icon: Home },
-  { href: "/kazi", label: "Construction Jobs", icon: Hammer },
-  { href: "/godown", label: "Shops & Godown", icon: Warehouse },
-  { href: "/airbnb", label: "Apartment & Airbnb", icon: Building2 },
-  { href: "/maduka", label: "Shop Frames", icon: Store },
-  { href: "/vifaa", label: "Materials", icon: Boxes },
+  { href: "/nyumba", label: "Rooms & Houses", short: "Rooms", icon: Home },
+  { href: "/kazi", label: "Construction Jobs", short: "Jobs", icon: Hammer },
+  { href: "/godown", label: "Shops & Godown", short: "Shops", icon: Warehouse },
+  { href: "/airbnb", label: "Apartment & Airbnb", short: "Apartments", icon: Building2 },
+  { href: "/maduka", label: "Shop Frames", short: "Frames", icon: Store },
+  { href: "/vifaa", label: "Materials", short: "Materials", icon: Boxes },
 ];
 
 const sideLinks = [
@@ -104,17 +104,17 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
+    <main className="home-settle min-h-screen overflow-x-hidden">
       <header className="topbar">
-        <div className="canvas flex items-center justify-between gap-3 px-5">
-          <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn" aria-label="Menu">
-            <Menu size={18} color="var(--ink)" />
+        <div className="canvas flex items-center justify-between gap-3 px-4">
+          <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn home-icon-btn" aria-label="Menu">
+            <Menu size={18} color="currentColor" />
           </button>
           <div className="text-center min-w-0">
-            <h1 className="font-heading text-[30px] leading-none" style={{ color: "var(--ink)" }}>Jengo</h1>
+            <h1 className="font-heading home-logo">Jengo</h1>
             <AdminLink />
           </div>
-          <InboxLink className="soft-icon-btn" />
+          <InboxLink className="soft-icon-btn home-icon-btn" />
         </div>
       </header>
 
@@ -154,75 +154,85 @@ export default function HomePage() {
         </nav>
       </aside>
 
-      <div className="canvas px-4 pt-6 pb-2">
-        <h2 className="page-title mb-4">Near you</h2>
+      <div className="canvas home-body px-4">
+        <div className="home-intro">
+          <p className="home-greet">Welcome back</p>
 
-        <form
-          ref={searchBox}
-          action="/search"
-          onSubmit={(e) => {
-            e.preventDefault();
-            goSearch(placeQ);
-          }}
-          className="relative mb-6"
-        >
-          <div className="search-field">
-            <Search size={18} color="var(--mocha)" />
-            <input
-              name="q"
-              value={placeQ}
-              onChange={(e) => setPlaceQ(e.target.value)}
-              onFocus={() => hits.length && setOpenHits(true)}
-              placeholder="City or street"
-              className="flex-1 bg-transparent outline-none text-[15px] min-w-0"
-              style={{ color: "var(--ink)" }}
-              autoComplete="off"
-              aria-label="Search by city or street"
-            />
+          <div className="home-search-row">
+            <form
+              ref={searchBox}
+              action="/search"
+              onSubmit={(e) => {
+                e.preventDefault();
+                goSearch(placeQ);
+              }}
+              className="home-search-form"
+            >
+              <div className="search-field home-search">
+                <Search size={18} color="var(--muted)" />
+                <input
+                  name="q"
+                  value={placeQ}
+                  onChange={(e) => setPlaceQ(e.target.value)}
+                  onFocus={() => hits.length && setOpenHits(true)}
+                  placeholder="City or street"
+                  className="flex-1 bg-transparent outline-none text-[15px] min-w-0"
+                  style={{ color: "var(--text)" }}
+                  autoComplete="off"
+                  aria-label="Search by city or street"
+                />
+              </div>
+              {openHits && hits.length > 0 && (
+                <div className="absolute z-20 left-0 right-0 mt-2 overflow-hidden sheet" style={{ borderRadius: 22 }}>
+                  {hits.map((h) => (
+                    <button
+                      key={`${h.label}-${h.place_id || h.lat}`}
+                      type="button"
+                      onClick={() => goSearch(h.label || h.city || "")}
+                      className="block w-full text-left px-4 py-2.5 text-sm"
+                      style={{ color: "var(--text)", borderBottom: "1px solid rgba(var(--mocha-rgb),0.14)" }}
+                    >
+                      {h.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </form>
+            <Link href="/search" className="home-filter" aria-label="Filters">
+              <SlidersHorizontal size={18} color="currentColor" />
+            </Link>
           </div>
-          {openHits && hits.length > 0 && (
-            <div className="absolute z-20 left-0 right-0 mt-2 overflow-hidden sheet" style={{ borderRadius: 22 }}>
-              {hits.map((h) => (
-                <button
-                  key={`${h.label}-${h.place_id || h.lat}`}
-                  type="button"
-                  onClick={() => goSearch(h.label || h.city || "")}
-                  className="block w-full text-left px-4 py-2.5 text-sm"
-                  style={{ color: "var(--ink)", borderBottom: "1px solid rgba(var(--mocha-rgb),0.14)" }}
-                >
-                  {h.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </form>
+        </div>
 
-        <div className="cat-rail no-scrollbar mb-6">
+        <Link href="/kazi" className="feature-card">
+          <div className="feature-copy">
+            <p className="feature-kicker">Featured</p>
+            <h3>Construction Jobs</h3>
+            <p className="feature-sub">Paint, tiles, ceiling, plumbing, electrical.</p>
+            <span className="feature-cta">Browse jobs</span>
+          </div>
+          <div className="feature-photo">
+            <Image src="/real/materials.jpg" alt="" fill priority className="object-cover" sizes="180px" />
+          </div>
+        </Link>
+
+        <div className="cat-rail no-scrollbar">
           {chips.map((c) => {
             const Icon = c.icon;
             return (
-              <Link key={c.href} href={c.href} className="cat-tile">
+              <Link key={c.href} href={c.href} className="cat-tile" aria-label={c.label}>
                 <span className="cat-tile-icon">
-                  <Icon size={22} strokeWidth={1.75} />
+                  <Icon size={28} strokeWidth={1.6} />
                 </span>
-                <span className="cat-tile-label">{c.label}</span>
+                <span className="cat-tile-label">{c.short}</span>
               </Link>
             );
           })}
         </div>
 
-        <Link href="/kazi" className="feature-card mb-6">
-          <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="(min-width: 1100px) 1120px, 100vw" />
-          <div className="feature-shade" />
-          <div className="feature-glass">
-            <h3>Construction Jobs</h3>
-            <p>Paint, tiles, ceiling, plumbing, electrical.</p>
-          </div>
-        </Link>
-
-        <div className="flex items-end justify-between mb-3">
-          <h3 className="section-title">Listings</h3>
-          <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Discover</Link>
+        <div className="home-section-head">
+          <h3 className="home-section-title">Listings</h3>
+          <Link href="/discover" className="home-see-all">See all</Link>
         </div>
         {waiting && items.length === 0 && <HomeFeedSkeleton />}
         {items.length > 0 && (

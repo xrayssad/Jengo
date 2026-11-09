@@ -60,11 +60,11 @@ export function InboxLink({ className }: { className?: string }) {
   return (
     <Link href="/messages" className={className} aria-label="Messages">
       <span className="relative inline-flex">
-        <Send size={16} color="var(--ink)" />
+        <Send size={18} color="currentColor" />
         {inbox.unread && (
           <span
             className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full"
-            style={{ backgroundColor: "var(--error)", boxShadow: "0 0 0 2px rgba(var(--paper-rgb),0.95)" }}
+            style={{ backgroundColor: "var(--accent)", boxShadow: "0 0 0 2px var(--surface)" }}
           />
         )}
       </span>

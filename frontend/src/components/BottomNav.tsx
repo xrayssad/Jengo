@@ -32,7 +32,7 @@ export default function BottomNav() {
           {item.href === "/messages" && chatUnread && (
             <span
               className="absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: "var(--error)", boxShadow: "0 0 0 2px rgba(var(--surface-rgb),0.95)" }}
+              style={{ backgroundColor: "var(--accent)", boxShadow: "0 0 0 2px var(--primary)" }}
             />
           )}
         </span>
@@ -58,7 +58,7 @@ export default function BottomNav() {
         {link(items[1])}
         <div className="flex items-center justify-center min-w-0">
           <Link href="/weka-tangazo" aria-label="Post a listing" className="nav-add">
-            <Plus size={22} color="var(--paper)" strokeWidth={2.4} />
+            <Plus size={22} color="var(--primary)" strokeWidth={2.4} />
           </Link>
         </div>
         {link(items[2])}

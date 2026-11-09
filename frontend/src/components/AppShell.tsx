@@ -57,7 +57,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       {show && (
         <>
           {!fullBleed(path) && (
-            <div aria-hidden style={{ height: "var(--bottom-nav-space)" }} />
+            <div aria-hidden className="nav-spacer" />
           )}
           <BottomNav />
         </>
