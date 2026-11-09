@@ -17,7 +17,7 @@ export default function HeartMark({
       {burst === "like" ? (
         <span className="heart-burst" aria-hidden>
           {Array.from({ length: 7 }, (_, i) => (
-            <i key={i} style={{ ["--p" as string]: String(i) }} />
+            <span key={i} className="heart-bit" style={{ ["--p" as string]: String(i) }} />
           ))}
         </span>
       ) : null}

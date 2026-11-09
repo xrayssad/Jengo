@@ -25,7 +25,7 @@ export default function SaveButton({
   useEffect(() => setOn(isSaved(item.id)), [item.id]);
   useEffect(() => {
     if (!burst) return;
-    const t = window.setTimeout(() => setBurst(null), 420);
+    const t = window.setTimeout(() => setBurst(null), 520);
     return () => window.clearTimeout(t);
   }, [burst]);
 

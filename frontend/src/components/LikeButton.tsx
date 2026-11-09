@@ -30,7 +30,7 @@ export default function LikeButton({ id, count }: { id: string; count?: number }
 
   useEffect(() => {
     if (!burst) return;
-    const t = window.setTimeout(() => setBurst(null), 420);
+    const t = window.setTimeout(() => setBurst(null), 520);
     return () => window.clearTimeout(t);
   }, [burst]);
 
