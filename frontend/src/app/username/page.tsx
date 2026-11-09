@@ -42,7 +42,7 @@ export default function UsernamePage() {
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "var(--paper)" }}>
       <div className="sheet w-full max-w-sm p-6 rounded-[28px] fade-up">
         <p className="text-sm" style={{ color: "var(--mocha)" }}>Google account</p>
-        <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "var(--ink)" }}>Choose a username</h1>
+        <h1 className="text-[20px] font-semibold leading-snug mb-3" style={{ color: "var(--text)" }}>Choose a username</h1>
         <p className="text-sm mb-8" style={{ color: "var(--muted)" }}>
           Your Google account is ready. Set a username once, then go home.
         </p>

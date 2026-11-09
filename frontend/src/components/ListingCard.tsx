@@ -91,7 +91,7 @@ export default function ListingCard({
           {rate ? <span className="market-rate">{rate}</span> : null}
         </p>
         <p className="market-place">
-          <MapPin size={12} color="var(--mocha)" aria-hidden />
+          <MapPin size={12} color="var(--muted)" aria-hidden />
           <span>{place || type}</span>
         </p>
         {(likes > 0 || stock) && (

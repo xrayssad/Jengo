@@ -59,7 +59,7 @@ export default function Page() {
           )}
           {rows.map((r) => (
             <div key={r.id} className="sheet rounded-[28px] p-5">
-              <h2 className="font-heading" style={{ color: "var(--ink)" }}>{r.title}</h2>
+              <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>{r.title}</h2>
               <p className="text-sm mt-1" style={{ color: "var(--muted)" }}>{r.message || "No message"}</p>
               <p className="text-xs mt-2 font-semibold" style={{ color: "var(--mocha)" }}>{r.status || "pending"}</p>
               {r.status === "accepted" && (

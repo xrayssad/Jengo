@@ -30,8 +30,8 @@ export default function SaveButton({
   };
 
   const Icon = variant === "heart" ? Heart : Bookmark;
-  const stroke = variant === "heart" ? (on ? "var(--error)" : "var(--ink)") : "var(--ink)";
-  const fill = on ? (variant === "heart" ? "var(--error)" : "var(--ink)") : "none";
+  const stroke = variant === "heart" ? (on ? "var(--error)" : "currentColor") : "currentColor";
+  const fill = on ? (variant === "heart" ? "var(--error)" : "currentColor") : "none";
 
   return (
     <button

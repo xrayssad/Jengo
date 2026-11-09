@@ -153,7 +153,7 @@ export default function JobClient({ id }: { id: string }) {
             />
             <div className="sheet rounded-[28px] p-5 space-y-2">
               {Number(job.budget) > 0 ? (
-                <p className="font-heading text-[28px] leading-none" style={{ color: "var(--ink)" }}>TSh {formatPrice(job.budget)}</p>
+                <p className="font-semibold text-[28px] leading-none" style={{ color: "var(--ink)" }}>TSh {formatPrice(job.budget)}</p>
               ) : null}
               {place ? (
                 <p className="flex items-center gap-1 text-sm" style={{ color: "var(--muted)" }}>
@@ -199,7 +199,7 @@ export default function JobClient({ id }: { id: string }) {
 
             {!mine && open && (
               <form onSubmit={sendOffer} className="sheet rounded-[28px] p-5 space-y-3">
-                <h2 className="font-heading text-xl" style={{ color: "var(--ink)" }}>Send an offer</h2>
+                <h2 className="font-semibold text-xl" style={{ color: "var(--ink)" }}>Send an offer</h2>
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" className="input-chocolate w-full px-4 py-3.5 text-sm" />
                 <input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Phone" inputMode="tel" className="input-chocolate w-full px-4 py-3.5 text-sm" />
                 <input value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="Amount (TSh)" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />

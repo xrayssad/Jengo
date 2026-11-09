@@ -31,7 +31,7 @@ export default function PhotoGallery({
     };
   }, [open, photos.length]);
 
-  if (!photos.length) return <>{fallback}</>;
+  if (!photos.length) return <div className="detail-hero">{fallback}</div>;
 
   const go = (n: number) => {
     const next = Math.max(0, Math.min(photos.length - 1, n));
@@ -42,7 +42,7 @@ export default function PhotoGallery({
 
   return (
     <>
-      <div className="relative detail-hero" style={{ height: "min(52vh, 420px)", minHeight: 280 }}>
+      <div className="relative detail-hero">
         <div
           ref={scroller}
           className="flex h-full overflow-x-auto snap-x snap-mandatory no-scrollbar"
@@ -87,10 +87,7 @@ export default function PhotoGallery({
               ))}
           </div>
           {photos.length > 1 ? (
-            <p
-              className="text-[11px] font-semibold px-2.5 py-1 rounded-full"
-              style={{ color: "var(--ink)", backgroundColor: "rgba(var(--surface-rgb),0.88)" }}
-            >
+            <p className="photo-count">
               {i + 1} / {photos.length}
             </p>
           ) : null}

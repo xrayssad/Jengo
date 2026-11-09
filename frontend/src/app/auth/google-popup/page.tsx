@@ -11,7 +11,7 @@ export default function GooglePopupPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "var(--paper)" }}>
       <div className="text-center max-w-sm">
-        <h1 className="font-heading text-2xl mb-3" style={{ color: "var(--ink)" }}>
+        <h1 className="text-xl font-semibold mb-3" style={{ color: "var(--text)" }}>
           Google sign-in
         </h1>
         <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>

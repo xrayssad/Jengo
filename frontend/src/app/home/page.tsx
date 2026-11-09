@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -50,6 +50,7 @@ export default function HomePage() {
   const [hits, setHits] = useState<PlaceHit[]>([]);
   const [openHits, setOpenHits] = useState(false);
   const searchBox = useRef<HTMLFormElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
   const { items, setItems, loading: waiting } = useListings({ status: "active", limit: 40 });
 
   const goSearch = (q: string) => {
@@ -58,6 +59,10 @@ export default function HomePage() {
     setOpenHits(false);
     router.push(`/search?q=${encodeURIComponent(next)}`);
   };
+
+  useLayoutEffect(() => {
+    if (railRef.current) railRef.current.scrollLeft = 0;
+  }, []);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -118,13 +123,15 @@ export default function HomePage() {
         </div>
       </header>
 
-      <div className="fixed inset-0 z-40 transition-opacity duration-300" style={{ backgroundColor: "rgba(var(--veil-rgb),0.55)", opacity: open ? 1 : 0, pointerEvents: open ? "auto" : "none" }} onClick={() => setOpen(false)} />
+      <div className="fixed inset-0 z-40 transition-opacity duration-300" style={{ backgroundColor: "rgba(var(--veil-rgb),0.55)", opacity: open ? 1 : 0, visibility: open ? "visible" : "hidden", pointerEvents: open ? "auto" : "none" }} onClick={() => setOpen(false)} />
       <aside
         className="drawer-gold fixed top-0 left-0 z-50 flex flex-col"
         style={{
           height: "100dvh",
           width: "min(300px, 86vw)",
           transform: open ? "translateX(0)" : "translateX(-105%)",
+          visibility: open ? "visible" : "hidden",
+          boxShadow: "none",
           transition: "transform 0.3s ease",
           paddingTop: "env(safe-area-inset-top)",
         }}
@@ -216,7 +223,7 @@ export default function HomePage() {
           </div>
         </Link>
 
-        <div className="cat-rail no-scrollbar">
+        <div ref={railRef} className="cat-rail no-scrollbar">
           {chips.map((c) => {
             const Icon = c.icon;
             return (

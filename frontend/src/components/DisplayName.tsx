@@ -13,7 +13,7 @@ export default function DisplayName() {
     <div className="canvas-read px-5 pt-4">
       <div className="p-4 sheet rounded-[24px]">
         <p className="text-sm" style={{ color: "var(--mocha)" }}>Your name</p>
-        <p className="font-heading text-xl mt-1" style={{ color: "var(--ink)" }}>{name || "No name yet"}</p>
+        <p className="text-xl font-semibold mt-1" style={{ color: "var(--text)" }}>{name || "No name yet"}</p>
         {!name && (
           <Link href="/settings" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>Set it in Settings</Link>
         )}

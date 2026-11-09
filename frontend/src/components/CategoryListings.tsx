@@ -46,12 +46,12 @@ export default function CategoryListings({
   }, [category]);
 
   return (
-    <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
+    <main className="min-h-screen pb-4" style={{ backgroundColor: "var(--bg)" }}>
       <header className="topbar">
-        <div className="canvas px-5">
+        <div className="canvas px-4">
           <div className="flex items-center gap-3">
             <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
-              <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
+              <ArrowLeft size={18} strokeWidth={2.2} color="currentColor" />
             </Link>
             <div className="min-w-0">
               <h1 className="page-title">{title}</h1>

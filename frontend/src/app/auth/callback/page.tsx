@@ -118,7 +118,7 @@ export default function AuthCallbackPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "var(--paper)" }}>
       <div className="text-center max-w-sm">
-        <h1 className="font-heading text-2xl mb-3" style={{ color: "var(--ink)" }}>
+        <h1 className="text-xl font-semibold mb-3" style={{ color: "var(--text)" }}>
           {error ? errorTitle(error) : "Finishing..."}
         </h1>
         {error ? (

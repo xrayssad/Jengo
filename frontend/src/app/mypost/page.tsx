@@ -79,7 +79,7 @@ function JobPost({ item }: { item: Job }) {
         <div className="post-scrim" />
         <div className="absolute left-4 right-4 bottom-4">
           <p className="text-[11px]" style={{ color: "var(--gold)" }}>Construction Jobs</p>
-          <p className="font-heading text-[26px] leading-none post-caption">{item.title}</p>
+          <p className="text-[16px] font-semibold leading-tight post-caption">{item.title}</p>
           {place ? <p className="text-xs mt-1 post-caption" style={{ opacity: 0.86 }}>{place}</p> : null}
         </div>
       </div>

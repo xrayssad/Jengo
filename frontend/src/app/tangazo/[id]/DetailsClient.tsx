@@ -24,6 +24,22 @@ import PhotoGallery from "@/components/PhotoGallery";
 import PosterName from "@/components/PosterName";
 import { DetailSkeleton } from "@/components/Skeletons";
 
+function shownPlace(location?: string | null, city?: string | null) {
+  const parts = [location, city]
+    .filter(Boolean)
+    .join(", ")
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const unique: string[] = [];
+  for (const part of parts) {
+    const prev = unique[unique.length - 1];
+    if (prev && prev.toLowerCase() === part.toLowerCase()) continue;
+    unique.push(part);
+  }
+  return unique.join(", ") || "—";
+}
+
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
   const [item, setItem] = useState<Listing | null>(null);
@@ -63,6 +79,7 @@ export default function DetailsClient({ id }: { id: string }) {
   const phones = item ? listingPhones(item) : [];
   const callHref = phones[0] ? phoneTelHref(phones[0]) : "";
   const ago = item ? timeAgo(item.created_at) : "";
+  const place = shownPlace(item?.location, item?.city);
 
   const specs = item
     ? [
@@ -93,7 +110,7 @@ export default function DetailsClient({ id }: { id: string }) {
       : item.description?.trim());
 
   return (
-    <main className="min-h-screen pb-28" style={{ backgroundColor: "var(--paper)" }}>
+    <main className="detail-page min-h-screen">
       {loading && <DetailSkeleton />}
       {!loading && error && (
         <div className="text-center py-16 px-5">
@@ -105,15 +122,15 @@ export default function DetailsClient({ id }: { id: string }) {
       )}
       {!loading && item && (
         <>
-          <div className="relative detail-hero">
+          <div className="relative">
             <PhotoGallery
               images={item.images}
               fallback={
                 <div
                   className="w-full flex items-center justify-center detail-hero-fallback"
-                  style={{ background: "linear-gradient(165deg, var(--blush), var(--cream))" }}
+                  style={{ background: "var(--surface-2)" }}
                 >
-                  <span className="text-2xl font-semibold" style={{ color: "var(--mocha)" }}>
+                  <span className="text-2xl font-semibold" style={{ color: "var(--primary)" }}>
                     {catShort[item.category || ""] || "Jengo"}
                   </span>
                 </div>
@@ -122,22 +139,23 @@ export default function DetailsClient({ id }: { id: string }) {
             <button
               type="button"
               onClick={() => router.back()}
-              className="absolute top-4 left-4 z-20 soft-icon-btn"
+              className="detail-float-btn absolute z-20"
+              style={{ top: "calc(16px + env(safe-area-inset-top))", left: 16 }}
               aria-label="Back"
             >
-              <ArrowLeft size={18} color="var(--ink)" />
+              <ArrowLeft size={18} color="currentColor" />
             </button>
-            <div className="absolute top-4 right-4 z-20">
-              <SaveButton item={item} variant="heart" size={18} className="heart-fab" />
+            <div className="absolute z-20" style={{ top: "calc(16px + env(safe-area-inset-top))", right: 16 }}>
+              <SaveButton item={item} variant="heart" size={18} className="detail-float-btn" />
             </div>
           </div>
 
-          <div className="canvas-read px-5 pt-6">
+          <div className="canvas-read px-4 pt-5">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[28px] font-bold leading-none tracking-tight" style={{ color: "var(--ink)" }}>
+                <p className="detail-price">
                   TZS {formatPrice(item.price)}
-                  <span className="text-sm font-medium ml-1.5" style={{ color: "var(--muted)" }}>
+                  <span className="detail-unit">
                     {item.category === "vifaa"
                       ? listingUnit(item)
                         ? `/ ${unitLabel(listingUnit(item))}`
@@ -145,28 +163,24 @@ export default function DetailsClient({ id }: { id: string }) {
                       : periodLabel(item.period)}
                   </span>
                 </p>
-                <p className="flex items-center gap-1.5 mt-2.5 text-[14px]" style={{ color: "var(--muted)" }}>
-                  <MapPin size={14} color="var(--mocha)" />
-                  <span className="line-clamp-2">
-                    {[item.location, item.city].filter(Boolean).join(", ") || "—"}
-                  </span>
+                <p className="detail-place">
+                  <MapPin size={14} color="var(--muted)" />
+                  <span>{place}</span>
                 </p>
               </div>
               {ago ? <span className="time-pill shrink-0">{ago}</span> : null}
             </div>
 
-            <h1 className="mt-4 text-[20px] font-semibold leading-snug" style={{ color: "var(--ink)" }}>
-              {item.title}
-            </h1>
-            <div className="mt-2">
+            <h1 className="detail-title">{item.title}</h1>
+            <div className="seller-card">
               <PosterName item={item} />
             </div>
 
-            <div className="grid grid-cols-4 gap-2 mt-5">
+            <div className="grid grid-cols-2 gap-3 mt-4">
               {specs.map((spec) => (
                 <div key={spec.label} className="stat-pill">
-                  <p className="stat-pill-value">{spec.value}</p>
                   <p className="stat-pill-label">{spec.label}</p>
+                  <p className="stat-pill-value">{spec.value}</p>
                 </div>
               ))}
             </div>
@@ -176,59 +190,49 @@ export default function DetailsClient({ id }: { id: string }) {
             </div>
 
             <div className="mt-6">
-              <p className="text-[15px] font-semibold" style={{ color: "var(--ink)" }}>
-                Listing information
-              </p>
-              <p className="text-[14px] leading-relaxed mt-2 whitespace-pre-wrap" style={{ color: "var(--muted)" }}>
+              <p className="detail-heading">Listing information</p>
+              <p className="detail-copy whitespace-pre-wrap">
                 {description || "No extra description."}
               </p>
             </div>
 
             {item.category === "vifaa" && (
               <div className="mt-5">
-                <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--mocha)" }}>
-                  Quantity
-                </label>
+                <label className="detail-qty-label">Quantity</label>
                 <input
                   value={qty}
                   onChange={(e) => setQty(e.target.value)}
                   inputMode="numeric"
                   placeholder="1"
-                  className="input-chocolate w-full px-4 py-3 text-sm"
+                  className="detail-qty w-full px-4 text-sm"
                 />
               </div>
             )}
           </div>
 
-          <div
-            className="fixed bottom-0 left-0 right-0 z-30 px-5 pt-3"
-            style={{
-              paddingBottom: "max(14px, env(safe-area-inset-bottom))",
-              background: "linear-gradient(to top, rgba(var(--paper-rgb), 0.96) 62%, rgba(var(--paper-rgb), 0))",
-            }}
-          >
-            <div className="canvas-read flex gap-2.5">
-              <Link
-                href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
-                className="detail-cta flex-1"
-              >
-                <Mail size={16} />
-                Message
-              </Link>
+          <div className="detail-cta-bar">
+            <div className="detail-cta-row">
               {callHref ? (
-                <a href={callHref} className="detail-cta flex-1">
+                <a href={callHref} className="detail-cta">
                   <Phone size={16} />
                   Call
                 </a>
               ) : (
                 <Link
                   href={`/tuma-ombi?listing=${item.id}&title=${encodeURIComponent(item.title)}&category=${encodeURIComponent(item.category || "")}&qty=${encodeURIComponent(qty)}`}
-                  className="detail-cta flex-1"
+                  className="detail-cta"
                 >
                   <Phone size={16} />
                   Request
                 </Link>
               )}
+              <Link
+                href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
+                className="detail-cta detail-cta-secondary"
+              >
+                <Mail size={16} />
+                Message
+              </Link>
             </div>
           </div>
         </>

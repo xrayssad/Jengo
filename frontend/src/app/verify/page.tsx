@@ -57,7 +57,7 @@ function VerifyForm() {
     <main className="min-h-screen w-full overflow-x-hidden flex items-center justify-center px-4" style={{ backgroundColor: "var(--paper)" }}>
       <div className="sheet w-full max-w-sm min-w-0 p-5 rounded-[28px] fade-up">
         <p className="text-sm" style={{ color: "var(--mocha)" }}>Verification</p>
-        <h1 className="font-heading text-[36px] leading-none mb-3" style={{ color: "var(--ink)" }}>
+        <h1 className="text-[20px] font-semibold leading-snug mb-3" style={{ color: "var(--text)" }}>
           Verify email
         </h1>
         <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>

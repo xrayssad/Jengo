@@ -4,41 +4,31 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, Hammer, MapPin, Plus } from "lucide-react";
-import { fetchJobs, peekJobs, type Job } from "@/lib/api";
+import { fetchJobs, formatPrice, peekJobs, type Job } from "@/lib/api";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
 
 function JobRow({ item }: { item: Job }) {
   const place = [item.location, item.city].filter(Boolean).join(", ");
   const photo = (item.images || []).find(Boolean);
   return (
-    <Link href={`/kazi/${item.id}`} className="estate-card block overflow-hidden">
-      <div className="post-frame" style={{ backgroundColor: "var(--ink-2)" }}>
+    <Link href={`/kazi/${item.id}`} className="market-tile block">
+      <div className="market-tile-media">
         {photo ? (
-          <img src={photo} alt="" className="w-full h-full object-cover" />
+          <img src={photo} alt="" />
         ) : (
-          <div className="w-full h-full flex items-center justify-center" style={{ background: "linear-gradient(165deg, var(--blush), var(--cream))" }}>
-            <Hammer size={28} color="var(--mocha)" />
+          <div className="flex h-full w-full items-center justify-center" style={{ background: "var(--surface-2)" }}>
+            <Hammer size={28} color="var(--primary)" />
           </div>
         )}
-        <div className="post-scrim" />
-        <div className="absolute left-4 right-4 bottom-4">
-          <p className="font-heading text-[28px] leading-none post-caption">{item.title}</p>
-          {place ? (
-            <p className="flex items-center gap-1 mt-2 text-xs post-caption" style={{ opacity: 0.86 }}>
-              <MapPin size={12} />
-              {place}
-            </p>
-          ) : null}
-        </div>
       </div>
-      <div className="px-4 py-3 flex items-center justify-between gap-3">
-        {item.deadline ? (
-          <p className="text-sm" style={{ color: "var(--ink)" }}>Deadline {item.deadline}</p>
-        ) : (
-          <span />
-        )}
-        {item.offers_count ? (
-          <span className="text-[11px]" style={{ color: "var(--mocha)" }}>{item.offers_count} offers</span>
+      <div className="market-body">
+        <p className="market-title">{item.title}</p>
+        <p className="market-price"><span>TZS {formatPrice(item.budget)}</span></p>
+        {place ? (
+          <p className="market-place">
+            <MapPin size={12} color="var(--muted)" aria-hidden />
+            <span>{place}</span>
+          </p>
         ) : null}
       </div>
     </Link>
@@ -78,11 +68,11 @@ export default function Page() {
   }, []);
 
   return (
-    <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>
+    <main className="min-h-screen" style={{ backgroundColor: "var(--bg)" }}>
       <header className="topbar">
-        <div className="canvas-read flex items-center gap-3 px-5">
+        <div className="canvas flex items-center gap-3 px-4">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
-            <ArrowLeft size={18} color="var(--ink)" />
+            <ArrowLeft size={18} color="currentColor" />
           </Link>
           <div className="flex-1 min-w-0">
             <h1 className="page-title">Construction Jobs</h1>
@@ -91,7 +81,7 @@ export default function Page() {
         </div>
       </header>
 
-      <div className="canvas-read px-5 pt-6 space-y-5">
+      <div className="canvas px-4 pt-6 space-y-4">
         <div className="estate-card">
           <div className="estate-card-media">
             <Image src="/real/materials.jpg" alt="" fill className="object-cover" sizes="720px" />
@@ -107,7 +97,7 @@ export default function Page() {
           Post a job
         </Link>
 
-        {loading && items.length === 0 && <ListingFeedSkeleton count={2} wide />}
+        {loading && items.length === 0 && <ListingFeedSkeleton count={4} />}
         {!loading && error && (
           <div className="text-center py-12">
             <p className="text-lg font-bold" style={{ color: "var(--ink)" }}>{error}</p>
@@ -120,9 +110,13 @@ export default function Page() {
             <p className="text-sm mt-2" style={{ color: "var(--muted)" }}>Post a small job like paint or repairs.</p>
           </div>
         )}
-        {items.map((item) => (
-          <JobRow key={item.id} item={item} />
-        ))}
+        {items.length > 0 && (
+          <div className="listing-grid mt-6">
+            {items.map((item) => (
+              <JobRow key={item.id} item={item} />
+            ))}
+          </div>
+        )}
       </div>
     </main>
   );

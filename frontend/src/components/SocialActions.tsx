@@ -8,7 +8,7 @@ import SaveButton from "./SaveButton";
 
 export default function SocialActions({ item }: { item: Listing }) {
   return (
-    <div className="flex items-center gap-5">
+    <div className="detail-actions">
       <LikeButton id={item.id} count={item.likes_count} />
       <SaveButton item={item} />
       <Link
@@ -17,7 +17,7 @@ export default function SocialActions({ item }: { item: Listing }) {
         aria-label="Direct message"
         onClick={(e) => e.stopPropagation()}
       >
-        <Send size={19} color="var(--ink)" strokeWidth={1.8} />
+        <Send size={19} color="var(--primary)" strokeWidth={1.8} />
         <span className="text-xs" style={{ color: "var(--mocha)" }}>Message</span>
       </Link>
     </div>

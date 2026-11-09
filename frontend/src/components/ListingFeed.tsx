@@ -39,11 +39,11 @@ export default function ListingFeed({
   }, []);
 
   return (
-    <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
+    <main className="min-h-screen pb-4" style={{ backgroundColor: "var(--bg)" }}>
       <header className="topbar">
-        <div className="canvas flex items-center gap-3 px-5">
+        <div className="canvas flex items-center gap-3 px-4">
           <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
-            <ArrowLeft size={18} color="var(--ink)" />
+            <ArrowLeft size={18} color="currentColor" />
           </Link>
           <div className="min-w-0">
             <h1 className="page-title">{title}</h1>

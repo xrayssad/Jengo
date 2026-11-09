@@ -58,7 +58,7 @@ export default function IncomingPage() {
         )}
         {rows.map((r) => (
           <div key={r.id} className="sheet rounded-[28px] p-5">
-            <h2 className="font-heading" style={{ color: "var(--ink)" }}>{r.title}</h2>
+            <h2 className="text-base font-semibold" style={{ color: "var(--text)" }}>{r.title}</h2>
             {r.quantity != null && (
               <p className="text-sm mt-1 font-semibold" style={{ color: "var(--mocha)" }}>Quantity: {r.quantity}</p>
             )}

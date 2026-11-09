@@ -173,7 +173,7 @@ function AdminDesk() {
 
           {!loading && tab === "muhtasari" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Market status</h1>
+              <h1 className="font-semibold text-3xl mb-1">Market status</h1>
               <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>
                 These numbers come from verified accounts, all listings, requests, and commission recorded after move-in.
               </p>
@@ -188,7 +188,7 @@ function AdminDesk() {
                     style={{ borderLeft: i === 0 ? "none" : "1px solid rgba(var(--ink-rgb),0.18)", paddingLeft: i === 0 ? 0 : 16 }}
                   >
                     <p className="text-sm" style={{ color: "var(--muted)" }}>{item.label}</p>
-                    <p className="font-heading text-2xl mt-1 break-words">{item.value}</p>
+                    <p className="font-semibold text-2xl mt-1 break-words">{item.value}</p>
                   </div>
                 ))}
               </div>
@@ -197,7 +197,7 @@ function AdminDesk() {
 
           {!loading && tab === "watumiaji" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Users</h1>
+              <h1 className="font-semibold text-3xl mb-1">Users</h1>
               <p className="text-sm mb-5" style={{ color: "var(--muted)" }}>
                 You can suspend an account so it cannot sign in. Role does not change here.
               </p>
@@ -247,7 +247,7 @@ function AdminDesk() {
 
           {!loading && tab === "matangazo" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Listings</h1>
+              <h1 className="font-semibold text-3xl mb-1">Listings</h1>
               <p className="text-sm mb-5" style={{ color: "var(--muted)" }}>
                 Hide to remove it from Discover. Restore to show it again. No approval is required before publishing.
               </p>
@@ -297,7 +297,7 @@ function AdminDesk() {
 
           {!loading && tab === "maombi" && (
             <div>
-              <h1 className="font-heading text-3xl mb-1">Requests</h1>
+              <h1 className="font-semibold text-3xl mb-1">Requests</h1>
               <p className="text-sm mb-5" style={{ color: "var(--muted)" }}>
                 Status of each request. Commission appears after move-in; payment is not taken here.
               </p>
