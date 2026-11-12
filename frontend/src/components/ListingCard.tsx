@@ -1,89 +1,89 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { ViewTransition } from "react";
 import Link from "next/link";
-import { Heart, Images, MapPin } from "lucide-react";
-import { catShort, formatPrice, listingUnit, unitLabel, type Listing } from "@/lib/api";
+import { Check, Eye, MapPin } from "lucide-react";
+import { formatPrice, listingUnit, type Listing } from "@/lib/api";
+import { bedCount, formatViews, sellerVerified, shortPlace, viewCount, type ViewMode } from "@/lib/browse";
+import { useT } from "@/lib/i18n";
 import SaveButton from "./SaveButton";
 
-const periodShort: Record<string, string> = {
-  mwezi: "/mo",
-  miezi_3: "/3 mo",
-  miezi_6: "/6 mo",
-  mwaka: "/yr",
-  usiku: "/night",
-  siku: "/day",
-  wiki: "/wk",
-};
+const RENTALS = new Set(["chumba_nyumba", "store_godown", "frame"]);
 
-const wash: Record<string, string> = {
-  chumba_nyumba: "linear-gradient(165deg, #F6F1EA, #E8D5C4)",
-  apartment_airbnb: "linear-gradient(165deg, #EFE6DA, #D4C4B0)",
-  store_godown: "linear-gradient(165deg, #E7EFE8, #C9D5CC)",
-  frame: "linear-gradient(165deg, #F3EBE1, #DCCFBE)",
-  vifaa: "linear-gradient(165deg, #E4EBE6, #B7C4BA)",
-};
-
-function placeLine(item: Listing) {
-  const city = (item.city || "").trim();
-  const location = (item.location || "").trim();
-  if (location && city && location.toLowerCase().includes(city.toLowerCase())) return location;
-  return [location, city].filter(Boolean).join(", ");
+function rateKey(item: Listing) {
+  if (item.category === "vifaa") {
+    const unit = listingUnit(item);
+    return unit ? `unit.${unit}` : "unit.kipande";
+  }
+  if (item.period) return `period.${item.period}`;
+  if (item.category === "apartment_airbnb") return "period.usiku";
+  if (RENTALS.has(item.category || "")) return "period.mwezi";
+  return "";
 }
 
 export default function ListingCard({
   item,
   eager,
   delay = -1,
+  layout = "grid",
 }: {
   item: Listing;
   eager?: boolean;
   delay?: number;
+  layout?: ViewMode;
 }) {
-  const place = placeLine(item);
+  const t = useT();
+  const place = shortPlace(item);
   const photos = (item.images || []).filter(Boolean);
-  const type = catShort[item.category || ""] || "Listing";
-  const rate =
-    item.category === "vifaa"
-      ? listingUnit(item)
-        ? `/${unitLabel(listingUnit(item))}`
-        : ""
-      : periodShort[item.period || ""] || "";
-  const likes = item.likes_count || 0;
-  const stock =
-    likes > 0 || item.category !== "vifaa" || item.stock == null ? "" : `${item.stock} left`;
+  const src = photos[0] || "";
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [ready, setReady] = useState(false);
+  const verified = sellerVerified(item);
+  const views = viewCount(item);
+  const beds = bedCount(item);
+  const stock = item.category === "vifaa" && item.stock != null ? item.stock : null;
+  const chip = stock != null ? t("stock", { n: stock }) : beds != null ? t("bed", { n: beds }) : "";
+  const rateId = rateKey(item);
+  const rate = rateId ? t(rateId) : "";
+  const shownRate = rate === rateId ? "" : rate;
   const enter = delay >= 0;
+  const row = layout === "list";
+
+  useEffect(() => {
+    setReady(false);
+    const node = imgRef.current;
+    if (node?.complete && node.naturalWidth > 0) setReady(true);
+  }, [src]);
 
   return (
     <article
-      className={enter ? "market-tile card-enter" : "market-tile"}
+      className={`${row ? "market-tile is-row" : "market-tile"}${enter ? " card-enter" : ""}`}
       style={enter ? { animationDelay: `${delay}ms` } : undefined}
     >
       <div className="listing-media">
         <ViewTransition name={`listing-${item.id}`} share="listing-morph" default="none">
           <div className="market-tile-media">
             <Link href={`/tangazo/${item.id}`} transitionTypes={["nav-forward"]} className="block h-full w-full" aria-label={item.title}>
-              {photos[0] ? (
+              {src ? (
                 <img
-                  src={photos[0]}
+                  ref={imgRef}
+                  src={src}
                   alt=""
                   loading={eager ? "eager" : "lazy"}
                   decoding="async"
+                  className={ready ? "is-ready" : ""}
+                  onLoad={() => setReady(true)}
+                  onError={() => setReady(true)}
                 />
               ) : (
-                <div
-                  className="flex h-full w-full items-center justify-center px-3 text-center"
-                  style={{ background: wash[item.category || ""] || "linear-gradient(165deg, var(--blush), var(--cream))" }}
-                >
-                  <span className="text-[13px] font-semibold" style={{ color: "var(--mocha)" }}>{type}</span>
-                </div>
+                <div className="market-photo-empty" />
               )}
             </Link>
-            {item.verified ? <span className="market-verified">Verified</span> : null}
-            {photos.length > 1 ? (
-              <span className="market-count">
-                <Images size={12} strokeWidth={2} aria-hidden />
-                {photos.length}
+            {verified ? (
+              <span className="market-verified">
+                <Check size={11} strokeWidth={2.6} aria-hidden />
+                {t("verified")}
               </span>
             ) : null}
           </div>
@@ -94,28 +94,32 @@ export default function ListingCard({
       </div>
 
       <Link href={`/tangazo/${item.id}`} transitionTypes={["nav-forward"]} className="market-body">
-        <p className="market-title">{item.title}</p>
         <p className="market-price">
-          <span>TZS {formatPrice(item.price)}</span>
-          {rate ? <span className="market-rate">{rate}</span> : null}
+          <span className="market-price-num">TSh&nbsp;{formatPrice(item.price)}</span>
+          {shownRate ? <span className="market-rate">{shownRate}</span> : null}
         </p>
-        <p className="market-place">
-          <MapPin size={12} color="var(--muted)" aria-hidden />
-          <span>{place || type}</span>
-        </p>
-        {(likes > 0 || stock) && (
+        <p className="market-title">{item.title}</p>
+        {(place || views != null) && (
           <p className="market-meta">
-            <span>{type}</span>
-            {likes > 0 ? (
-              <span className="market-meta-aside">
-                <Heart size={12} strokeWidth={2} aria-hidden />
-                {likes}
+            <span className="market-place">
+              {place ? (
+                <>
+                  <MapPin size={12} color="currentColor" aria-hidden />
+                  <span>{place}</span>
+                </>
+              ) : (
+                <span />
+              )}
+            </span>
+            {views != null ? (
+              <span className="market-views">
+                <Eye size={12} strokeWidth={2} aria-hidden />
+                {t("views", { n: formatViews(views) })}
               </span>
-            ) : (
-              <span className="market-meta-aside">{stock}</span>
-            )}
+            ) : null}
           </p>
         )}
+        {chip ? <p className="market-chip">{chip}</p> : null}
       </Link>
     </article>
   );

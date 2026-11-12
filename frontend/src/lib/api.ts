@@ -19,8 +19,21 @@ export type Listing = {
   owner_id?: string;
   owner_username?: string | null;
   owner_name?: string | null;
+  owner_verified?: boolean;
+  owner?: { verified?: boolean } | null;
   phones?: string[];
   phone?: string;
+  /** Optional. Present only when the API sends coordinates. */
+  lat?: number | null;
+  lng?: number | null;
+  /** Optional view counters. Hidden on the card when absent. */
+  views?: number | null;
+  views_count?: number | null;
+  view_count?: number | null;
+  bedrooms?: number | null;
+  beds?: number | null;
+  rooms?: number | null;
+  featured?: boolean;
 };
 
 const TOKEN_KEY = "jengo_token";

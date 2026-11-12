@@ -15,13 +15,8 @@ export function useTheme() {
   return useContext(ThemeCtx);
 }
 
-function firstTheme(): ThemeName {
-  if (typeof document === "undefined") return "light";
-  return document.documentElement.classList.contains("dark") ? "dark" : "light";
-}
-
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeName>(firstTheme);
+  const [theme, setThemeState] = useState<ThemeName>("light");
 
   useEffect(() => {
     const next = readTheme();

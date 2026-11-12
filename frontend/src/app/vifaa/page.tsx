@@ -2,18 +2,19 @@
 
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import ListingCard from "@/components/ListingCard";
-import { ListingFeedSkeleton } from "@/components/Skeletons";
+import ListingBrowse from "@/components/ListingBrowse";
+import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 
 export default function VifaaPage() {
-  const { items, loading } = useListings({ category: "vifaa", status: "active", limit: 40 });
+  const t = useT();
+  const { items, loading, error } = useListings({ category: "vifaa", status: "active", limit: 40 });
 
   return (
     <main className="min-h-screen pb-4" style={{ backgroundColor: "var(--bg)" }}>
       <header className="topbar">
         <div className="canvas flex items-center gap-3 px-4">
-          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label={t("back")}>
             <ArrowLeft size={18} color="currentColor" />
           </Link>
           <div className="min-w-0">
@@ -24,22 +25,7 @@ export default function VifaaPage() {
       </header>
 
       <div className="canvas px-4 pt-6">
-        {loading && items.length === 0 && <ListingFeedSkeleton />}
-        {!loading && items.length === 0 && (
-          <div className="empty-panel">
-            <p className="lead">No materials yet</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 text-sm">
-              Post a listing
-            </Link>
-          </div>
-        )}
-        {items.length > 0 && (
-          <div className="listing-grid">
-            {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
-            ))}
-          </div>
-        )}
+        <ListingBrowse items={items} loading={loading} error={error} />
       </div>
     </main>
   );

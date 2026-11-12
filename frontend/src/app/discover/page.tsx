@@ -1,10 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { Search } from "lucide-react";
-import ListingCard from "@/components/ListingCard";
-import { ListingFeedSkeleton } from "@/components/Skeletons";
+import ListingBrowse from "@/components/ListingBrowse";
 import { shopCategories } from "@/lib/api";
 import { useListings } from "@/lib/useListings";
 
@@ -20,7 +18,7 @@ const chips = [
 const shop = new Set(shopCategories);
 
 export default function DiscoverPage() {
-  const { items, loading } = useListings({ status: "active", limit: 40 });
+  const { items, loading, error } = useListings({ status: "active", limit: 40 });
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
 
@@ -59,20 +57,7 @@ export default function DiscoverPage() {
         </div>
       </header>
       <div className="canvas px-4 pt-6">
-        {loading && items.length === 0 && <ListingFeedSkeleton />}
-        {!loading && shown.length === 0 && (
-          <div className="empty-panel">
-            <p className="lead">No listings</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 text-sm">Post a listing</Link>
-          </div>
-        )}
-        {shown.length > 0 && (
-          <div className="listing-grid">
-            {shown.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 50 : -1} />
-            ))}
-          </div>
-        )}
+        <ListingBrowse items={shown} loading={loading} error={error} />
       </div>
     </main>
   );

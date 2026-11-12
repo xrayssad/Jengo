@@ -1,9 +1,22 @@
-"use client";
-
-import { useParams } from "next/navigation";
+import { Suspense } from "react";
+import { DetailSkeleton } from "@/components/Skeletons";
 import DetailsClient from "./DetailsClient";
 
-export default function TangazoDetailsPage() {
-  const params = useParams<{ id: string }>();
-  return <DetailsClient id={String(params.id || "")} />;
+export const instant = false;
+
+async function Body({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  return <DetailsClient id={id} />;
+}
+
+export default function TangazoDetailsPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  return (
+    <Suspense fallback={<DetailSkeleton />}>
+      <Body params={params} />
+    </Suspense>
+  );
 }

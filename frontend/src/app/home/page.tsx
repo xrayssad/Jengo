@@ -11,11 +11,12 @@ import {
   Home, Warehouse, Building2, Store, Boxes, SlidersHorizontal,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
-import ListingCard from "@/components/ListingCard";
-import { HomeFeedSkeleton } from "@/components/Skeletons";
+import { LangCircle, LangDrawer, ThemeCircle } from "@/components/HeaderTools";
+import ListingBrowse from "@/components/ListingBrowse";
 import ThemeToggle from "@/components/ThemeToggle";
 import { InboxLink } from "@/components/MqttInbox";
 import { clearAuth, fetchListings, suggestPlaces, writeHomeListingsCache, type PlaceHit } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 
 const chips = [
@@ -46,13 +47,14 @@ if (typeof window !== "undefined") void fetchListings({ status: "active", limit:
 
 export default function HomePage() {
   const router = useRouter();
+  const t = useT();
   const [open, setOpen] = useState(false);
   const [placeQ, setPlaceQ] = useState("");
   const [hits, setHits] = useState<PlaceHit[]>([]);
   const [openHits, setOpenHits] = useState(false);
   const searchBox = useRef<HTMLFormElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
-  const { items, setItems, loading: waiting } = useListings({ status: "active", limit: 40 });
+  const { items, setItems, loading: waiting, error } = useListings({ status: "active", limit: 40 });
 
   const goSearch = (q: string) => {
     const next = q.split(",")[0].trim() || q.trim();
@@ -112,15 +114,19 @@ export default function HomePage() {
   return (
     <main className="home-settle min-h-screen overflow-x-hidden">
       <header className="topbar">
-        <div className="canvas flex items-center justify-between gap-3 px-4">
-          <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn home-icon-btn" aria-label="Menu">
+        <div className="canvas home-top px-4">
+          <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn home-icon-btn" aria-label={t("menu")}>
             <Menu size={18} color="currentColor" />
           </button>
-          <div className="text-center min-w-0">
+          <div className="home-brand">
             <h1 className="font-heading home-logo">Jengo</h1>
             <AdminLink />
           </div>
-          <InboxLink className="soft-icon-btn home-icon-btn" />
+          <div className="home-tools">
+            <ThemeCircle />
+            <LangCircle />
+            <InboxLink className="soft-icon-btn home-icon-btn" />
+          </div>
         </div>
       </header>
 
@@ -139,7 +145,7 @@ export default function HomePage() {
       >
         <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: "1px solid var(--gold)" }}>
           <p className="font-heading text-[28px] leading-none" style={{ color: "var(--gold)" }}>Jengo</p>
-          <button type="button" onClick={() => setOpen(false)} className="drawer-close w-9 h-9 flex items-center justify-center" aria-label="Close">
+          <button type="button" onClick={() => setOpen(false)} className="drawer-close w-9 h-9 flex items-center justify-center" aria-label={t("close")}>
             <X size={16} color="var(--gold)" />
           </button>
         </div>
@@ -156,6 +162,7 @@ export default function HomePage() {
           <div className="flex mx-3 mt-2 mb-2 px-3 py-3" style={{ color: "var(--gold)" }}>
             <ThemeToggle dense />
           </div>
+          <LangDrawer />
           <Link href="/login" onClick={() => { clearAuth(); setOpen(false); }} className="flex mx-3 mt-4 mb-6 px-3 py-3" style={{ border: "1px solid var(--gold)", color: "var(--gold)" }}>
             <span className="text-sm">Log out</span>
           </Link>
@@ -238,18 +245,7 @@ export default function HomePage() {
           })}
         </div>
 
-        <div className="home-section-head">
-          <h3 className="home-section-title">Listings</h3>
-          <Link href="/discover" className="home-see-all">See all</Link>
-        </div>
-        {waiting && items.length === 0 && <HomeFeedSkeleton />}
-        {items.length > 0 && (
-          <div className="listing-grid">
-            {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 50 : -1} />
-            ))}
-          </div>
-        )}
+        <ListingBrowse items={items} loading={waiting} error={error} />
       </div>
     </main>
   );

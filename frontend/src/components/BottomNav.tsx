@@ -4,18 +4,20 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { Home, Clapperboard, Plus, MessageCircle, User } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { moveSpring, usePrefersReducedMotion } from "@/lib/motion";
 import { useInboxLive } from "./MqttInbox";
 
 const items = [
-  { href: "/home", label: "Home", icon: Home },
-  { href: "/reels", label: "Reels", icon: Clapperboard },
-  { href: "/messages", label: "Chat", icon: MessageCircle },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/home", label: "nav.home", icon: Home },
+  { href: "/reels", label: "nav.reels", icon: Clapperboard },
+  { href: "/messages", label: "nav.chat", icon: MessageCircle },
+  { href: "/profile", label: "nav.profile", icon: User },
 ];
 
 export default function BottomNav() {
   const path = usePathname();
+  const t = useT();
   const reduce = usePrefersReducedMotion();
   const inbox = useInboxLive();
   const chatUnread = inbox.unread && path !== "/messages";
@@ -42,11 +44,11 @@ export default function BottomNav() {
           {item.href === "/messages" && chatUnread && (
             <span
               className="absolute -top-0.5 -right-1 w-2.5 h-2.5 rounded-full"
-              style={{ backgroundColor: "var(--accent)", boxShadow: "0 0 0 2px var(--primary)" }}
+              style={{ backgroundColor: "var(--accent)", boxShadow: "0 0 0 2px var(--nav)" }}
             />
           )}
         </span>
-        <span className="nav-label">{item.label}</span>
+        <span className="nav-label">{t(item.label)}</span>
       </Link>
     );
   };
@@ -67,8 +69,8 @@ export default function BottomNav() {
         {link(items[0])}
         {link(items[1])}
         <div className="flex items-center justify-center min-w-0">
-          <Link href="/weka-tangazo" aria-label="Post a listing" className="nav-add">
-            <Plus size={22} color="var(--primary)" strokeWidth={2.4} />
+          <Link href="/weka-tangazo" aria-label={t("nav.post")} className="nav-add">
+            <Plus size={22} color="currentColor" strokeWidth={2.4} />
           </Link>
         </div>
         {link(items[2])}

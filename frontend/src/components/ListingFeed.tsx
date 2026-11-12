@@ -3,9 +3,9 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
-import ListingCard from "./ListingCard";
-import { ListingFeedSkeleton } from "./Skeletons";
+import ListingBrowse from "./ListingBrowse";
 
 function asList(category: string | string[]) {
   const raw = Array.isArray(category) ? category : [category];
@@ -21,8 +21,9 @@ export default function ListingFeed({
   subtitle: string;
   category: string | string[];
 }) {
+  const t = useT();
   const cats = asList(category);
-  const { items, setItems, loading } = useListings({
+  const { items, setItems, loading, error } = useListings({
     status: "active",
     category: cats.join(","),
     limit: 40,
@@ -42,7 +43,7 @@ export default function ListingFeed({
     <main className="min-h-screen pb-4" style={{ backgroundColor: "var(--bg)" }}>
       <header className="topbar">
         <div className="canvas flex items-center gap-3 px-4">
-          <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
+          <Link href="/home" className="soft-icon-btn shrink-0" aria-label={t("back")}>
             <ArrowLeft size={18} color="currentColor" />
           </Link>
           <div className="min-w-0">
@@ -52,20 +53,7 @@ export default function ListingFeed({
         </div>
       </header>
       <div className="canvas px-4 pt-6">
-        {loading && items.length === 0 && <ListingFeedSkeleton />}
-        {!loading && items.length === 0 && (
-          <div className="empty-panel">
-            <p className="lead">No listings yet</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-5 py-3 text-sm">Post a listing</Link>
-          </div>
-        )}
-        {items.length > 0 && (
-          <div className="listing-grid">
-            {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 50 : -1} />
-            ))}
-          </div>
-        )}
+        <ListingBrowse items={items} loading={loading} error={error} />
       </div>
     </main>
   );

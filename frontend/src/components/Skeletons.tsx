@@ -4,7 +4,24 @@ function Bone({ className = "", style }: { className?: string; style?: CSSProper
   return <span className={`skel-bone ${className}`.trim()} style={style} />;
 }
 
-export function ListingCardSkeleton({ wide = false }: { wide?: boolean }) {
+export function ListingCardSkeleton({ wide = false, layout = "grid" }: { wide?: boolean; layout?: "grid" | "list" }) {
+  if (layout === "list" && !wide) {
+    return (
+      <div className="market-tile is-row" aria-hidden>
+        <div className="listing-media">
+          <div className="market-tile-media">
+            <Bone className="absolute inset-0 rounded-none" />
+          </div>
+        </div>
+        <div className="market-body space-y-2">
+          <Bone className="h-4 w-24" />
+          <Bone className="h-3.5 w-full" />
+          <Bone className="h-3 w-3/5" />
+        </div>
+      </div>
+    );
+  }
+
   if (wide) {
     return (
       <div className="estate-card" aria-hidden>
@@ -25,18 +42,21 @@ export function ListingCardSkeleton({ wide = false }: { wide?: boolean }) {
         <Bone className="absolute inset-0 rounded-none" />
       </div>
       <div className="market-body space-y-2">
-        <Bone className="h-3.5 w-3/4" />
-        <Bone className="h-3.5 w-1/2" />
+        <Bone className="h-4 w-2/3" />
+        <Bone className="h-3.5 w-full" />
+        <Bone className="h-3.5 w-4/5" />
+        <Bone className="h-3 w-1/2" />
       </div>
     </div>
   );
 }
 
-export function ListingFeedSkeleton({ count = 4, wide = false }: { count?: number; wide?: boolean }) {
+export function ListingFeedSkeleton({ count = 4, wide = false, layout = "grid" }: { count?: number; wide?: boolean; layout?: "grid" | "list" }) {
+  const list = layout === "list" && !wide;
   return (
-    <div className={wide ? "space-y-5" : "listing-grid"} aria-busy="true" aria-label="Loading listings">
+    <div className={wide ? "space-y-5" : list ? "listing-grid is-list" : "listing-grid"} aria-busy="true" aria-label="Loading listings">
       {Array.from({ length: count }).map((_, i) => (
-        <ListingCardSkeleton key={i} wide={wide} />
+        <ListingCardSkeleton key={i} wide={wide} layout={layout} />
       ))}
     </div>
   );

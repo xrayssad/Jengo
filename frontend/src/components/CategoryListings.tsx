@@ -5,8 +5,8 @@ import { ArrowLeft } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { fetchListings, type Listing } from "@/lib/api";
-import ListingCard from "@/components/ListingCard";
-import { ListingFeedSkeleton } from "@/components/Skeletons";
+import ListingBrowse from "@/components/ListingBrowse";
+import { useT } from "@/lib/i18n";
 
 type Props = {
   title: string;
@@ -22,6 +22,7 @@ export default function CategoryListings({
   icon: Icon,
   tabs,
 }: Props) {
+  const t = useT();
   const [items, setItems] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -50,11 +51,14 @@ export default function CategoryListings({
       <header className="topbar">
         <div className="canvas px-4">
           <div className="flex items-center gap-3">
-            <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
+            <Link href="/home" className="soft-icon-btn shrink-0" aria-label={t("back")}>
               <ArrowLeft size={18} strokeWidth={2.2} color="currentColor" />
             </Link>
             <div className="min-w-0">
-              <h1 className="page-title">{title}</h1>
+              <h1 className="page-title flex items-center gap-2">
+                <Icon size={18} strokeWidth={1.8} aria-hidden />
+                {title}
+              </h1>
               <p className="page-note">
                 {loading ? "Loading..." : `${items.length} available`}
               </p>
@@ -65,27 +69,7 @@ export default function CategoryListings({
       </header>
 
       <div className="canvas px-4 py-6">
-        {loading && <ListingFeedSkeleton />}
-        {!loading && error && (
-          <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
-        )}
-        {!loading && !error && items.length === 0 && (
-          <div className="empty-panel">
-            <Icon size={36} color="var(--caramel)" className="mx-auto mb-3" />
-            <p className="lead">No listings yet</p>
-            <p className="hint">Be the first to post.</p>
-            <Link href="/weka-tangazo" className="btn-primary inline-block mt-4 px-6 py-3 text-sm">
-              Post a listing
-            </Link>
-          </div>
-        )}
-        {!loading && !error && items.length > 0 && (
-          <div className="listing-grid">
-            {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 50 : -1} />
-            ))}
-          </div>
-        )}
+        <ListingBrowse items={items} loading={loading} error={error} />
       </div>
     </main>
   );

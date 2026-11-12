@@ -3,6 +3,7 @@
 import { useEffect, useState, type CSSProperties, type MouseEvent } from "react";
 import { Bookmark } from "lucide-react";
 import type { Listing } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 import { haptic } from "@/lib/motion";
 import { isSaved, toggleSaved } from "@/lib/social";
 import HeartMark from "./HeartMark";
@@ -20,6 +21,7 @@ export default function SaveButton({
   size?: number;
   variant?: "bookmark" | "heart";
 }) {
+  const t = useT();
   const [on, setOn] = useState(false);
   const [burst, setBurst] = useState<"like" | "unlike" | null>(null);
   useEffect(() => setOn(isSaved(item.id)), [item.id]);
@@ -52,7 +54,7 @@ export default function SaveButton({
         e.stopPropagation();
       }}
       onClick={press}
-      aria-label={on ? "Remove from Saved" : "Save listing"}
+      aria-label={on ? t("unsave") : t("save")}
       className={className || "flex items-center gap-1"}
       style={style}
     >

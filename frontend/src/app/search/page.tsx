@@ -4,8 +4,9 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
-import ListingCard from "@/components/ListingCard";
+import ListingBrowse from "@/components/ListingBrowse";
 import { SearchSkeleton } from "@/components/Skeletons";
+import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 
 const filters = [
@@ -18,6 +19,7 @@ const filters = [
 ];
 
 function SearchInner() {
+  const t = useT();
   const search = useSearchParams();
   const initialQ = search.get("q") || "";
   const initialCat = filters.some((f) => f.id === (search.get("category") || ""))
@@ -48,7 +50,7 @@ function SearchInner() {
       <header className="topbar">
         <div className="canvas px-5">
           <div className="flex items-center gap-3 mb-4">
-            <Link href="/home" className="soft-icon-btn shrink-0" aria-label="Back">
+            <Link href="/home" className="soft-icon-btn shrink-0" aria-label={t("back")}>
               <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
             </Link>
             <h1 className="page-title">Search</h1>
@@ -91,40 +93,7 @@ function SearchInner() {
       </header>
 
       <div className="canvas px-4 pt-6">
-        <p className="text-xs mb-4" style={{ color: "var(--muted)" }}>
-          {loading ? "Loading..." : query ? `${items.length} listings in ${query}` : `${items.length} results`}
-        </p>
-
-        {loading && items.length === 0 && <SearchSkeleton />}
-
-        {!loading && error && (
-          <p className="text-center text-sm py-10" style={{ color: "var(--error)" }}>{error}</p>
-        )}
-
-        {!loading && !error && items.length === 0 && (
-          <div className="empty-panel">
-            <Search size={32} color="var(--caramel)" className="mx-auto mb-3" />
-            <p className="lead">
-              {query || category ? "No listings match this city or street" : "No listings yet"}
-            </p>
-            {!query && !category && (
-              <Link
-                href="/weka-tangazo"
-                className="btn-primary inline-block mt-4 px-6 py-3 text-sm"
-              >
-                Post a listing
-              </Link>
-            )}
-          </div>
-        )}
-
-        {items.length > 0 && !error && (
-          <div className="listing-grid">
-            {items.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 50 : -1} />
-            ))}
-          </div>
-        )}
+        <ListingBrowse items={items} loading={loading} error={error} />
       </div>
     </main>
   );

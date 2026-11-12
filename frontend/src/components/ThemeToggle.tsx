@@ -1,10 +1,12 @@
 "use client";
 
 import { Moon, Sun } from "lucide-react";
+import { useT } from "@/lib/i18n";
 import { useTheme } from "./ThemeProvider";
 
 export default function ThemeToggle({ dense = false }: { dense?: boolean }) {
   const { theme, setTheme } = useTheme();
+  const t = useT();
   const night = theme === "dark";
   const Icon = night ? Moon : Sun;
 
@@ -13,7 +15,7 @@ export default function ThemeToggle({ dense = false }: { dense?: boolean }) {
       type="button"
       role="switch"
       aria-checked={night}
-      aria-label="Night mode"
+      aria-label={night ? t("theme.light") : t("theme.dark")}
       onClick={() => setTheme(night ? "light" : "dark")}
       className="flex items-center gap-3 w-full min-w-0 text-left"
     >
@@ -26,7 +28,7 @@ export default function ThemeToggle({ dense = false }: { dense?: boolean }) {
         className={`flex-1 min-w-0 text-sm ${dense ? "" : "font-semibold"}`}
         style={{ color: dense ? "inherit" : "var(--ink)" }}
       >
-        Night mode
+        {night ? t("theme.light") : t("theme.dark")}
       </span>
       <span
         className="relative shrink-0"

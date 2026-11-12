@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Send } from "lucide-react";
 import { fetchInbox, fetchMqttSession, getAuthUser, getToken, refreshAuth } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 type Ping = { type?: string; thread_key?: string; id?: string; listing_id?: string; reel_id?: string; likes_count?: number };
 type Unwatch = () => void;
@@ -57,8 +58,9 @@ function skipInbox(path: string) {
 
 export function InboxLink({ className }: { className?: string }) {
   const inbox = useInboxLive();
+  const t = useT();
   return (
-    <Link href="/messages" className={className} aria-label="Messages">
+    <Link href="/messages" className={className} aria-label={t("messages")}>
       <span className="relative inline-flex">
         <Send size={18} color="currentColor" />
         {inbox.unread && (
