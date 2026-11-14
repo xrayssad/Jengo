@@ -23,7 +23,7 @@ export default function ListingFeed({
 }) {
   const t = useT();
   const cats = asList(category);
-  const { items, setItems, loading, error } = useListings({
+  const { items, setItems, loading, error, pending, stale, refresh } = useListings({
     status: "active",
     category: cats.join(","),
     limit: 40,
@@ -53,7 +53,7 @@ export default function ListingFeed({
         </div>
       </header>
       <div className="canvas px-4 pt-6">
-        <ListingBrowse items={items} loading={loading} error={error} />
+        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} onRefresh={() => { void refresh(); }} />
       </div>
     </main>
   );

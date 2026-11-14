@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
 import { hushAllReels } from "@/lib/reelsMedia";
@@ -35,6 +35,15 @@ function fullBleed(path: string) {
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "";
   const show = !hideNav(path);
+  const [holdSpace, setHoldSpace] = useState(false);
+
+  useLayoutEffect(() => {
+    const sync = () => setHoldSpace(document.documentElement.dataset.detailOverlay === "1");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-detail-overlay"] });
+    return () => obs.disconnect();
+  }, [path]);
 
   useEffect(() => {
     if (skipUsernameGate(path)) return;
@@ -56,7 +65,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   return (
     <MqttInbox>
       {children}
-      {show && !fullBleed(path) ? <div aria-hidden className="nav-spacer" /> : null}
+      {(show || holdSpace || path.startsWith("/tangazo/")) && !fullBleed(path) ? <div aria-hidden className="nav-spacer" /> : null}
       <BottomNav hidden={!show} />
     </MqttInbox>
   );

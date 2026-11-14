@@ -24,6 +24,7 @@ import {
   type ViewMode,
 } from "@/lib/browse";
 import { useT } from "@/lib/i18n";
+import { disarmReturn, listRoute, peekReturn, pulseReturn, returnFrame } from "@/lib/listSession";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import ListingCard from "./ListingCard";
 import { ListingFeedSkeleton } from "./Skeletons";
@@ -36,15 +37,24 @@ export default function ListingBrowse({
   error = "",
   scrollTop = true,
   beforeFeed = null,
+  pending = 0,
+  stale = false,
+  onRefresh,
 }: {
   items: Listing[];
   loading?: boolean;
   error?: string;
   scrollTop?: boolean;
   beforeFeed?: ReactNode;
+  pending?: number;
+  stale?: boolean;
+  onRefresh?: () => void;
 }) {
   const t = useT();
   const path = usePathname() || "/";
+  const route = listRoute(path);
+  const routeRef = useRef(route || "/home");
+  if (route) routeRef.current = route;
   const reduce = usePrefersReducedMotion();
   const [region, setRegion] = useState("all");
   const [sort, setSort] = useState<SortKey>("new");
@@ -58,7 +68,8 @@ export default function ListingBrowse({
   const [booted, setBooted] = useState(false);
   const ready = useRef(false);
   const fadeTimer = useRef<number | null>(null);
-  const want = useRef<{ region: string; sort: SortKey; view: ViewMode; y: number } | null>(null);
+  const seenRoute = useRef("");
+  const want = useRef<{ region: string; sort: SortKey; view: ViewMode; y: number; highlight: string } | null>(null);
 
   const regions = useMemo(() => {
     const list = regionsFor(items);
@@ -71,8 +82,31 @@ export default function ListingBrowse({
   const featured = useMemo(() => anyFeatured(items), [items]);
   const sorts = featured ? SORT_KEYS : SORT_KEYS.filter((key) => key !== "featured");
 
+  const focusReturn = () => {
+    const highlight = peekReturn();
+    if (!highlight) return;
+    const frame = returnFrame();
+    const esc = window.CSS?.escape ? window.CSS.escape(highlight) : highlight.replace(/"/g, "");
+    const card = document.querySelector<HTMLElement>(`[data-listing-id="${esc}"][data-frame="${frame}"]`)
+      || document.querySelector<HTMLElement>(`[data-listing-id="${esc}"]`);
+    if (card) {
+      const rect = card.getBoundingClientRect();
+      const mid = (rect.top + rect.bottom) / 2;
+      const off = mid < 80 || mid > window.innerHeight - 80 || rect.right < 24 || rect.left > window.innerWidth - 24;
+      if (off) card.scrollIntoView({ block: "center", inline: "nearest", behavior: "auto" });
+    }
+    pulseReturn(highlight, frame);
+    disarmReturn();
+  };
+
   useLayoutEffect(() => {
-    const saved = readBrowse(path);
+    if (!route) return;
+    if (seenRoute.current === route) {
+      focusReturn();
+      return;
+    }
+    seenRoute.current = route;
+    const saved = readBrowse(route);
     const nextView = saved?.view ? asView(saved.view) : readView();
     const nextSort = saved?.sort && isSortKey(saved.sort) ? saved.sort : "new";
     const hasNear = typeof saved?.nearLat === "number" && typeof saved?.nearLng === "number";
@@ -81,25 +115,38 @@ export default function ListingBrowse({
     setSort(nextSort);
     setRegion(nextRegion);
     setNear(hasNear ? { lat: saved!.nearLat as number, lng: saved!.nearLng as number } : null);
-    want.current = { region: nextRegion, sort: nextSort, view: nextView, y: typeof saved?.y === "number" ? saved.y : 0 };
+    want.current = {
+      region: nextRegion,
+      sort: nextSort,
+      view: nextView,
+      y: typeof saved?.y === "number" ? saved.y : 0,
+      highlight: peekReturn() || "",
+    };
     ready.current = true;
     setBooted(false);
-  }, [path]);
+  }, [route, reduce]);
 
   useLayoutEffect(() => {
     const target = want.current;
     if (!target || loading) return;
     if (region !== target.region || sort !== target.sort || view !== target.view) return;
     window.scrollTo(0, target.y);
+    const highlight = target.highlight;
     want.current = null;
     setBooted(true);
-  }, [loading, items, region, sort, view]);
+    if (!highlight) return;
+    const focus = window.requestAnimationFrame(() => focusReturn());
+    return () => window.cancelAnimationFrame(focus);
+  }, [loading, items, region, sort, view, reduce]);
 
   useEffect(() => {
     if (!ready.current || want.current || !booted) return;
+    const routeName = routeRef.current;
+    if (!routeName) return;
     writeView(view);
     const onScroll = () => {
-      writeBrowse(path, {
+      if (document.documentElement.dataset.detailOverlay === "1" && document.body.style.overflow === "hidden") return;
+      writeBrowse(routeName, {
         region,
         sort,
         view,
@@ -112,7 +159,38 @@ export default function ListingBrowse({
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [booted, path, region, sort, view, near, scrollTop]);
+  }, [booted, route, region, sort, view, near, scrollTop]);
+
+  useEffect(() => {
+    const prev = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+    return () => {
+      window.history.scrollRestoration = prev;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!onRefresh) return;
+    let startY = 0;
+    let tracking = false;
+    const onStart = (event: TouchEvent) => {
+      if (window.scrollY > 2) return;
+      startY = event.touches[0]?.clientY || 0;
+      tracking = true;
+    };
+    const onEnd = (event: TouchEvent) => {
+      if (!tracking) return;
+      tracking = false;
+      const dy = (event.changedTouches[0]?.clientY || 0) - startY;
+      if (dy > 72) onRefresh();
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchend", onEnd);
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [onRefresh]);
 
   useEffect(() => {
     if (!toast) return;
@@ -140,6 +218,8 @@ export default function ListingBrowse({
     if (region === "near" && near && sort === "new") return next;
     return sortListings(next, sort === "featured" && !featured ? "new" : sort);
   }, [items, region, near, sort, featured]);
+
+  const listIds = useMemo(() => shown.map((item) => item.id), [shown]);
 
   const commit = (fn: () => void) => {
     const y = window.scrollY;
@@ -228,6 +308,13 @@ export default function ListingBrowse({
 
       {beforeFeed}
 
+      {pending > 0 ? (
+        <button type="button" className="new-pill" onClick={() => onRefresh?.()}>
+          {t("newListings", { n: pending })}
+        </button>
+      ) : null}
+      {stale ? <p className="stale-banner">{t("staleList")}</p> : null}
+
       <div className="browse-head">
         <p className="browse-count-line">
           <span className="browse-count">{shown.length}</span>
@@ -275,7 +362,14 @@ export default function ListingBrowse({
         {shown.length > 0 && (
           <div className={view === "large" ? "listing-grid is-large" : "listing-grid"}>
             {shown.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 2} delay={i < 6 ? i * 60 : -1} layout={view} />
+              <ListingCard
+                key={item.id}
+                item={item}
+                eager={i < 2}
+                delay={i < 6 ? i * 60 : -1}
+                layout={view}
+                listIds={listIds}
+              />
             ))}
           </div>
         )}

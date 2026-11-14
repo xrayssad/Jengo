@@ -91,5 +91,11 @@
   "wizard.edit": "Hariri",
   "wizard.negotiable": "Bei inaweza kujadiliwa",
   "required": "Lazima",
-  "optional": "si lazima"
+  "optional": "si lazima",
+  "newListings": "Matangazo {n} mapya, gusa kuonyesha upya",
+  "staleList": "Orodha iliyohifadhiwa. Onyesha upya ukiwa mtandaoni.",
+  "moreList": "Zaidi kwenye orodha hii",
+  "prevListing": "Tangazo lililopita",
+  "nextListing": "Tangazo linalofuata",
+  "gone": "Halipo tena"
 }

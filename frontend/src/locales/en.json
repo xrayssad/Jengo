@@ -91,5 +91,11 @@
   "wizard.edit": "Edit",
   "wizard.negotiable": "Negotiable",
   "required": "Required",
-  "optional": "optional"
+  "optional": "optional",
+  "newListings": "{n} new listings, tap to refresh",
+  "staleList": "Showing saved listings. Refresh when you are back online.",
+  "moreList": "More from this list",
+  "prevListing": "Previous listing",
+  "nextListing": "Next listing",
+  "gone": "No longer available"
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import FreshRail from "@/components/FreshRail";
@@ -20,6 +20,7 @@ import { InboxLink } from "@/components/MqttInbox";
 import { clearAuth, fetchListings, suggestPlaces, writeHomeListingsCache, type PlaceHit } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
+import { usePersistentScroll } from "@/lib/listSession";
 
 const chips = [
   { href: "/nyumba", label: "Rooms & Houses", short: "Rooms", icon: Home },
@@ -56,7 +57,7 @@ export default function HomePage() {
   const [openHits, setOpenHits] = useState(false);
   const searchBox = useRef<HTMLFormElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
-  const { items, setItems, loading: waiting, error } = useListings({ status: "active", limit: 40 });
+  const { items, setItems, loading: waiting, error, pending, stale, refresh, version } = useListings({ status: "active", limit: 40 });
   const [scrolled, setScrolled] = useState(false);
 
   const goSearch = (q: string) => {
@@ -66,13 +67,15 @@ export default function HomePage() {
     router.push(`/search?q=${encodeURIComponent(next)}`);
   };
 
-  useLayoutEffect(() => {
-    if (railRef.current) railRef.current.scrollLeft = 0;
-  }, []);
+  usePersistentScroll("cats", railRef, true);
 
   useEffect(() => {
+    if (document.documentElement.dataset.detailOverlay === "1") return;
     document.body.style.overflow = open ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    return () => {
+      if (document.documentElement.dataset.detailOverlay === "1") return;
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   useEffect(() => {
@@ -262,10 +265,13 @@ export default function HomePage() {
             items={items}
             loading={waiting}
             error={error}
+            pending={pending}
+            stale={stale}
+            onRefresh={() => { void refresh(); }}
             beforeFeed={
               <>
-                <HeroCarousel items={items} loading={waiting} />
-                <FreshRail items={items} />
+                <HeroCarousel items={items} loading={waiting} version={version} />
+                <FreshRail items={items} version={version} />
                 <PromoBanner />
               </>
             }

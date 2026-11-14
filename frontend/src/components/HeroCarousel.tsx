@@ -1,18 +1,27 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import type { Listing } from "@/lib/api";
 import { pickFeatured } from "@/lib/browse";
 import { isLiteDevice } from "@/lib/device";
+import { listRoute, readCarousel, writeCarousel } from "@/lib/listSession";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import ListingCard from "./ListingCard";
 
-export default function HeroCarousel({ items, loading }: { items: Listing[]; loading?: boolean }) {
+export default function HeroCarousel({ items, loading, version = 0 }: { items: Listing[]; loading?: boolean; version?: number }) {
   const reduce = usePrefersReducedMotion();
+  const path = usePathname() || "/";
+  const route = listRoute(path);
   const scroller = useRef<HTMLDivElement>(null);
   const pause = useRef(false);
+  const restored = useRef(false);
   const [active, setActive] = useState(0);
-  const featured = pickFeatured(items);
+  const count = items.length;
+  const pickedIds = useMemo(() => pickFeatured(items).map((item) => item.id), [version, count]);
+  const featured = pickedIds
+    .map((id) => items.find((item) => item.id === id))
+    .filter((item): item is Listing => Boolean(item));
 
   useEffect(() => {
     const el = scroller.current;
@@ -66,9 +75,25 @@ export default function HeroCarousel({ items, loading }: { items: Listing[]; loa
     };
   }, [featured.length, loading, reduce]);
 
+  useLayoutEffect(() => {
+    const el = scroller.current;
+    if (!el || restored.current || !featured.length) return;
+    const index = readCarousel(route || "/home");
+    const slide = el.querySelectorAll<HTMLElement>(".hero-slide")[index];
+    if (!slide) return;
+    el.scrollLeft = slide.offsetLeft - (el.clientWidth - slide.offsetWidth) / 2;
+    setActive(index);
+    restored.current = true;
+  }, [featured.length, route]);
+
+  useEffect(() => {
+    if (!route || !featured.length) return;
+    writeCarousel(route, active);
+  }, [active, route, featured.length]);
+
   useEffect(() => {
     const el = scroller.current;
-    if (!el || reduce || featured.length < 2) return;
+    if (!el || reduce || featured.length < 2 || !route) return;
     const tick = () => {
       if (pause.current || document.hidden) return;
       const slide = el.querySelector<HTMLElement>(".hero-slide");
@@ -101,7 +126,7 @@ export default function HeroCarousel({ items, loading }: { items: Listing[]; loa
       el.removeEventListener("pointercancel", release);
       document.removeEventListener("visibilitychange", vis);
     };
-  }, [featured.length, reduce]);
+  }, [featured.length, reduce, route]);
 
   const go = (index: number) => {
     const el = scroller.current;
@@ -126,7 +151,7 @@ export default function HeroCarousel({ items, loading }: { items: Listing[]; loa
           : featured.map((item, index) => (
               <div key={item.id} className="hero-slide">
                 <div className="hero-slide-frame">
-                  <ListingCard item={item} frame="hero" eager={index < 2} />
+                  <ListingCard item={item} frame="hero" eager={index < 2} listIds={pickedIds} />
                 </div>
               </div>
             ))}

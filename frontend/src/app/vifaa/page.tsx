@@ -8,7 +8,7 @@ import { useListings } from "@/lib/useListings";
 
 export default function VifaaPage() {
   const t = useT();
-  const { items, loading, error } = useListings({ category: "vifaa", status: "active", limit: 40 });
+  const { items, loading, error, pending, stale, refresh } = useListings({ category: "vifaa", status: "active", limit: 40 });
 
   return (
     <main className="min-h-screen pb-4" style={{ backgroundColor: "var(--bg)" }}>
@@ -25,7 +25,7 @@ export default function VifaaPage() {
       </header>
 
       <div className="canvas px-4 pt-6">
-        <ListingBrowse items={items} loading={loading} error={error} />
+        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} onRefresh={() => { void refresh(); }} />
       </div>
     </main>
   );

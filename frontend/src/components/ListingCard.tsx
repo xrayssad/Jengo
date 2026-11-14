@@ -3,11 +3,13 @@
 import { useEffect, useState } from "react";
 import { ViewTransition } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { ArrowUpRight, Check, Eye, ImageIcon, MapPin } from "lucide-react";
 import { catShort, formatPrice, listingUnit, type Listing } from "@/lib/api";
 import { bedCount, formatViews, sellerVerified, shortPlace, viewCount, type ViewMode } from "@/lib/browse";
 import { sizedImage } from "@/lib/images";
 import { useT } from "@/lib/i18n";
+import { freezeBrowse, useOpenListing, useReturnPulse } from "@/lib/listSession";
 import SaveButton from "./SaveButton";
 
 const RENTALS = new Set(["chumba_nyumba", "store_godown", "frame"]);
@@ -65,6 +67,8 @@ export default function ListingCard({
   layout = "large",
   frame = "feed",
   preview = false,
+  listIds,
+  highlight = false,
 }: {
   item: Listing;
   eager?: boolean;
@@ -72,8 +76,14 @@ export default function ListingCard({
   layout?: ViewMode;
   frame?: "feed" | "hero" | "rail";
   preview?: boolean;
+  listIds?: string[];
+  highlight?: boolean;
 }) {
   const t = useT();
+  const pulsed = useReturnPulse(item.id, frame);
+  const path = usePathname() || "";
+  const active = useOpenListing(item.id);
+  const opened = path.startsWith("/tangazo/") && active;
   const place = shortPlace(item);
   const photos = (item.images || []).filter(Boolean);
   const src = photos[0] || "";
@@ -94,7 +104,18 @@ export default function ListingCard({
 
   const media = (
     <div className="market-tile-media">
-      <Link href={href} transitionTypes={["nav-forward"]} className="immerse-hit" aria-label={item.title}>
+        <Link
+          href={href}
+          scroll={false}
+          transitionTypes={["nav-forward"]}
+          className="immerse-hit"
+          aria-label={item.title}
+          onClick={() => {
+            if (preview) return;
+            const ids = listIds?.length ? listIds : [item.id];
+            freezeBrowse(frame, ids, item.id);
+          }}
+        >
         <ListingPhoto src={src} eager={eager} ratio={ratio} />
       </Link>
       <div className="immerse-shade" aria-hidden />
@@ -140,13 +161,18 @@ export default function ListingCard({
         frame === "hero" ? "is-hero" : "",
         frame === "rail" ? "is-rail" : "",
         enter ? "card-enter" : "",
+        highlight || pulsed ? "is-return" : "",
       ].filter(Boolean).join(" ")}
+      data-listing-id={item.id}
+      data-frame={frame}
       style={enter ? { animationDelay: `${delay}ms` } : undefined}
     >
       <div className="listing-media">
-        <ViewTransition name={frame === "feed" ? `listing-${item.id}` : `listing-${frame}-${item.id}`} share="listing-morph" default="none">
-          {media}
-        </ViewTransition>
+        {opened ? media : (
+          <ViewTransition name={frame === "feed" ? `listing-${item.id}` : `listing-${frame}-${item.id}`} share="listing-morph" default="none">
+            {media}
+          </ViewTransition>
+        )}
       </div>
       {frame === "feed" && (views != null || chip) ? (
         <p className="immerse-foot">

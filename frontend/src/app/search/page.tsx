@@ -28,7 +28,7 @@ function SearchInner() {
   const [query, setQuery] = useState(initialQ);
   const [debounced, setDebounced] = useState(initialQ.trim());
   const [category, setCategory] = useState(initialCat);
-  const { items, loading, error } = useListings({
+  const { items, loading, error, pending, stale, refresh } = useListings({
     status: "active",
     category: category || undefined,
     q: debounced || undefined,
@@ -93,7 +93,7 @@ function SearchInner() {
       </header>
 
       <div className="canvas px-4 pt-6">
-        <ListingBrowse items={items} loading={loading} error={error} />
+        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} onRefresh={() => { void refresh(); }} />
       </div>
     </main>
   );

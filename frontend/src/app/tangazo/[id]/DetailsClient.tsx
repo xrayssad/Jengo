@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ViewTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, Mail, MapPin, Phone, Share2 } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Mail, MapPin, Phone, Share2 } from "lucide-react";
 import { motionDur, moveSpring, usePrefersReducedMotion } from "@/lib/motion";
 import {
   catLabel,
@@ -21,6 +21,8 @@ import {
   unitLabel,
   type Listing,
 } from "@/lib/api";
+import { useT } from "@/lib/i18n";
+import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -43,23 +45,59 @@ function shownPlace(location?: string | null, city?: string | null) {
   return unique.join(", ") || "—";
 }
 
-export default function DetailsClient({ id }: { id: string }) {
+export default function DetailsClient({ id: routeId, overlay = false }: { id: string; overlay?: boolean }) {
+  const [id, setId] = useState(routeId);
   const router = useRouter();
   const from = useSearchParams().get("from");
+  const t = useT();
   const vtName = from === "hero" || from === "rail" ? `listing-${from}-${id}` : `listing-${id}`;
   const [item, setItem] = useState<Listing | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [gone, setGone] = useState(false);
   const [qty, setQty] = useState("1");
   const [sent, setSent] = useState(false);
+  const [browseReady, setBrowseReady] = useState(false);
+  const [rev, setRev] = useState(0);
+  const swapHolder = useRef({ id: "", dir: "" as "" | "next" | "prev" });
+  if (swapHolder.current.id !== id) {
+    const dir = takeBrowseDir();
+    swapHolder.current = { id, dir: dir === "next" || dir === "prev" ? dir : "" };
+  }
+  const swap = swapHolder.current.dir;
   const reduce = usePrefersReducedMotion();
 
   useLayoutEffect(() => {
-    const cached = peekListing(id);
-    if (!cached) return;
-    setItem(cached);
-    setLoading(false);
+    setId(routeId);
+  }, [routeId]);
+
+  useEffect(() => {
+    setBrowseReady(true);
+  }, []);
+
+  useEffect(() => {
+    setQty("1");
+    setSent(false);
   }, [id]);
+
+  useLayoutEffect(() => {
+    const cached = peekListing(id);
+    setGone(false);
+    setError("");
+    if (cached) {
+      setItem(cached);
+      setLoading(false);
+    } else {
+      setItem(null);
+      setLoading(true);
+    }
+    if (overlay) {
+      const node = document.querySelector(".detail-overlay");
+      if (node instanceof HTMLElement) node.scrollTop = 0;
+      return;
+    }
+    window.scrollTo(0, 0);
+  }, [id, overlay]);
 
   useEffect(() => {
     let stop = false;
@@ -73,7 +111,14 @@ export default function DetailsClient({ id }: { id: string }) {
           setError("");
         }
       } catch (e) {
-        if (!stop && !cached) setError(e instanceof Error ? e.message : "Not available");
+        const status = (e as { status?: number }).status;
+        if (!stop && (status === 404 || status === 410)) {
+          setGone(true);
+          setItem(null);
+          setError("");
+          markMissing(id);
+          setRev((n) => n + 1);
+        } else if (!stop && !cached) setError(e instanceof Error ? e.message : "Not available");
       } finally {
         if (!stop) setLoading(false);
       }
@@ -116,23 +161,124 @@ export default function DetailsClient({ id }: { id: string }) {
       ? item.description?.replace(/\n*(?:Simu|Phone):\s*.+$/m, "").trim()
       : item.description?.trim());
 
+  const frozen = useMemo(() => (browseReady ? readFrozen() : null), [browseReady, id, rev]);
+  const inContext = Boolean(frozen && frozen.ids.includes(id));
+
+  const neighbor = (dir: 1 | -1) => {
+    const current = readFrozen();
+    if (!current || !current.ids.includes(id)) return null;
+    const missing = new Set(current.missing);
+    let index = current.ids.indexOf(id);
+    while (true) {
+      index += dir;
+      if (index < 0 || index >= current.ids.length) return null;
+      const next = current.ids[index];
+      if (!missing.has(next)) return next;
+    }
+  };
+
+  const prevId = inContext ? neighbor(-1) : null;
+  const nextId = inContext ? neighbor(1) : null;
+
+  const go = (nextId: string, dir: 1 | -1) => {
+    const source = readFrozen()?.source || "feed";
+    if (!reduce) setBrowseDir(dir > 0 ? "next" : "prev");
+    moveBrowse(nextId);
+    const href = listingHref(nextId, source);
+    if (overlay) {
+      setId(nextId);
+      window.history.replaceState(window.history.state, "", href);
+      return;
+    }
+    router.replace(href, { scroll: false });
+  };
+
+  const close = () => {
+    if (overlay) router.back();
+    else router.push("/home");
+  };
+
+  useEffect(() => {
+    if (!inContext) return;
+    const card = document.querySelector<HTMLElement>(".more-card.is-on");
+    const scroller = card?.parentElement;
+    if (card && scroller) {
+      const left = card.offsetLeft - (scroller.clientWidth - card.offsetWidth) / 2;
+      scroller.scrollTo({ left: Math.max(0, left) });
+    }
+    const near = [prevId, nextId].filter((value): value is string => Boolean(value));
+    let stop = false;
+    const images: HTMLImageElement[] = [];
+    for (const nearId of near) {
+      void (async () => {
+        let row = peekListing(nearId);
+        if (!row) {
+          try {
+            row = await fetchListing(nearId);
+          } catch (err) {
+            const status = (err as { status?: number }).status;
+            if (status === 404 || status === 410) {
+              markMissing(nearId);
+              setRev((n) => n + 1);
+            }
+            return;
+          }
+        }
+        if (stop || !row) return;
+        setRev((n) => n + 1);
+        const src = (row.images || []).find(Boolean);
+        if (!src) return;
+        const img = new Image();
+        img.src = src;
+        images.push(img);
+      })();
+    }
+    return () => {
+      stop = true;
+      for (const img of images) img.src = "";
+    };
+  }, [inContext, prevId, nextId]);
+
   return (
-    <main className="detail-page min-h-screen">
+    <main key={id} className={`detail-page min-h-screen${swap ? ` is-swap-${swap}` : ""}${inContext && (frozen?.ids.length || 0) > 1 ? " has-rail" : ""}`}>
       {loading && <DetailSkeleton />}
       {!loading && error && (
         <div className="text-center py-16 px-5">
           <p className="text-lg font-semibold mb-2" style={{ color: "var(--error)" }}>{error}</p>
-          <Link href="/discover" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>
-            Back to Discover
-          </Link>
+          <button type="button" onClick={close} className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>
+            {t("back")}
+          </button>
         </div>
       )}
-      {!loading && item && (
+      {!loading && gone && (
+        <div className="detail-gone">
+          <button type="button" onClick={close} className="detail-float-btn detail-back" aria-label={t("back")}>
+            <ArrowLeft size={18} color="currentColor" />
+          </button>
+          {prevId ? (
+            <button type="button" className="detail-step detail-step-prev" aria-label={t("prevListing")} onClick={() => go(prevId, -1)}>
+              <ChevronLeft size={18} />
+            </button>
+          ) : null}
+          {nextId ? (
+            <button type="button" className="detail-step detail-step-next" aria-label={t("nextListing")} onClick={() => go(nextId, 1)}>
+              <ChevronRight size={18} />
+            </button>
+          ) : null}
+          <p>{t("gone")}</p>
+        </div>
+      )}
+      {!loading && item && !gone && (
         <>
           <div className="relative">
             <ViewTransition name={vtName} share="listing-morph" default="none">
             <PhotoGallery
+              key={id}
               images={item.images}
+              onEdge={(dir) => {
+                const next = neighbor(dir);
+                if (next) go(next, dir);
+              }}
               fallback={
                 <div
                   className="w-full flex items-center justify-center detail-hero-fallback"
@@ -147,12 +293,22 @@ export default function DetailsClient({ id }: { id: string }) {
             </ViewTransition>
             <button
               type="button"
-              onClick={() => router.back()}
+              onClick={close}
               className="detail-float-btn detail-back"
-              aria-label="Back"
+              aria-label={t("back")}
             >
               <ArrowLeft size={18} color="currentColor" />
             </button>
+            {prevId ? (
+              <button type="button" className="detail-step detail-step-prev" aria-label={t("prevListing")} onClick={() => go(prevId, -1)}>
+                <ChevronLeft size={18} />
+              </button>
+            ) : null}
+            {nextId ? (
+              <button type="button" className="detail-step detail-step-next" aria-label={t("nextListing")} onClick={() => go(nextId, 1)}>
+                <ChevronRight size={18} />
+              </button>
+            ) : null}
             <div className="detail-float-row">
               <button
                 type="button"
@@ -278,6 +434,33 @@ export default function DetailsClient({ id }: { id: string }) {
           </div>
         </>
       )}
+      {inContext && frozen && frozen.ids.length > 1 ? (
+        <div className="more-rail">
+          <p className="more-rail-label">{t("moreList")}</p>
+          <div className="more-rail-scroller no-scrollbar">
+            {frozen.ids.map((rowId) => {
+              const row = peekListing(rowId);
+              const src = (row?.images || []).find(Boolean) || "";
+              const missing = frozen.missing.includes(rowId);
+              return (
+                <button
+                  key={rowId}
+                  type="button"
+                  className={rowId === id ? "more-card is-on" : "more-card"}
+                  aria-current={rowId === id ? "true" : undefined}
+                  disabled={missing}
+                  onClick={() => {
+                    if (rowId === id || missing) return;
+                    go(rowId, frozen.ids.indexOf(rowId) > frozen.ids.indexOf(id) ? 1 : -1);
+                  }}
+                >
+                  {src ? <img src={src} alt="" /> : <span>{(row?.title || "·").slice(0, 1)}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

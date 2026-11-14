@@ -540,6 +540,76 @@ export function peekListing(id: string): Listing | null {
   return listingMem.get(id) || null;
 }
 
+const SHOWN_KEY = "jengo_shown_v1";
+const shownMem = new Map<string, Listing[]>();
+let shownHydrated = false;
+
+function hydrateShown() {
+  if (shownHydrated || typeof window === "undefined") return;
+  shownHydrated = true;
+  hydrateFeeds();
+  try {
+    const raw = sessionStorage.getItem(SHOWN_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, string[]>) : {};
+    for (const [key, ids] of Object.entries(parsed)) {
+      if (!Array.isArray(ids)) continue;
+      const items = ids.map((id) => listingMem.get(id)).filter((item): item is Listing => Boolean(item));
+      if (items.length) shownMem.set(key, items);
+    }
+  } catch {
+    /* ignore broken snapshot */
+  }
+}
+
+function persistShown() {
+  if (typeof window === "undefined") return;
+  try {
+    const ids: Record<string, string[]> = {};
+    for (const [key, items] of shownMem) ids[key] = items.map((item) => item.id);
+    sessionStorage.setItem(SHOWN_KEY, JSON.stringify(ids));
+  } catch {
+    /* quota */
+  }
+}
+
+/** The list the user is looking at. A later network response must not replace it. */
+export function readShown(params?: ListingQuery): Listing[] {
+  hydrateShown();
+  const key = feedKey(params);
+  const shown = shownMem.get(key);
+  if (shown?.length) return shown;
+  const exact = feedMem.get(key);
+  if (!exact?.length) return [];
+  shownMem.set(key, exact);
+  persistShown();
+  return exact;
+}
+
+export function commitShown(params: ListingQuery | undefined, items: Listing[]) {
+  hydrateShown();
+  shownMem.set(feedKey(params), items);
+  rememberListings(items);
+  persistShown();
+}
+
+/** Keep the visible rows. Count listings the user has not seen yet. */
+export function absorbListings(params: ListingQuery | undefined, fresh: Listing[]): { items: Listing[]; pending: number } {
+  hydrateShown();
+  const key = feedKey(params);
+  const shown = shownMem.get(key);
+  if (!shown?.length) {
+    shownMem.set(key, fresh);
+    persistShown();
+    return { items: fresh, pending: 0 };
+  }
+  const seen = new Set(shown.map((item) => item.id));
+  let pending = 0;
+  for (const item of fresh) {
+    if (item?.id && !seen.has(item.id)) pending += 1;
+  }
+  return { items: shown, pending };
+}
+
 export async function fetchListings(params?: ListingQuery): Promise<{ items: Listing[] }> {
   const key = feedKey(params);
   const existing = feedFlight.get(key);

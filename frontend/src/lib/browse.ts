@@ -197,10 +197,16 @@ function withPhoto(item: Listing) {
   return (item.images || []).some(Boolean);
 }
 
+function tie(a: Listing, b: Listing) {
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
 /** Featured flag when the API sends it; otherwise the newest listings that have a photo. */
 export function pickFeatured(items: Listing[], limit = 8): Listing[] {
   const flagged = items.filter((item) => item.featured === true && withPhoto(item));
-  const source = flagged.length ? flagged : items.filter(withPhoto).sort((a, b) => createdAt(b) - createdAt(a));
+  const source = flagged.length
+    ? flagged.slice().sort((a, b) => createdAt(b) - createdAt(a) || tie(a, b))
+    : items.filter(withPhoto).sort((a, b) => createdAt(b) - createdAt(a) || tie(a, b));
   return source.slice(0, limit);
 }
 
@@ -209,17 +215,17 @@ export function pickFresh(items: Listing[], limit = 8, now = 0): Listing[] {
   const photos = items.filter(withPhoto);
   const recent = now ? photos.filter((item) => createdAt(item) >= now - 7 * 24 * 60 * 60 * 1000) : [];
   const source = recent.length >= 3 ? recent : photos;
-  return source.slice().sort((a, b) => createdAt(b) - createdAt(a)).slice(0, limit);
+  return source.slice().sort((a, b) => createdAt(b) - createdAt(a) || tie(a, b)).slice(0, limit);
 }
 
 export function sortListings(items: Listing[], sort: SortKey): Listing[] {
   const next = items.slice();
   next.sort((a, b) => {
-    if (sort === "price_asc") return priceOf(a) - priceOf(b) || createdAt(b) - createdAt(a);
-    if (sort === "price_desc") return priceOf(b) - priceOf(a) || createdAt(b) - createdAt(a);
-    if (sort === "views") return (viewCount(b) || 0) - (viewCount(a) || 0) || createdAt(b) - createdAt(a);
-    if (sort === "featured") return Number(b.featured === true) - Number(a.featured === true) || createdAt(b) - createdAt(a);
-    return createdAt(b) - createdAt(a);
+    if (sort === "price_asc") return priceOf(a) - priceOf(b) || createdAt(b) - createdAt(a) || tie(a, b);
+    if (sort === "price_desc") return priceOf(b) - priceOf(a) || createdAt(b) - createdAt(a) || tie(a, b);
+    if (sort === "views") return (viewCount(b) || 0) - (viewCount(a) || 0) || createdAt(b) - createdAt(a) || tie(a, b);
+    if (sort === "featured") return Number(b.featured === true) - Number(a.featured === true) || createdAt(b) - createdAt(a) || tie(a, b);
+    return createdAt(b) - createdAt(a) || tie(a, b);
   });
   return next;
 }
@@ -231,7 +237,7 @@ export function nearListings(items: Listing[], near: NearPoint): Listing[] {
     if (!point) return [];
     return [{ item, distance: distanceKm(near.lat, near.lng, point.lat, point.lng) }];
   });
-  ranked.sort((a, b) => a.distance - b.distance);
+  ranked.sort((a, b) => a.distance - b.distance || (a.item.id < b.item.id ? -1 : a.item.id > b.item.id ? 1 : 0));
   const close = ranked.filter((row) => row.distance <= 80);
   return (close.length ? close : ranked).map((row) => row.item);
 }

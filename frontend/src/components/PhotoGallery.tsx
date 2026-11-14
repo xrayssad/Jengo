@@ -7,15 +7,19 @@ import { ChevronLeft, ChevronRight, X } from "lucide-react";
 export default function PhotoGallery({
   images,
   fallback,
+  onEdge,
 }: {
   images?: string[] | null;
   fallback: ReactNode;
+  onEdge?: (dir: 1 | -1) => void;
 }) {
   const photos = (images || []).filter(Boolean);
   const scroller = useRef<HTMLDivElement>(null);
   const [i, setI] = useState(0);
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
+  const drag = useRef({ x: 0, y: 0, i: 0, active: false });
+  const swallow = useRef(false);
 
   useEffect(() => {
     const node = root.current;
@@ -118,6 +122,32 @@ export default function PhotoGallery({
       <div
         ref={scroller}
         className="flex h-full overflow-x-auto snap-x snap-mandatory overscroll-x-contain no-scrollbar"
+        onPointerDown={(event) => {
+          drag.current = { x: event.clientX, y: event.clientY, i, active: true };
+        }}
+        onPointerUp={(event) => {
+          if (!drag.current.active || !onEdge) {
+            drag.current.active = false;
+            return;
+          }
+          const dx = event.clientX - drag.current.x;
+          const dy = event.clientY - drag.current.y;
+          drag.current.active = false;
+          if (Math.abs(dx) > 12) swallow.current = true;
+          if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
+          const atStart = drag.current.i <= 0;
+          const atEnd = drag.current.i >= photos.length - 1;
+          if (dx > 0 && atStart) {
+            swallow.current = true;
+            onEdge(-1);
+          } else if (dx < 0 && atEnd) {
+            swallow.current = true;
+            onEdge(1);
+          }
+        }}
+        onPointerCancel={() => {
+          drag.current.active = false;
+        }}
         onScroll={(e) => {
           const el = e.currentTarget;
           if (!el.clientWidth) return;
@@ -131,6 +161,10 @@ export default function PhotoGallery({
             type="button"
             className="min-w-full h-full snap-center shrink-0"
             onClick={() => {
+              if (swallow.current) {
+                swallow.current = false;
+                return;
+              }
               setI(n);
               setOpen(true);
             }}

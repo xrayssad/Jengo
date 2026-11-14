@@ -18,7 +18,7 @@ const chips = [
 const shop = new Set(shopCategories);
 
 export default function DiscoverPage() {
-  const { items, loading, error } = useListings({ status: "active", limit: 40 });
+  const { items, loading, error, pending, stale, refresh } = useListings({ status: "active", limit: 40 });
   const [q, setQ] = useState("");
   const [cat, setCat] = useState("");
 
@@ -57,7 +57,7 @@ export default function DiscoverPage() {
         </div>
       </header>
       <div className="canvas px-4 pt-6">
-        <ListingBrowse items={shown} loading={loading} error={error} />
+        <ListingBrowse items={shown} loading={loading} error={error} pending={pending} stale={stale} onRefresh={() => { void refresh(); }} />
       </div>
     </main>
   );
