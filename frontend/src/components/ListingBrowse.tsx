@@ -3,10 +3,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUp, House, LayoutGrid, List, Loader2, LocateFixed, X } from "lucide-react";
+import { ArrowUp, House, LayoutGrid, Loader2, LocateFixed, RectangleVertical, X } from "lucide-react";
+import type { ReactNode } from "react";
 import type { Listing } from "@/lib/api";
 import {
   anyFeatured,
+  asView,
   hasCoords,
   inRegion,
   isSortKey,
@@ -33,18 +35,20 @@ export default function ListingBrowse({
   loading = false,
   error = "",
   scrollTop = true,
+  beforeFeed = null,
 }: {
   items: Listing[];
   loading?: boolean;
   error?: string;
   scrollTop?: boolean;
+  beforeFeed?: ReactNode;
 }) {
   const t = useT();
   const path = usePathname() || "/";
   const reduce = usePrefersReducedMotion();
   const [region, setRegion] = useState("all");
   const [sort, setSort] = useState<SortKey>("new");
-  const [view, setView] = useState<ViewMode>("grid");
+  const [view, setView] = useState<ViewMode>("large");
   const [near, setNear] = useState<NearPoint | null>(null);
   const [locating, setLocating] = useState(false);
   const [sheet, setSheet] = useState(false);
@@ -69,7 +73,7 @@ export default function ListingBrowse({
 
   useLayoutEffect(() => {
     const saved = readBrowse(path);
-    const nextView = saved?.view === "list" || saved?.view === "grid" ? saved.view : readView();
+    const nextView = saved?.view ? asView(saved.view) : readView();
     const nextSort = saved?.sort && isSortKey(saved.sort) ? saved.sort : "new";
     const hasNear = typeof saved?.nearLat === "number" && typeof saved?.nearLng === "number";
     const nextRegion = saved?.region === "near" && hasNear ? "near" : saved?.region && saved.region !== "near" ? saved.region : "all";
@@ -222,6 +226,8 @@ export default function ListingBrowse({
         ))}
       </div>
 
+      {beforeFeed}
+
       <div className="browse-head">
         <p className="browse-count-line">
           <span className="browse-count">{shown.length}</span>
@@ -235,8 +241,8 @@ export default function ListingBrowse({
             <button type="button" aria-label={t("view.grid")} aria-pressed={view === "grid"} className={view === "grid" ? "is-on" : ""} onClick={() => commit(() => setView("grid"))}>
               <LayoutGrid size={16} />
             </button>
-            <button type="button" aria-label={t("view.list")} aria-pressed={view === "list"} className={view === "list" ? "is-on" : ""} onClick={() => commit(() => setView("list"))}>
-              <List size={16} />
+            <button type="button" aria-label={t("view.large")} aria-pressed={view === "large"} className={view === "large" ? "is-on" : ""} onClick={() => commit(() => setView("large"))}>
+              <RectangleVertical size={16} />
             </button>
           </div>
         </div>
@@ -267,9 +273,9 @@ export default function ListingBrowse({
           </div>
         )}
         {shown.length > 0 && (
-          <div className={view === "list" ? "listing-grid is-list" : "listing-grid"}>
+          <div className={view === "large" ? "listing-grid is-large" : "listing-grid"}>
             {shown.map((item, i) => (
-              <ListingCard key={item.id} item={item} eager={i < 4} delay={i < 8 ? i * 40 : -1} layout={view} />
+              <ListingCard key={item.id} item={item} eager={i < 2} delay={i < 6 ? i * 60 : -1} layout={view} />
             ))}
           </div>
         )}

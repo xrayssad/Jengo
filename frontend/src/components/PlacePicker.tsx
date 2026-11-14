@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { placeDetails, suggestPlaces, type PlaceHit } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 const MapPreview = dynamic(() => import("./MapPreview"), { ssr: false });
 
@@ -13,7 +14,16 @@ export type PlaceValue = {
   lng: number | null;
 };
 
-export default function PlacePicker({ value, onChange }: { value: PlaceValue; onChange: (v: PlaceValue) => void }) {
+export default function PlacePicker({
+  value,
+  onChange,
+  pin = false,
+}: {
+  value: PlaceValue;
+  onChange: (v: PlaceValue) => void;
+  pin?: boolean;
+}) {
+  const t = useT();
   const [hits, setHits] = useState<PlaceHit[]>([]);
   const [open, setOpen] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -87,7 +97,36 @@ export default function PlacePicker({ value, onChange }: { value: PlaceValue; on
           ))}
         </div>
       )}
-      {value.lat != null && value.lng != null && (
+      {pin ? (
+        <div className="mt-3">
+          <button
+            type="button"
+            className="wizard-locate"
+            onClick={() => {
+              if (!navigator.geolocation) return;
+              navigator.geolocation.getCurrentPosition((pos) => {
+                onChange({
+                  ...value,
+                  location: value.location.trim() || "Current location",
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                });
+              });
+            }}
+          >
+            {t("wizard.locate")}
+          </button>
+          <div className="mt-3 overflow-hidden" style={{ borderRadius: 18 }}>
+            <MapPreview
+              lat={value.lat ?? -6.7924}
+              lng={value.lng ?? 39.2083}
+              draggable
+              onMove={(lat, lng) => onChange({ ...value, lat, lng })}
+            />
+          </div>
+        </div>
+      ) : null}
+      {!pin && value.lat != null && value.lng != null && (
         <div className="mt-3 overflow-hidden" style={{ border: "1px solid var(--mocha)", borderRadius: 18 }}>
           <MapPreview lat={value.lat} lng={value.lng} />
         </div>

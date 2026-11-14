@@ -15,6 +15,29 @@ export default function PhotoGallery({
   const scroller = useRef<HTMLDivElement>(null);
   const [i, setI] = useState(0);
   const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const node = root.current;
+    if (!node) return;
+    const lite = document.documentElement.dataset.lite === "1";
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (lite || reduce) return;
+    let raf = 0;
+    const onScroll = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const y = Math.max(0, Math.min(window.scrollY * 0.5, node.clientHeight * 0.35));
+        node.style.setProperty("--parallax", `${y}px`);
+      });
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [photos.length]);
 
   useEffect(() => {
     if (!open) return;
@@ -91,7 +114,7 @@ export default function PhotoGallery({
   );
 
   return (
-    <div className="relative detail-hero">
+    <div ref={root} className="relative detail-hero">
       <div
         ref={scroller}
         className="flex h-full overflow-x-auto snap-x snap-mandatory overscroll-x-contain no-scrollbar"

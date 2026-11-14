@@ -2,9 +2,11 @@
 
 import { useEffect, useLayoutEffect, useState } from "react";
 import { ViewTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Mail, MapPin, Phone } from "lucide-react";
+import { motion } from "motion/react";
+import { ArrowLeft, Check, Mail, MapPin, Phone, Share2 } from "lucide-react";
+import { motionDur, moveSpring, usePrefersReducedMotion } from "@/lib/motion";
 import {
   catLabel,
   catShort,
@@ -41,17 +43,16 @@ function shownPlace(location?: string | null, city?: string | null) {
   return unique.join(", ") || "—";
 }
 
-function cachedListing(id: string) {
-  if (typeof window === "undefined") return null;
-  return peekListing(id);
-}
-
 export default function DetailsClient({ id }: { id: string }) {
   const router = useRouter();
-  const [item, setItem] = useState<Listing | null>(() => cachedListing(id));
-  const [loading, setLoading] = useState(() => !cachedListing(id));
+  const from = useSearchParams().get("from");
+  const vtName = from === "hero" || from === "rail" ? `listing-${from}-${id}` : `listing-${id}`;
+  const [item, setItem] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [qty, setQty] = useState("1");
+  const [sent, setSent] = useState(false);
+  const reduce = usePrefersReducedMotion();
 
   useLayoutEffect(() => {
     const cached = peekListing(id);
@@ -129,7 +130,7 @@ export default function DetailsClient({ id }: { id: string }) {
       {!loading && item && (
         <>
           <div className="relative">
-            <ViewTransition name={`listing-${item.id}`} share="listing-morph" default="none">
+            <ViewTransition name={vtName} share="listing-morph" default="none">
             <PhotoGallery
               images={item.images}
               fallback={
@@ -147,18 +148,38 @@ export default function DetailsClient({ id }: { id: string }) {
             <button
               type="button"
               onClick={() => router.back()}
-              className="detail-float-btn absolute z-20"
-              style={{ top: "calc(16px + env(safe-area-inset-top))", left: 16 }}
+              className="detail-float-btn detail-back"
               aria-label="Back"
             >
               <ArrowLeft size={18} color="currentColor" />
             </button>
-            <div className="absolute z-20" style={{ top: "calc(16px + env(safe-area-inset-top))", right: 16 }}>
+            <div className="detail-float-row">
+              <button
+                type="button"
+                className="detail-float-btn"
+                aria-label="Share"
+                onClick={() => {
+                  const url = `${window.location.origin}/tangazo/${item.id}`;
+                  const data = { title: item.title, url };
+                  if (navigator.share) {
+                    navigator.share(data).catch(() => {});
+                    return;
+                  }
+                  navigator.clipboard?.writeText(url).catch(() => {});
+                }}
+              >
+                <Share2 size={16} />
+              </button>
               <SaveButton item={item} variant="heart" size={18} className="detail-float-btn" />
             </div>
           </div>
 
-          <div className="canvas-read px-4 pt-5">
+          <motion.div
+            className="detail-sheet canvas-read px-4 pt-5"
+            initial={reduce ? false : { y: 36, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={reduce ? { duration: motionDur.fast } : moveSpring}
+          >
             <ViewTransition enter="detail-copy" default="none">
             <div>
             <div className="flex items-start justify-between gap-3">
@@ -182,6 +203,7 @@ export default function DetailsClient({ id }: { id: string }) {
             </div>
 
             <h1 className="detail-title">{item.title}</h1>
+            <p className="detail-accent">{catLabel[item.category || ""] || catShort[item.category || ""] || ""}</p>
             </div>
             </ViewTransition>
             <div className="seller-card">
@@ -220,7 +242,7 @@ export default function DetailsClient({ id }: { id: string }) {
                 />
               </div>
             )}
-          </div>
+          </motion.div>
 
           <div className="detail-cta-bar">
             <div className="detail-cta-row">
@@ -240,10 +262,17 @@ export default function DetailsClient({ id }: { id: string }) {
               )}
               <Link
                 href={`/chat/${item.id}?title=${encodeURIComponent(item.title)}`}
-                className="detail-cta detail-cta-secondary"
+                className={sent ? "detail-cta detail-cta-secondary is-sent" : "detail-cta detail-cta-secondary"}
+                onClick={(event) => {
+                  if (reduce || sent) return;
+                  event.preventDefault();
+                  setSent(true);
+                  const href = `/chat/${item.id}?title=${encodeURIComponent(item.title)}`;
+                  window.setTimeout(() => router.push(href), 1200);
+                }}
               >
-                <Mail size={16} />
-                Message
+                {sent ? <Check size={16} /> : <Mail size={16} />}
+                {sent ? "Sent" : "Message"}
               </Link>
             </div>
           </div>

@@ -11,7 +11,7 @@ export const REGIONS = [
 ] as const;
 
 export type SortKey = "new" | "price_asc" | "price_desc" | "views" | "featured";
-export type ViewMode = "grid" | "list";
+export type ViewMode = "grid" | "large";
 
 export const VIEW_KEY = "jengo_listing_view";
 const STATE_PREFIX = "jengo_browse:";
@@ -29,12 +29,16 @@ export type NearPoint = { lat: number; lng: number };
 
 const SORTS = new Set<SortKey>(["new", "price_asc", "price_desc", "views", "featured"]);
 
+export function asView(value: unknown): ViewMode {
+  return value === "grid" ? "grid" : "large";
+}
+
 export function readView(): ViewMode {
-  if (typeof window === "undefined") return "grid";
+  if (typeof window === "undefined") return "large";
   try {
-    return localStorage.getItem(VIEW_KEY) === "list" ? "list" : "grid";
+    return asView(localStorage.getItem(VIEW_KEY));
   } catch {
-    return "grid";
+    return "large";
   }
 }
 
@@ -187,6 +191,25 @@ export function distanceKm(aLat: number, aLng: number, bLat: number, bLng: numbe
 
 export function anyFeatured(items: Listing[]): boolean {
   return items.some((item) => item.featured === true);
+}
+
+function withPhoto(item: Listing) {
+  return (item.images || []).some(Boolean);
+}
+
+/** Featured flag when the API sends it; otherwise the newest listings that have a photo. */
+export function pickFeatured(items: Listing[], limit = 8): Listing[] {
+  const flagged = items.filter((item) => item.featured === true && withPhoto(item));
+  const source = flagged.length ? flagged : items.filter(withPhoto).sort((a, b) => createdAt(b) - createdAt(a));
+  return source.slice(0, limit);
+}
+
+/** Newest photo listings. Pass `now` so the seven-day window is chosen after mount, not during prerender. */
+export function pickFresh(items: Listing[], limit = 8, now = 0): Listing[] {
+  const photos = items.filter(withPhoto);
+  const recent = now ? photos.filter((item) => createdAt(item) >= now - 7 * 24 * 60 * 60 * 1000) : [];
+  const source = recent.length >= 3 ? recent : photos;
+  return source.slice().sort((a, b) => createdAt(b) - createdAt(a)).slice(0, limit);
 }
 
 export function sortListings(items: Listing[], sort: SortKey): Listing[] {

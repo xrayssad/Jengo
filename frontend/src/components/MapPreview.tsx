@@ -12,22 +12,46 @@ const icon = L.icon({
   iconAnchor: [12, 41],
 });
 
-export default function MapPreview({ lat, lng }: { lat: number; lng: number }) {
+export default function MapPreview({
+  lat,
+  lng,
+  draggable = false,
+  onMove,
+}: {
+  lat: number;
+  lng: number;
+  draggable?: boolean;
+  onMove?: (lat: number, lng: number) => void;
+}) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const onMoveRef = useRef(onMove);
+  onMoveRef.current = onMove;
 
   useEffect(() => {
     if (!ref.current) return;
+    const placeMarker = (map: L.Map) => {
+      map.eachLayer((layer) => {
+        if (layer instanceof L.Marker) map.removeLayer(layer);
+      });
+      const marker = L.marker([lat, lng], { icon, draggable }).addTo(map);
+      if (draggable) {
+        marker.on("dragend", () => {
+          const point = marker.getLatLng();
+          onMoveRef.current?.(point.lat, point.lng);
+        });
+      }
+    };
     if (!mapRef.current) {
       mapRef.current = L.map(ref.current, { zoomControl: false, attributionControl: false }).setView([lat, lng], 16);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapRef.current);
-      L.marker([lat, lng], { icon }).addTo(mapRef.current);
+      placeMarker(mapRef.current);
     } else {
-      mapRef.current.setView([lat, lng], 16);
-      mapRef.current.eachLayer((layer) => {
-        if (layer instanceof L.Marker) mapRef.current?.removeLayer(layer);
-      });
-      L.marker([lat, lng], { icon }).addTo(mapRef.current);
+      const center = mapRef.current.getCenter();
+      if (Math.abs(center.lat - lat) > 0.00002 || Math.abs(center.lng - lng) > 0.00002) {
+        mapRef.current.setView([lat, lng], mapRef.current.getZoom());
+      }
+      placeMarker(mapRef.current);
     }
     const map = mapRef.current;
     const t = window.setTimeout(() => map.invalidateSize(), 80);

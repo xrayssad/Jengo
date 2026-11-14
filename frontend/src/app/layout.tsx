@@ -4,6 +4,7 @@ import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import AppShell from "@/components/AppShell";
 import ThemeProvider from "@/components/ThemeProvider";
 import { I18nProvider, LANG_BOOT } from "@/lib/i18n";
+import { DEVICE_BOOT } from "@/lib/device";
 import { THEME_BOOT } from "@/lib/theme";
 import "./globals.css";
 
@@ -35,6 +36,9 @@ export default function RootLayout({
       <body className="antialiased" suppressHydrationWarning>
         <Script id="jengo-theme" strategy="beforeInteractive">
           {THEME_BOOT}
+        </Script>
+        <Script id="jengo-device" strategy="beforeInteractive">
+          {DEVICE_BOOT}
         </Script>
         <Script id="jengo-lang" strategy="beforeInteractive">
           {LANG_BOOT}

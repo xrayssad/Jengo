@@ -18,10 +18,12 @@ function skipUsernameGate(path: string) {
   );
 }
 
+const NAV_HIDDEN = ["/admin", "/tangazo", "/tuma-ombi", "/chat", "/weka-tangazo", "/picha", "/reels/new", "/kazi/weka"];
+
 function hideNav(path: string) {
   if (skipUsernameGate(path)) return true;
-  if (path.startsWith("/admin") || path.startsWith("/tangazo") || path.startsWith("/tuma-ombi")) return true;
-  if (path.startsWith("/chat") || path.includes("/chat")) return true;
+  if (NAV_HIDDEN.some((prefix) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(prefix))) return true;
+  if (path.includes("/chat")) return true;
   if (path.startsWith("/messages/") && path !== "/messages") return true;
   return false;
 }
@@ -54,14 +56,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   return (
     <MqttInbox>
       {children}
-      {show && (
-        <>
-          {!fullBleed(path) && (
-            <div aria-hidden className="nav-spacer" />
-          )}
-          <BottomNav />
-        </>
-      )}
+      {show && !fullBleed(path) ? <div aria-hidden className="nav-spacer" /> : null}
+      <BottomNav hidden={!show} />
     </MqttInbox>
   );
 }

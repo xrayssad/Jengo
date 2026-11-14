@@ -1,21 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { createListing } from "@/lib/api";
+import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, Loader2, Store, Warehouse } from "lucide-react";
+import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
 import { rememberListing } from "@/lib/mine";
-import AppAlert, { type AlertKind } from "@/components/AppAlert";
+import { useT } from "@/lib/i18n";
+import { usePrefersReducedMotion } from "@/lib/motion";
 import AuthGate from "@/components/AuthGate";
+import ListingCard from "@/components/ListingCard";
 import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
-import PhotoPicker from "@/components/PhotoPicker";
+
+const DRAFT_KEY = "jengo_listing_draft";
 
 const categories = [
-  { id: "chumba_nyumba", label: "Rooms & Houses" },
-  { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "store_godown", label: "Shops Store & Godown" },
-  { id: "frame", label: "Shop Frames" },
-  { id: "vifaa", label: "Building Materials" },
+  { id: "chumba_nyumba", label: "Rooms & Houses", hint: "A room, house or compound", icon: Home },
+  { id: "apartment_airbnb", label: "Apartment & Airbnb", hint: "A stay charged by the night", icon: Building2 },
+  { id: "store_godown", label: "Shops & Godown", hint: "A shop, store or warehouse", icon: Warehouse },
+  { id: "frame", label: "Shop Frames", hint: "A frame inside a market", icon: Store },
+  { id: "vifaa", label: "Materials", hint: "Cement, timber, steel and more", icon: Boxes },
 ];
 
 const units = [
@@ -52,46 +55,403 @@ const periods: Record<string, { id: string; label: string }[]> = {
   ],
 };
 
+const roomTypes = [
+  { id: "single", label: "Single room" },
+  { id: "master", label: "Master" },
+  { id: "self", label: "Self-contained" },
+  { id: "house", label: "Whole house" },
+];
+
+const amenitySets: Record<string, string[]> = {
+  chumba_nyumba: ["Water", "Electricity", "Fence", "Security", "Parking", "Wi-Fi", "Furnished", "Tiled"],
+  apartment_airbnb: ["Water", "Electricity", "Security", "Parking", "Wi-Fi", "Furnished", "Tiled"],
+  store_godown: ["Water", "Electricity", "Security", "Parking", "Road access"],
+  frame: ["Electricity", "Security", "Water"],
+  vifaa: ["Delivery", "Parking"],
+};
+
+type Pending = { id: string; preview: string; file: File; error: boolean };
+
+type Draft = {
+  step: number;
+  category: string;
+  title: string;
+  description: string;
+  price: string;
+  negotiable: boolean;
+  period: string;
+  unit: string;
+  stock: string;
+  bedrooms: number;
+  bathrooms: number;
+  roomType: string;
+  deposit: string;
+  available: string;
+  guests: number;
+  minNights: number;
+  size: string;
+  frontage: string;
+  market: string;
+  frameSize: string;
+  minOrder: string;
+  amenities: string[];
+  photos: string[];
+  place: PlaceValue;
+  phones: string[];
+  whatsapp: string;
+  sameWa: boolean;
+};
+
+function digits(value: string) {
+  return value.replace(/[^\d]/g, "").slice(0, 12);
+}
+
+function grouped(value: string) {
+  if (!value) return "";
+  return Number(value).toLocaleString("en-TZ");
+}
+
+function tzPhone(value: string) {
+  const clean = value.replace(/[\s-]/g, "");
+  return /^(\+255|0)[67]\d{8}$/.test(clean);
+}
+
+async function compress(file: File) {
+  try {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.8));
+    bitmap.close?.();
+    if (!blob) return file;
+    return new File([blob], file.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" });
+  } catch {
+    return file;
+  }
+}
+
+const emptyPlace: PlaceValue = { location: "", city: "", lat: null, lng: null };
+
 export default function WekaTangazoPage() {
   const router = useRouter();
+  const t = useT();
+  const reduce = usePrefersReducedMotion();
+  const [step, setStep] = useState(1);
+  const [dir, setDir] = useState<"fwd" | "back">("fwd");
   const [category, setCategory] = useState("chumba_nyumba");
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [negotiable, setNegotiable] = useState(false);
   const [period, setPeriod] = useState("mwezi");
   const [unit, setUnit] = useState("mfuko");
   const [stock, setStock] = useState("");
-  const [place, setPlace] = useState<PlaceValue>({ location: "", city: "", lat: null, lng: null });
+  const [bedrooms, setBedrooms] = useState(1);
+  const [bathrooms, setBathrooms] = useState(1);
+  const [roomType, setRoomType] = useState("single");
+  const [deposit, setDeposit] = useState("");
+  const [available, setAvailable] = useState("");
+  const [guests, setGuests] = useState(2);
+  const [minNights, setMinNights] = useState(1);
+  const [size, setSize] = useState("");
+  const [frontage, setFrontage] = useState("");
+  const [market, setMarket] = useState("");
+  const [frameSize, setFrameSize] = useState("");
+  const [minOrder, setMinOrder] = useState("");
+  const [amenities, setAmenities] = useState<string[]>([]);
   const [photos, setPhotos] = useState<string[]>([]);
+  const [pending, setPending] = useState<Pending[]>([]);
+  const [place, setPlace] = useState<PlaceValue>(emptyPlace);
   const [phones, setPhones] = useState<string[]>([""]);
-  const [description, setDescription] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
+  const [sameWa, setSameWa] = useState(false);
+  const [tried, setTried] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
-  const [alertOpen, setAlertOpen] = useState(false);
-  const [alertKind, setAlertKind] = useState<AlertKind>("error");
-  const [alertTitle, setAlertTitle] = useState("");
-  const [alertMsg, setAlertMsg] = useState("");
+  const [failed, setFailed] = useState(false);
+  const [done, setDone] = useState<Listing | null>(null);
+  const [pool, setPool] = useState<Listing[]>([]);
+  const [askDraft, setAskDraft] = useState(false);
+  const [preview, setPreview] = useState<"card" | "detail">("card");
+  const draftRaw = useRef<string | null>(null);
+  const lock = useRef(false);
+  const cameraRef = useRef<HTMLInputElement>(null);
+  const libraryRef = useRef<HTMLInputElement>(null);
 
-  const show = (kind: AlertKind, titleText: string, msg?: string) => {
-    setAlertKind(kind);
-    setAlertTitle(titleText);
-    setAlertMsg(msg || "");
-    setAlertOpen(true);
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        draftRaw.current = raw;
+        setAskDraft(true);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchListings({ status: "active", limit: 40, category })
+      .then((res) => setPool(res.items || []))
+      .catch(() => setPool([]));
+  }, [category]);
+
+  const draft = useMemo<Draft>(
+    () => ({
+      step,
+      category,
+      title,
+      description,
+      price,
+      negotiable,
+      period,
+      unit,
+      stock,
+      bedrooms,
+      bathrooms,
+      roomType,
+      deposit,
+      available,
+      guests,
+      minNights,
+      size,
+      frontage,
+      market,
+      frameSize,
+      minOrder,
+      amenities,
+      photos,
+      place,
+      phones,
+      whatsapp,
+      sameWa,
+    }),
+    [
+      step, category, title, description, price, negotiable, period, unit, stock, bedrooms, bathrooms,
+      roomType, deposit, available, guests, minNights, size, frontage, market, frameSize, minOrder,
+      amenities, photos, place, phones, whatsapp, sameWa,
+    ],
+  );
+
+  useEffect(() => {
+    if (askDraft || done) return;
+    const id = window.setTimeout(() => {
+      try {
+        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+      } catch {
+        /* ignore */
+      }
+    }, 400);
+    return () => window.clearTimeout(id);
+  }, [askDraft, done, draft]);
+
+  const applyDraft = () => {
+    try {
+      const saved = JSON.parse(draftRaw.current || "") as Partial<Draft>;
+      if (saved.category) setCategory(saved.category);
+      if (typeof saved.title === "string") setTitle(saved.title);
+      if (typeof saved.description === "string") setDescription(saved.description);
+      if (typeof saved.price === "string") setPrice(saved.price);
+      if (typeof saved.negotiable === "boolean") setNegotiable(saved.negotiable);
+      if (typeof saved.period === "string") setPeriod(saved.period);
+      if (typeof saved.unit === "string") setUnit(saved.unit);
+      if (typeof saved.stock === "string") setStock(saved.stock);
+      if (typeof saved.bedrooms === "number") setBedrooms(saved.bedrooms);
+      if (typeof saved.bathrooms === "number") setBathrooms(saved.bathrooms);
+      if (typeof saved.roomType === "string") setRoomType(saved.roomType);
+      if (typeof saved.deposit === "string") setDeposit(saved.deposit);
+      if (typeof saved.available === "string") setAvailable(saved.available);
+      if (typeof saved.guests === "number") setGuests(saved.guests);
+      if (typeof saved.minNights === "number") setMinNights(saved.minNights);
+      if (typeof saved.size === "string") setSize(saved.size);
+      if (typeof saved.frontage === "string") setFrontage(saved.frontage);
+      if (typeof saved.market === "string") setMarket(saved.market);
+      if (typeof saved.frameSize === "string") setFrameSize(saved.frameSize);
+      if (typeof saved.minOrder === "string") setMinOrder(saved.minOrder);
+      if (Array.isArray(saved.amenities)) setAmenities(saved.amenities.filter((item) => typeof item === "string"));
+      if (Array.isArray(saved.photos)) setPhotos(saved.photos.filter((item) => typeof item === "string").slice(0, 10));
+      if (saved.place) setPlace({ ...emptyPlace, ...saved.place });
+      if (Array.isArray(saved.phones) && saved.phones.length) setPhones(saved.phones.slice(0, 3));
+      if (typeof saved.whatsapp === "string") setWhatsapp(saved.whatsapp);
+      if (typeof saved.sameWa === "boolean") setSameWa(saved.sameWa);
+      if (typeof saved.step === "number") setStep(Math.min(5, Math.max(1, saved.step)));
+    } catch {
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+    }
+    setAskDraft(false);
   };
 
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (title.trim().length < 3 || !price || !place.location.trim()) {
-      show("error", "Fill in the fields", "Title, price and location are required.");
+  const dropDraft = () => {
+    draftRaw.current = null;
+    try {
+      localStorage.removeItem(DRAFT_KEY);
+    } catch {
+      /* ignore */
+    }
+    setAskDraft(false);
+  };
+
+  const phoneErrors = phones.map((value) => (value.trim() && !tzPhone(value) ? "Use 07xx, 06xx or +255." : ""));
+  const waError = !sameWa && whatsapp.trim() && !tzPhone(whatsapp) ? "Use 07xx, 06xx or +255." : "";
+
+  const stepValid = (() => {
+    if (step === 1) return true;
+    if (step === 2) {
+      if (title.trim().length < 3 || !price) return false;
+      if (category === "vifaa" && (stock === "" || Number(stock) < 0)) return false;
+      return true;
+    }
+    if (step === 3) return photos.length > 0 && pending.every((item) => item.error);
+    if (step === 4) {
+      if (place.location.trim().length < 2) return false;
+      if (phoneErrors.some(Boolean) || waError) return false;
+      return true;
+    }
+    return true;
+  })();
+
+  const band = useMemo(() => {
+    const needle = (place.city || place.location).trim().toLowerCase();
+    const match = pool.filter((item) => {
+      if ((item.category || "") !== category) return false;
+      if (!needle) return true;
+      return `${item.city || ""} ${item.location || ""}`.toLowerCase().includes(needle.split(",")[0]);
+    });
+    const prices = match.map((item) => Number(item.price)).filter((n) => Number.isFinite(n) && n > 0);
+    if (prices.length < 3) return null;
+    return { min: Math.min(...prices), max: Math.max(...prices) };
+  }, [pool, category, place.city, place.location]);
+
+  const go = (next: number) => {
+    setDir(next > step ? "fwd" : "back");
+    setTried(false);
+    setStep(next);
+  };
+
+  const forward = () => {
+    if (!stepValid) {
+      setTried(true);
       return;
     }
-    if (category === "vifaa" && (stock === "" || Number.isNaN(Number(stock)) || Number(stock) < 0)) {
-      show("error", "Enter stock", "Available quantity is required.");
-      return;
+    go(Math.min(5, step + 1));
+  };
+
+  const addFiles = async (files: FileList | null) => {
+    const room = 10 - photos.length - pending.filter((item) => !item.error).length;
+    const batch = Array.from(files || []).slice(0, Math.max(0, room));
+    if (!batch.length) return;
+    for (const file of batch) {
+      const id = `${Date.now()}-${file.name}-${Math.random()}`;
+      const preview = URL.createObjectURL(file);
+      setPending((cur) => [...cur, { id, preview, file, error: false }]);
+      const ready = await compress(file);
+      try {
+        const res = await uploadPhoto(ready);
+        if (res.url) setPhotos((cur) => (cur.length >= 10 ? cur : [...cur, res.url]));
+        setPending((cur) => cur.filter((item) => item.id !== id));
+        URL.revokeObjectURL(preview);
+      } catch {
+        setPending((cur) => cur.map((item) => (item.id === id ? { ...item, error: true, file: ready } : item)));
+      }
     }
+  };
+
+  const retry = async (item: Pending) => {
+    setPending((cur) => cur.map((row) => (row.id === item.id ? { ...row, error: false } : row)));
+    try {
+      const res = await uploadPhoto(item.file);
+      if (res.url) setPhotos((cur) => (cur.length >= 10 ? cur : [...cur, res.url]));
+      setPending((cur) => cur.filter((row) => row.id !== item.id));
+      URL.revokeObjectURL(item.preview);
+    } catch {
+      setPending((cur) => cur.map((row) => (row.id === item.id ? { ...row, error: true } : row)));
+    }
+  };
+
+  const hold = (index: number) => (event: React.PointerEvent) => {
+    const startX = event.clientX;
+    const startY = event.clientY;
+    let dragging = false;
+    let target = index;
+    const timer = window.setTimeout(() => {
+      dragging = true;
+    }, 380);
+    const move = (e: PointerEvent) => {
+      if (!dragging && Math.hypot(e.clientX - startX, e.clientY - startY) > 10) window.clearTimeout(timer);
+      if (!dragging) return;
+      const node = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>("[data-shot]");
+      const next = Number(node?.dataset.shot);
+      if (Number.isInteger(next)) target = next;
+    };
+    const up = () => {
+      window.clearTimeout(timer);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setPhotos((cur) => {
+        if (dragging) {
+          if (target === index || target < 0 || target >= cur.length) return cur;
+          const copy = cur.slice();
+          const [item] = copy.splice(index, 1);
+          copy.splice(target, 0, item);
+          return copy;
+        }
+        if (index <= 0 || index >= cur.length) return cur;
+        const copy = cur.slice();
+        const [item] = copy.splice(index, 1);
+        copy.unshift(item);
+        return copy;
+      });
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  const optional = () => {
+    const extra: Record<string, string | number | boolean | string[]> = {};
+    if (negotiable) extra.negotiable = true;
+    if (amenities.length) extra.amenities = amenities;
+    if (category === "chumba_nyumba") {
+      extra.bedrooms = bedrooms;
+      extra.bathrooms = bathrooms;
+      extra.room_type = roomType;
+      if (deposit) extra.deposit = Number(deposit);
+      if (available) extra.available_from = available;
+    }
+    if (category === "apartment_airbnb") {
+      extra.guests = guests;
+      extra.bedrooms = bedrooms;
+      extra.min_nights = minNights;
+    }
+    if (category === "store_godown") {
+      if (size) extra.size_m2 = Number(size);
+      if (frontage.trim()) extra.frontage = frontage.trim();
+    }
+    if (category === "frame") {
+      if (frameSize.trim()) extra.frame_size = frameSize.trim();
+      if (market.trim()) extra.market_name = market.trim();
+    }
+    if (category === "vifaa" && minOrder) extra.min_order = Number(minOrder);
+    const wa = sameWa ? phones[0] : whatsapp;
+    if (wa.trim()) extra.whatsapp = wa.trim();
+    return extra;
+  };
+
+  const publish = async () => {
+    if (lock.current || !stepValid) return;
+    lock.current = true;
     setLoading(true);
+    setFailed(false);
     try {
       const isVifaa = category === "vifaa";
-      const contact = phones.map((p) => p.trim()).filter(Boolean).slice(0, 3);
+      const contact = phones.map((item) => item.trim()).filter(Boolean).slice(0, 3);
       const desc = description.trim();
       const created = await createListing({
         category,
@@ -101,162 +461,473 @@ export default function WekaTangazoPage() {
         period: isVifaa ? "" : period,
         location: place.location.trim(),
         city: place.city.trim(),
-        images: photos.slice(0, 6),
+        images: photos.slice(0, 10),
         lat: place.lat,
         lng: place.lng,
         phones: contact,
         ...(isVifaa ? { unit, stock: Number(stock) } : {}),
+        ...optional(),
       });
       if (created?.id) rememberListing(String(created.id));
-      setDone(true);
-    } catch (err) {
-      show("error", "Could not publish", err instanceof Error ? err.message : "Try again.");
+      try {
+        localStorage.removeItem(DRAFT_KEY);
+      } catch {
+        /* ignore */
+      }
+      setDone(created);
+    } catch {
+      setFailed(true);
+      lock.current = false;
     } finally {
       setLoading(false);
     }
   };
 
-  if (done) {
+  const reset = () => {
+    lock.current = false;
+    setDone(null);
+    setStep(1);
+    setTitle("");
+    setDescription("");
+    setPrice("");
+    setNegotiable(false);
+    setStock("");
+    setAmenities([]);
+    setPhotos([]);
+    setPending([]);
+    setPlace(emptyPlace);
+    setPhones([""]);
+    setWhatsapp("");
+    setSameWa(false);
+    setFailed(false);
+  };
+
+  const score = Math.min(
+    100,
+    (title.trim().length >= 3 ? 15 : 0) +
+      (price ? 15 : 0) +
+      (photos.length ? 20 : 0) +
+      (photos.length >= 3 ? 10 : 0) +
+      (description.trim().length >= 40 ? 15 : 0) +
+      (amenities.length ? 10 : 0) +
+      (place.lat != null ? 15 : 0),
+  );
+
+  const previewItem: Listing = {
+    id: "preview",
+    category,
+    title: title || "Listing title",
+    price: Number(price || 0),
+    period: category === "vifaa" ? "" : period,
+    location: place.location,
+    city: place.city,
+    images: photos,
+    unit: category === "vifaa" ? unit : undefined,
+    stock: category === "vifaa" && stock !== "" ? Number(stock) : undefined,
+  };
+
+  const share = () => {
+    if (!done?.id) return;
+    const url = `${window.location.origin}/tangazo/${done.id}`;
+    const data = { title: done.title, url };
+    if (navigator.share) {
+      navigator.share(data).catch(() => {});
+      return;
+    }
+    navigator.clipboard?.writeText(url).catch(() => {});
+  };
+
+  const chip = (id: string, label: string, on: boolean, pick: () => void) => (
+    <button key={id} type="button" className={on ? "filter-chip is-on" : "filter-chip"} aria-pressed={on} onClick={pick}>
+      {label}
+    </button>
+  );
+
+  const stepper = (label: string, value: number, set: (n: number) => void, min = 0, max = 20) => (
+    <div className="wizard-field">
+      <span className="wizard-label">{label}</span>
+      <div className="wizard-stepper">
+        <button type="button" onClick={() => set(Math.max(min, value - 1))} aria-label={`Less ${label}`}>–</button>
+        <span>{value}</span>
+        <button type="button" onClick={() => set(Math.min(max, value + 1))} aria-label={`More ${label}`}>+</button>
+      </div>
+    </div>
+  );
+
+  if (done?.id) {
     return (
       <AuthGate>
-      <main className="min-h-screen flex items-center justify-center px-5" style={{ backgroundColor: "var(--paper)" }}>
-        <div className="sheet max-w-sm w-full text-center p-6">
-          <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--ink)" }}>Listing posted</h1>
-          <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>It is live on Discover now.</p>
-          <button type="button" onClick={() => router.push("/discover")} className="btn-primary w-full py-3.5 rounded-full font-semibold text-sm">
-            View Discover
-          </button>
-          <button type="button" onClick={() => router.push("/home")} className="btn-secondary w-full mt-3 py-3.5 rounded-full font-semibold text-sm">
-            Back to Home
-          </button>
-        </div>
-      </main>
+        <main className="wizard-page">
+          {!reduce ? (
+            <div className="confetti" aria-hidden>
+              {Array.from({ length: 16 }, (_, i) => (
+                <i key={i} style={{ left: `${6 + i * 6}%`, animationDelay: `${i * 40}ms`, background: i % 2 ? "var(--accent)" : "var(--primary)" }} />
+              ))}
+            </div>
+          ) : null}
+          <div className="wizard-success">
+            <span className="wizard-check"><Check size={32} /></span>
+            <h1 className="font-heading text-4xl">{t("wizard.sent")}</h1>
+            <p style={{ color: "var(--muted)" }}>{t("wizard.live")}</p>
+            <button type="button" className="btn-primary" onClick={() => router.push(`/tangazo/${done.id}`)}>{t("wizard.view")}</button>
+            <button type="button" className="btn-secondary" onClick={share}>{t("wizard.share")}</button>
+            <button type="button" className="btn-secondary" onClick={reset}>{t("wizard.another")}</button>
+          </div>
+        </main>
       </AuthGate>
     );
   }
 
   return (
     <AuthGate>
-    <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
-      <header className="topbar">
-        <div className="canvas-read flex items-center gap-3 px-5">
-          <button type="button" onClick={() => router.push("/home")} className="soft-icon-btn shrink-0" aria-label="Back">
-            <ArrowLeft size={18} color="var(--ink)" />
+      <main className="wizard-page">
+        <header className="wizard-top">
+          <button
+            type="button"
+            className="soft-icon-btn shrink-0"
+            aria-label={t("wizard.back")}
+            onClick={() => (step > 1 ? go(step - 1) : router.push("/home"))}
+          >
+            <ArrowLeft size={18} />
           </button>
-          <h1 className="page-title">Post a listing</h1>
-        </div>
-      </header>
-
-      <form onSubmit={submit} className="canvas-read px-5 pt-6">
-      <div className="sheet p-5 space-y-4">
-        <div className="grid grid-cols-2 gap-2">
-          {categories.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => {
-                setCategory(c.id);
-                if (c.id !== "vifaa") setPeriod(periods[c.id][0].id);
-              }}
-              className={category === c.id ? "choice is-on" : "choice"}
-              aria-pressed={category === c.id}
-            >
-              {c.label}
-            </button>
-          ))}
-        </div>
-
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-        <input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="Price" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-
-        {category === "vifaa" ? (
-          <>
-            <div className="flex flex-wrap gap-2">
-              {units.map((u) => (
-                <button
-                  key={u.id}
-                  type="button"
-                  onClick={() => setUnit(u.id)}
-                  className={unit === u.id ? "filter-chip is-on" : "filter-chip"}
-                  aria-pressed={unit === u.id}
-                >
-                  {u.label}
-                </button>
-              ))}
-            </div>
-            <input value={stock} onChange={(e) => setStock(e.target.value)} placeholder="Stock / quantity" inputMode="numeric" className="input-chocolate w-full px-4 py-3.5 text-sm" />
-          </>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {periods[category].map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => setPeriod(p.id)}
-                className={period === p.id ? "filter-chip is-on" : "filter-chip"}
-                aria-pressed={period === p.id}
-              >
-                {p.label}
-              </button>
-            ))}
+          <div>
+            <h1>{t("wizard.post")}</h1>
+            <p className="wizard-step-label">{t("wizard.step", { n: step })}</p>
           </div>
-        )}
+        </header>
+        <div className="wizard-progress" aria-hidden>
+          <span style={{ width: `${(step / 5) * 100}%` }} />
+        </div>
 
-        <div>
-          <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Photos</p>
-          <PhotoPicker urls={photos} onChange={setPhotos} />
-        </div>
-        <div>
-          <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Location</p>
-          <PlacePicker value={place} onChange={setPlace} />
-        </div>
-        <div>
-          <p className="text-sm mb-2" style={{ color: "var(--muted)" }}>Contact phone numbers</p>
-          <div className="space-y-2">
-            {phones.map((p, i) => (
-              <div key={i} className="flex gap-2">
-                <input
-                  value={p}
-                  onChange={(e) => setPhones((cur) => cur.map((x, j) => (j === i ? e.target.value : x)))}
-                  placeholder={i === 0 ? "Example: 0712 345 678" : "Another number"}
-                  inputMode="tel"
-                  className="input-chocolate w-full px-4 py-3.5 text-sm"
-                />
-                {i > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setPhones((cur) => cur.filter((_, j) => j !== i))}
-                    className="text-sm px-3"
-                    style={{ color: "var(--mocha)" }}
-                  >
-                    Remove
-                  </button>
-                )}
+        <div className="wizard-body">
+          <div key={step} className={dir === "back" ? "wizard-pane is-back" : "wizard-pane"}>
+            {askDraft ? (
+              <div className="wizard-banner">
+                <p>{t("wizard.draft")}</p>
+                <div>
+                  <button type="button" className="btn-primary px-4" onClick={applyDraft}>{t("wizard.keep")}</button>
+                  <button type="button" className="btn-secondary px-4" onClick={dropDraft}>{t("wizard.fresh")}</button>
+                </div>
               </div>
-            ))}
+            ) : null}
+
+            {step === 1 && (
+              <div className="wizard-cats">
+                {categories.map((item) => {
+                  const Icon = item.icon;
+                  const on = category === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      className={on ? "wizard-cat is-on" : "wizard-cat"}
+                      aria-pressed={on}
+                      onClick={() => {
+                        setCategory(item.id);
+                        if (item.id !== "vifaa") setPeriod(periods[item.id][0].id);
+                        setAmenities([]);
+                      }}
+                    >
+                      <Icon size={22} />
+                      <span className="wizard-cat-name">{item.label}</span>
+                      <span className="wizard-cat-hint">{item.hint}</span>
+                      {on ? <Check className="wizard-cat-mark" size={16} /> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {step === 2 && (
+              <div>
+                <label className="wizard-field">
+                  <span className="wizard-label">Title <i>*</i> <span className="wizard-optional">{title.length}/80</span></span>
+                  <input className="wizard-input" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
+                  <span className="wizard-hint">A clear title is easier to find.</span>
+                  {tried && title.trim().length < 3 ? <span className="wizard-error">Add a title of at least 3 letters.</span> : null}
+                </label>
+                <label className="wizard-field">
+                  <span className="wizard-label">Description <span className="wizard-optional">({t("optional")}) {description.length}/500</span></span>
+                  <textarea className="wizard-input" rows={4} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
+                </label>
+                <label className="wizard-field">
+                  <span className="wizard-label">Price (TSh) <i>*</i></span>
+                  <input
+                    className="wizard-input"
+                    inputMode="numeric"
+                    value={grouped(price)}
+                    onChange={(e) => setPrice(digits(e.target.value))}
+                  />
+                  {band ? <span className="wizard-hint">{t("wizard.similar", { min: formatPrice(band.min), max: formatPrice(band.max) })}</span> : null}
+                  {tried && !price ? <span className="wizard-error">Enter a price.</span> : null}
+                </label>
+                <div className="wizard-toggle">
+                  <span>{t("wizard.negotiable")}</span>
+                  <button type="button" className={negotiable ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={negotiable} onClick={() => setNegotiable((v) => !v)}>
+                    <i />
+                  </button>
+                </div>
+                {category !== "vifaa" ? (
+                  <div className="wizard-field">
+                    <span className="wizard-label">Rent period</span>
+                    <div className="wizard-chips">
+                      {periods[category].map((item) => chip(item.id, item.label, period === item.id, () => setPeriod(item.id)))}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="wizard-field">
+                      <span className="wizard-label">Unit</span>
+                      <div className="wizard-chips">
+                        {units.map((item) => chip(item.id, item.label, unit === item.id, () => setUnit(item.id)))}
+                      </div>
+                    </div>
+                    <label className="wizard-field">
+                      <span className="wizard-label">Stock <i>*</i></span>
+                      <input className="wizard-input" inputMode="numeric" value={stock} onChange={(e) => setStock(digits(e.target.value))} />
+                      {tried && stock === "" ? <span className="wizard-error">Enter the available quantity.</span> : null}
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">Minimum order <span className="wizard-optional">({t("optional")})</span></span>
+                      <input className="wizard-input" inputMode="numeric" value={minOrder} onChange={(e) => setMinOrder(digits(e.target.value))} />
+                    </label>
+                  </>
+                )}
+                {category === "chumba_nyumba" && (
+                  <>
+                    <div className="wizard-row">
+                      {stepper("Bedrooms", bedrooms, setBedrooms, 0, 20)}
+                      {stepper("Bathrooms", bathrooms, setBathrooms, 0, 20)}
+                    </div>
+                    <div className="wizard-field">
+                      <span className="wizard-label">Type</span>
+                      <div className="wizard-chips">
+                        {roomTypes.map((item) => chip(item.id, item.label, roomType === item.id, () => setRoomType(item.id)))}
+                      </div>
+                    </div>
+                    <label className="wizard-field">
+                      <span className="wizard-label">Deposit <span className="wizard-optional">({t("optional")})</span></span>
+                      <input className="wizard-input" inputMode="numeric" value={grouped(deposit)} onChange={(e) => setDeposit(digits(e.target.value))} />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">Available from <span className="wizard-optional">({t("optional")})</span></span>
+                      <input className="wizard-input" type="date" value={available} onChange={(e) => setAvailable(e.target.value)} />
+                    </label>
+                  </>
+                )}
+                {category === "apartment_airbnb" && (
+                  <div className="wizard-row">
+                    {stepper("Guests", guests, setGuests, 1, 30)}
+                    {stepper("Bedrooms", bedrooms, setBedrooms, 0, 20)}
+                    {stepper("Min nights", minNights, setMinNights, 1, 30)}
+                  </div>
+                )}
+                {category === "store_godown" && (
+                  <div className="wizard-row">
+                    <label className="wizard-field">
+                      <span className="wizard-label">Size m² <span className="wizard-optional">({t("optional")})</span></span>
+                      <input className="wizard-input" inputMode="numeric" value={size} onChange={(e) => setSize(digits(e.target.value))} />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">Road frontage <span className="wizard-optional">({t("optional")})</span></span>
+                      <input className="wizard-input" value={frontage} onChange={(e) => setFrontage(e.target.value)} />
+                    </label>
+                  </div>
+                )}
+                {category === "frame" && (
+                  <div className="wizard-row">
+                    <label className="wizard-field">
+                      <span className="wizard-label">Size <span className="wizard-optional">({t("optional")})</span></span>
+                      <input className="wizard-input" value={frameSize} onChange={(e) => setFrameSize(e.target.value)} />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">Market name <span className="wizard-optional">({t("optional")})</span></span>
+                      <input className="wizard-input" value={market} onChange={(e) => setMarket(e.target.value)} />
+                    </label>
+                  </div>
+                )}
+                <div className="wizard-field">
+                  <span className="wizard-label">Amenities <span className="wizard-optional">({t("optional")})</span></span>
+                  <div className="wizard-chips">
+                    {(amenitySets[category] || []).map((item) =>
+                      chip(item, item, amenities.includes(item), () =>
+                        setAmenities((cur) => (cur.includes(item) ? cur.filter((name) => name !== item) : [...cur, item])),
+                      ),
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div>
+                <p className="wizard-label">{t("wizard.photos", { n: photos.length })}</p>
+                <div className="shot-grid" style={{ marginTop: 10 }}>
+                  {photos.map((url, index) => (
+                    <div key={url} className="shot" data-shot={index} onPointerDown={hold(index)}>
+                      <img src={url} alt="" />
+                      {index === 0 ? <span className="shot-cover">{t("wizard.cover")}</span> : null}
+                      <button
+                        type="button"
+                        className="shot-x"
+                        aria-label="Remove photo"
+                        onPointerDown={(e) => e.stopPropagation()}
+                        onClick={() => setPhotos((cur) => cur.filter((item) => item !== url))}
+                      >
+                        <span>×</span>
+                      </button>
+                    </div>
+                  ))}
+                  {pending.map((item) => (
+                    <div key={item.id} className="shot">
+                      <img src={item.preview} alt="" />
+                      {item.error ? (
+                        <button type="button" className="shot-cover" onClick={() => retry(item)}>Retry</button>
+                      ) : (
+                        <span className="shot-ring" />
+                      )}
+                    </div>
+                  ))}
+                  {photos.length + pending.length < 10 ? (
+                    <>
+                      <button type="button" className="shot" onClick={() => cameraRef.current?.click()}>
+                        <Camera size={18} />
+                        <span className="text-[11px]">Camera</span>
+                      </button>
+                      <button type="button" className="shot" onClick={() => libraryRef.current?.click()}>
+                        <ImagePlus size={18} />
+                        <span className="text-[11px]">Gallery</span>
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+                {tried && photos.length === 0 ? <p className="wizard-error" style={{ marginTop: 8 }}>Add at least one photo.</p> : null}
+                <p className="wizard-tip">{t("wizard.tip")}</p>
+                {photos[0] ? (
+                  <div className="wizard-preview-card" style={{ marginTop: 16 }}>
+                    <ListingCard item={previewItem} eager />
+                  </div>
+                ) : null}
+                <input ref={cameraRef} className="hidden" type="file" accept="image/*" capture="environment" onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ""; }} />
+                <input ref={libraryRef} className="hidden" type="file" accept="image/*" multiple onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ""; }} />
+              </div>
+            )}
+
+            {step === 4 && (
+              <div>
+                <div className="wizard-field">
+                  <span className="wizard-label">Location <i>*</i></span>
+                  <PlacePicker
+                    pin
+                    value={place}
+                    onChange={(next) => {
+                      setPlace({
+                        ...next,
+                        location: next.location.trim() || (next.lat != null ? "Pinned location" : ""),
+                      });
+                    }}
+                  />
+                  {tried && place.location.trim().length < 2 ? <span className="wizard-error">Add a street or area.</span> : null}
+                </div>
+                <div className="wizard-field">
+                  <span className="wizard-label">Phone numbers <span className="wizard-optional">({t("optional")})</span></span>
+                  {phones.map((value, index) => (
+                    <div key={index} className="wizard-field" style={{ marginTop: index ? 8 : 0 }}>
+                      <div className="flex gap-2">
+                        <input
+                          className="wizard-input"
+                          inputMode="tel"
+                          value={value}
+                          placeholder={index === 0 ? "0712 345 678" : "Another number"}
+                          onChange={(e) => setPhones((cur) => cur.map((item, i) => (i === index ? e.target.value : item)))}
+                        />
+                        {index > 0 ? (
+                          <button type="button" className="btn-secondary px-3" onClick={() => setPhones((cur) => cur.filter((_, i) => i !== index))}>
+                            Remove
+                          </button>
+                        ) : (
+                          <span className="wizard-optional self-center">{t("wizard.primary")}</span>
+                        )}
+                      </div>
+                      {phoneErrors[index] ? <span className="wizard-error">{phoneErrors[index]}</span> : null}
+                    </div>
+                  ))}
+                  {phones.length < 3 ? (
+                    <button type="button" className="wizard-hint" style={{ textAlign: "left" }} onClick={() => setPhones((cur) => [...cur, ""])}>
+                      + Add number
+                    </button>
+                  ) : null}
+                </div>
+                <label className="wizard-field">
+                  <span className="wizard-label">WhatsApp <span className="wizard-optional">({t("optional")})</span></span>
+                  <input className="wizard-input" inputMode="tel" value={sameWa ? phones[0] || "" : whatsapp} disabled={sameWa} onChange={(e) => setWhatsapp(e.target.value)} />
+                  {waError ? <span className="wizard-error">{waError}</span> : null}
+                </label>
+                <div className="wizard-toggle">
+                  <span>{t("wizard.same")}</span>
+                  <button type="button" className={sameWa ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={sameWa} onClick={() => setSameWa((v) => !v)}>
+                    <i />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {step === 5 && (
+              <div>
+                <div className="wizard-chips" role="tablist">
+                  <button type="button" className={preview === "card" ? "filter-chip is-on" : "filter-chip"} onClick={() => setPreview("card")}>{t("wizard.card")}</button>
+                  <button type="button" className={preview === "detail" ? "filter-chip is-on" : "filter-chip"} onClick={() => setPreview("detail")}>{t("wizard.detail")}</button>
+                </div>
+                <div style={{ marginTop: 12 }}>
+                  {preview === "card" ? (
+                    <div className="wizard-preview-card">
+                      <ListingCard item={previewItem} eager />
+                    </div>
+                  ) : (
+                    <article className="wizard-detail-preview">
+                      {photos[0] ? <img src={photos[0]} alt="" /> : <div className="market-photo-empty" />}
+                      <div className="wizard-detail-copy">
+                        <p className="detail-price">TSh {formatPrice(price || 0)}</p>
+                        <h2>{title}</h2>
+                        <p><em>{categories.find((item) => item.id === category)?.label}</em></p>
+                        <p className="detail-copy">{description || "No extra description."}</p>
+                      </div>
+                    </article>
+                  )}
+                </div>
+                {[
+                  ["Category", categories.find((item) => item.id === category)?.label || "", 1],
+                  ["Details", title, 2],
+                  ["Photos", t("wizard.photos", { n: photos.length }), 3],
+                  ["Location", place.location, 4],
+                ].map(([label, value, target]) => (
+                  <div key={String(label)} className="wizard-summary">
+                    <span><strong>{label}.</strong> {value}</span>
+                    <button type="button" onClick={() => go(Number(target))}>{t("wizard.edit")}</button>
+                  </div>
+                ))}
+                <p className="wizard-label" style={{ marginTop: 8 }}>{t("wizard.strength", { n: score })}</p>
+                <div className="wizard-meter" aria-hidden><span style={{ width: `${score}%` }} /></div>
+                {failed ? <p className="wizard-error" style={{ marginTop: 10 }}>{t("wizard.retry")}</p> : null}
+              </div>
+            )}
           </div>
-          {phones.length < 3 && (
-            <button
-              type="button"
-              onClick={() => setPhones((cur) => [...cur, ""])}
-              className="text-sm mt-2"
-              style={{ color: "var(--mocha)" }}
-            >
-              + Add number
+        </div>
+
+        <div className="wizard-actions">
+          {step > 1 ? (
+            <button type="button" className="btn-secondary" onClick={() => go(step - 1)}>{t("wizard.back")}</button>
+          ) : null}
+          {step < 5 ? (
+            <button type="button" className="btn-primary" disabled={!stepValid} onClick={forward}>{t("wizard.next")}</button>
+          ) : (
+            <button type="button" className="btn-primary inline-flex items-center justify-center gap-2" disabled={loading} onClick={publish}>
+              {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+              {t("wizard.publish")}
             </button>
           )}
         </div>
-        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} placeholder="Description" className="input-chocolate w-full px-4 py-3.5 text-sm resize-none" />
-
-        <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 rounded-full font-semibold text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
-          {loading ? <Loader2 size={18} className="animate-spin" /> : null}
-          {loading ? "Publishing..." : "Publish listing"}
-        </button>
-      </div>
-      </form>
-
-      <AppAlert open={alertOpen} kind={alertKind} title={alertTitle} message={alertMsg} onClose={() => setAlertOpen(false)} />
-    </main>
+      </main>
     </AuthGate>
   );
 }

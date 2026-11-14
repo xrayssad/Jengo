@@ -4,7 +4,18 @@ function Bone({ className = "", style }: { className?: string; style?: CSSProper
   return <span className={`skel-bone ${className}`.trim()} style={style} />;
 }
 
-export function ListingCardSkeleton({ wide = false, layout = "grid" }: { wide?: boolean; layout?: "grid" | "list" }) {
+export function ListingCardSkeleton({ wide = false, layout = "grid" }: { wide?: boolean; layout?: "grid" | "list" | "large" }) {
+  if (layout === "large" && !wide) {
+    return (
+      <div className="market-tile is-immerse is-large" aria-hidden>
+        <div className="listing-media">
+          <div className="market-tile-media">
+            <Bone className="absolute inset-0 rounded-none" />
+          </div>
+        </div>
+      </div>
+    );
+  }
   if (layout === "list" && !wide) {
     return (
       <div className="market-tile is-row" aria-hidden>
@@ -51,10 +62,11 @@ export function ListingCardSkeleton({ wide = false, layout = "grid" }: { wide?: 
   );
 }
 
-export function ListingFeedSkeleton({ count = 4, wide = false, layout = "grid" }: { count?: number; wide?: boolean; layout?: "grid" | "list" }) {
+export function ListingFeedSkeleton({ count = 4, wide = false, layout = "grid" }: { count?: number; wide?: boolean; layout?: "grid" | "list" | "large" }) {
   const list = layout === "list" && !wide;
+  const large = layout === "large" && !wide;
   return (
-    <div className={wide ? "space-y-5" : list ? "listing-grid is-list" : "listing-grid"} aria-busy="true" aria-label="Loading listings">
+    <div className={wide ? "space-y-5" : large ? "listing-grid is-large" : list ? "listing-grid is-list" : "listing-grid"} aria-busy="true" aria-label="Loading listings">
       {Array.from({ length: count }).map((_, i) => (
         <ListingCardSkeleton key={i} wide={wide} layout={layout} />
       ))}

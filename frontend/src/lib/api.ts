@@ -618,6 +618,21 @@ export async function createListing(body: {
   lat?: number | null;
   lng?: number | null;
   phones?: string[];
+  negotiable?: boolean;
+  amenities?: string[];
+  bedrooms?: number;
+  bathrooms?: number;
+  room_type?: string;
+  deposit?: number;
+  available_from?: string;
+  guests?: number;
+  min_nights?: number;
+  size_m2?: number;
+  frontage?: string;
+  market_name?: string;
+  frame_size?: string;
+  min_order?: number;
+  whatsapp?: string;
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",

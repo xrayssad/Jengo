@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { motion } from "motion/react";
 import { Home, Clapperboard, Plus, MessageCircle, User } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { moveSpring, usePrefersReducedMotion } from "@/lib/motion";
+import { motionDur, motionEase, tapSpring, usePrefersReducedMotion } from "@/lib/motion";
 import { useInboxLive } from "./MqttInbox";
 
 const items = [
@@ -15,7 +15,7 @@ const items = [
   { href: "/profile", label: "nav.profile", icon: User },
 ];
 
-export default function BottomNav() {
+export default function BottomNav({ hidden = false }: { hidden?: boolean }) {
   const path = usePathname();
   const t = useT();
   const reduce = usePrefersReducedMotion();
@@ -36,7 +36,7 @@ export default function BottomNav() {
           reduce ? (
             <span className="nav-pill" />
           ) : (
-            <motion.span layoutId="nav-pill" className="nav-pill" transition={moveSpring} />
+            <motion.span layoutId="nav-pill" className="nav-pill" transition={tapSpring} />
           )
         ) : null}
         <span className="nav-ico relative inline-flex">
@@ -48,23 +48,28 @@ export default function BottomNav() {
             />
           )}
         </span>
-        <span className="nav-label">{t(item.label)}</span>
+        {active ? (
+          reduce ? (
+            <span className="nav-label">{t(item.label)}</span>
+          ) : (
+            <motion.span
+              className="nav-label"
+              initial={{ opacity: 0, x: -6 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: motionDur.fast, ease: motionEase }}
+            >
+              {t(item.label)}
+            </motion.span>
+          )
+        ) : null}
       </Link>
     );
   };
 
   return (
-    <nav className="bottom-nav">
+    <nav className={hidden ? "bottom-nav is-hidden" : "bottom-nav"} aria-hidden={hidden || undefined}>
       <div
-        className="nav-island mx-auto px-2"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
-          width: "100%",
-          maxWidth: 560,
-          boxSizing: "border-box",
-          alignItems: "center",
-        }}
+        className="nav-island nav-row mx-auto"
       >
         {link(items[0])}
         {link(items[1])}

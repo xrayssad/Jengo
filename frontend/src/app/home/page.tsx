@@ -2,9 +2,11 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import FeatureHero from "@/components/FeatureHero";
+import FreshRail from "@/components/FreshRail";
+import HeroCarousel from "@/components/HeroCarousel";
+import PromoBanner from "@/components/PromoBanner";
+import Splash from "@/components/Splash";
 import {
   Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
@@ -55,6 +57,7 @@ export default function HomePage() {
   const searchBox = useRef<HTMLFormElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const { items, setItems, loading: waiting, error } = useListings({ status: "active", limit: 40 });
+  const [scrolled, setScrolled] = useState(false);
 
   const goSearch = (q: string) => {
     const next = q.split(",")[0].trim() || q.trim();
@@ -98,6 +101,13 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
     const onLike = (e: Event) => {
       const d = ((e as CustomEvent).detail || {}) as { listing_id?: string; likes_count?: number };
       if (!d.listing_id || typeof d.likes_count !== "number") return;
@@ -113,7 +123,8 @@ export default function HomePage() {
 
   return (
     <main className="home-settle min-h-screen overflow-x-hidden">
-      <header className="topbar">
+      <Splash />
+      <header className={scrolled ? "topbar is-scrolled" : "topbar"}>
         <div className="canvas home-top px-4">
           <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn home-icon-btn" aria-label={t("menu")}>
             <Menu size={18} color="currentColor" />
@@ -169,9 +180,21 @@ export default function HomePage() {
         </nav>
       </aside>
 
-      <div className="canvas home-body px-4">
+      <div className="canvas home-body">
+        <div className="home-pad">
         <div className="home-intro">
-          <p className="home-greet">Welcome back</p>
+          <h2 className="home-headline">
+            {(["headline.a", "headline.b", "headline.accent", "headline.c"] as const).map((key, i) => {
+              const text = t(key);
+              if (!text) return null;
+              const accent = key === "headline.accent";
+              return (
+                <span key={key} className={accent ? "headline-word headline-accent" : "headline-word"} style={{ animationDelay: `${i * 60}ms` }}>
+                  {accent ? <em>{text}</em> : text}
+                </span>
+              );
+            })}
+          </h2>
 
           <div className="home-search-row">
             <form
@@ -218,18 +241,7 @@ export default function HomePage() {
             </Link>
           </div>
         </div>
-
-        <FeatureHero
-          copy={
-            <div className="feature-copy">
-              <p className="feature-kicker">Featured</p>
-              <h3>Construction Jobs</h3>
-              <p className="feature-sub">Paint, tiles, ceiling, plumbing, electrical.</p>
-              <span className="feature-cta">Browse jobs</span>
-            </div>
-          }
-          photo={<Image src="/real/materials.jpg" alt="" fill priority className="object-cover" sizes="180px" />}
-        />
+        </div>
 
         <div ref={railRef} className="cat-rail no-scrollbar">
           {chips.map((c, i) => {
@@ -245,7 +257,20 @@ export default function HomePage() {
           })}
         </div>
 
-        <ListingBrowse items={items} loading={waiting} error={error} />
+        <div className="home-pad">
+          <ListingBrowse
+            items={items}
+            loading={waiting}
+            error={error}
+            beforeFeed={
+              <>
+                <HeroCarousel items={items} loading={waiting} />
+                <FreshRail items={items} />
+                <PromoBanner />
+              </>
+            }
+          />
+        </div>
       </div>
     </main>
   );
