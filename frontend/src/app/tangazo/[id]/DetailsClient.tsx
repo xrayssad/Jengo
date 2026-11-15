@@ -5,7 +5,7 @@ import { ViewTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Mail, MapPin, Phone, Share2 } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Eye, Mail, MapPin, Phone, Share2 } from "lucide-react";
 import { motionDur, moveSpring, usePrefersReducedMotion } from "@/lib/motion";
 import {
   catLabel,
@@ -13,6 +13,7 @@ import {
   fetchListing,
   formatPrice,
   peekListing,
+  recordListingView,
   listingPhones,
   listingUnit,
   periodLabel,
@@ -21,12 +22,15 @@ import {
   unitLabel,
   type Listing,
 } from "@/lib/api";
+import { formatViews, viewCount } from "@/lib/browse";
+import { VIEW_DWELL_MS } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
 import PosterName from "@/components/PosterName";
+import ReportImpersonation from "@/components/ReportImpersonation";
 import { DetailSkeleton } from "@/components/Skeletons";
 
 function shownPlace(location?: string | null, city?: string | null) {
@@ -127,6 +131,34 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
       stop = true;
     };
   }, [id]);
+
+  useEffect(() => {
+    if (loading || !item || gone) return;
+    let timer = 0;
+    let stop = false;
+    const arm = () => {
+      window.clearTimeout(timer);
+      if (stop || document.hidden) return;
+      timer = window.setTimeout(() => {
+        if (stop || document.hidden) return;
+        void recordListingView(item.id).then((count) => {
+          if (count == null || stop) return;
+          setItem((cur) => (cur && cur.id === item.id ? { ...cur, views: count, views_count: count } : cur));
+        });
+      }, VIEW_DWELL_MS);
+    };
+    arm();
+    const onVis = () => {
+      if (document.hidden) window.clearTimeout(timer);
+      else arm();
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      stop = true;
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [id, loading, gone, item?.id]);
 
   const phones = item ? listingPhones(item) : [];
   const callHref = phones[0] ? phoneTelHref(phones[0]) : "";
@@ -240,7 +272,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
   }, [inContext, prevId, nextId]);
 
   return (
-    <main key={id} className={`detail-page min-h-screen${swap ? ` is-swap-${swap}` : ""}${inContext && (frozen?.ids.length || 0) > 1 ? " has-rail" : ""}`}>
+    <main key={id} className={`detail-page min-h-screen${swap ? ` is-swap-${swap}` : ""}`}>
       {loading && <DetailSkeleton />}
       {!loading && error && (
         <div className="text-center py-16 px-5">
@@ -355,7 +387,15 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
                   <span>{place}</span>
                 </p>
               </div>
-              {ago ? <span className="time-pill shrink-0">{ago}</span> : null}
+              <div className="detail-meta">
+                {viewCount(item) != null ? (
+                  <span className="detail-views">
+                    <Eye size={14} aria-hidden />
+                    {t("views", { n: formatViews(viewCount(item) || 0) })}
+                  </span>
+                ) : null}
+                {ago ? <span className="time-pill shrink-0">{ago}</span> : null}
+              </div>
             </div>
 
             <h1 className="detail-title">{item.title}</h1>
@@ -384,6 +424,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
               <p className="detail-copy whitespace-pre-wrap">
                 {description || "No extra description."}
               </p>
+              <ReportImpersonation targetType="listing" targetId={item.id} />
             </div>
 
             {item.category === "vifaa" && (

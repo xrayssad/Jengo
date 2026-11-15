@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useState, type SetStateAction } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState, type SetStateAction } from "react";
 import { absorbListings, commitShown, fetchListings, peekListings, readShown, type Listing, type ListingQuery } from "./api";
 
 /** Paint the saved feed immediately. A background refresh never reorders or drops those rows. */
@@ -68,6 +68,18 @@ export function useListings(params: ListingQuery) {
       return next;
     });
   }, [key]);
+
+  useEffect(() => {
+    const onView = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { id?: string; views_count?: number };
+      if (!detail?.id || typeof detail.views_count !== "number") return;
+      updateItems((cur) => cur.map((item) => (
+        item.id === detail.id ? { ...item, views_count: detail.views_count, views: detail.views_count } : item
+      )));
+    };
+    window.addEventListener("jengo-views", onView);
+    return () => window.removeEventListener("jengo-views", onView);
+  }, [updateItems]);
 
   const refresh = useCallback(() => {
     const query = JSON.parse(key) as ListingQuery;

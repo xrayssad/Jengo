@@ -1,16 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ViewTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Check, Eye, ImageIcon, MapPin } from "lucide-react";
+import { ArrowUpRight, Eye, MapPin } from "lucide-react";
 import { catShort, formatPrice, listingUnit, type Listing } from "@/lib/api";
-import { bedCount, formatViews, sellerVerified, shortPlace, viewCount, type ViewMode } from "@/lib/browse";
-import { sizedImage } from "@/lib/images";
+import { bedCount, formatViews, sellerVerified, shortPlace, verifiedType, viewCount, type ViewMode } from "@/lib/browse";
 import { useT } from "@/lib/i18n";
 import { freezeBrowse, useOpenListing, useReturnPulse } from "@/lib/listSession";
+import ListingPhoto from "./ListingPhoto";
 import SaveButton from "./SaveButton";
+import VerifiedBadge from "./VerifiedBadge";
 
 const RENTALS = new Set(["chumba_nyumba", "store_godown", "frame"]);
 
@@ -25,44 +25,10 @@ function rateKey(item: Listing) {
   return "";
 }
 
-function ListingPhoto({ src, eager, ratio }: { src: string; eager?: boolean; ratio: [number, number] }) {
-  const [failed, setFailed] = useState(false);
-  const [ready, setReady] = useState(false);
-  const sized = sizedImage(src, [480, 800, 1200]);
-
-  useEffect(() => {
-    setFailed(false);
-    setReady(false);
-  }, [src]);
-
-  if (!src || failed) {
-    return (
-      <div className="market-photo-empty">
-        <ImageIcon size={28} strokeWidth={1.6} aria-hidden />
-      </div>
-    );
-  }
-
-  return (
-    <img
-      src={sized.src}
-      srcSet={sized.srcSet}
-      sizes="(max-width: 900px) 92vw, 480px"
-      alt=""
-      width={ratio[0]}
-      height={ratio[1]}
-      loading={eager ? "eager" : "lazy"}
-      decoding="async"
-      className={ready ? "is-ready" : ""}
-      onLoad={() => setReady(true)}
-      onError={() => setFailed(true)}
-    />
-  );
-}
-
 export default function ListingCard({
   item,
   eager,
+  priority = false,
   delay = -1,
   layout = "large",
   frame = "feed",
@@ -72,6 +38,7 @@ export default function ListingCard({
 }: {
   item: Listing;
   eager?: boolean;
+  priority?: boolean;
   delay?: number;
   layout?: ViewMode;
   frame?: "feed" | "hero" | "rail";
@@ -88,6 +55,8 @@ export default function ListingCard({
   const photos = (item.images || []).filter(Boolean);
   const src = photos[0] || "";
   const verified = sellerVerified(item);
+  const kindVerified = verifiedType(item);
+  const seller = (item.owner_name || item.owner_username || "").trim();
   const views = viewCount(item);
   const beds = bedCount(item);
   const stock = item.category === "vifaa" && item.stock != null ? item.stock : null;
@@ -116,20 +85,22 @@ export default function ListingCard({
             freezeBrowse(frame, ids, item.id);
           }}
         >
-        <ListingPhoto src={src} eager={eager} ratio={ratio} />
+        <ListingPhoto src={src} eager={eager} priority={priority} ratio={ratio} />
       </Link>
       <div className="immerse-shade" aria-hidden />
       <div className="immerse-top">
         {kind && !grid ? <span className="immerse-pill">{kind}</span> : null}
-        {verified && !grid ? (
-          <span className="immerse-verified">
-            <Check size={11} strokeWidth={2.6} aria-hidden />
-            {t("verified")}
-          </span>
-        ) : null}
       </div>
       <div className="immerse-copy">
-        <p className="immerse-title">{item.title}</p>
+        <p className="immerse-title">
+          <span className="immerse-title-text">{item.title}</span>
+        </p>
+        {verified ? (
+          <p className="immerse-seller">
+            {seller ? <span>{seller}</span> : null}
+            <VerifiedBadge size="sm" type={kindVerified} />
+          </p>
+        ) : null}
         {!grid && place ? (
           <p className="immerse-place">
             <MapPin size={13} aria-hidden />
@@ -140,6 +111,12 @@ export default function ListingCard({
           <span>TSh {formatPrice(item.price)}</span>
           {!grid && shownRate ? <span className="immerse-rate">{shownRate}</span> : null}
         </p>
+        {views != null && frame !== "feed" ? (
+          <p className="immerse-views">
+            <Eye size={12} strokeWidth={2} aria-hidden />
+            {t("views", { n: formatViews(views) })}
+          </p>
+        ) : null}
       </div>
       {!grid ? (
         <span className="immerse-go" aria-hidden>
@@ -174,7 +151,7 @@ export default function ListingCard({
           </ViewTransition>
         )}
       </div>
-      {frame === "feed" && (views != null || chip) ? (
+      {frame === "feed" && (views != null || chip || item.views_7d != null) ? (
         <p className="immerse-foot">
           {chip ? <span>{chip}</span> : null}
           {views != null ? (
@@ -183,6 +160,7 @@ export default function ListingCard({
               {t("views", { n: formatViews(views) })}
             </span>
           ) : null}
+          {item.views_7d != null ? <span>{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
         </p>
       ) : null}
     </article>

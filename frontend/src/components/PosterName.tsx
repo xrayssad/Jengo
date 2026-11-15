@@ -1,4 +1,16 @@
+"use client";
+
 import type { Listing } from "@/lib/api";
+import VerifiedBadge from "./VerifiedBadge";
+
+type Poster = {
+  owner_name?: string | null;
+  owner_username?: string | null;
+  is_verified?: boolean;
+  owner_verified?: boolean;
+  verified_type?: "individual" | "business" | null;
+  owner?: Listing["owner"];
+};
 
 export function posterLabel(item: { owner_name?: string | null; owner_username?: string | null }) {
   const username = (item.owner_username || "").trim();
@@ -10,7 +22,7 @@ export default function PosterName({
   item,
   tone = "ink",
 }: {
-  item: Pick<Listing, "owner_name" | "owner_username">;
+  item: Poster;
   tone?: "ink" | "photo";
 }) {
   const { name, username, show } = posterLabel(item);
@@ -18,6 +30,9 @@ export default function PosterName({
   const initial = (name || username).slice(0, 1).toUpperCase();
   const titleColor = tone === "photo" ? "#FFF6ED" : "var(--text)";
   const handleColor = tone === "photo" ? "rgba(255,246,237,0.82)" : "var(--muted)";
+  const verified = Boolean(item.is_verified || item.owner_verified || item.owner?.is_verified || item.owner?.verified);
+  const raw = item.verified_type || item.owner?.verified_type;
+  const kind = raw === "business" || raw === "individual" ? raw : null;
   return (
     <div className="flex items-center gap-2 min-w-0">
       <span
@@ -31,8 +46,9 @@ export default function PosterName({
         {initial}
       </span>
       <div className="min-w-0">
-        <p className={tone === "photo" ? "text-sm font-semibold truncate leading-tight" : "text-[15px] font-semibold truncate leading-tight"} style={{ color: titleColor, textShadow: tone === "photo" ? "0 1px 2px rgba(0,0,0,0.55)" : undefined }}>
-          {name || username}
+        <p className={tone === "photo" ? "name-line text-sm font-semibold leading-tight" : "name-line text-[15px] font-semibold leading-tight"} style={{ color: titleColor, textShadow: tone === "photo" ? "0 1px 2px rgba(0,0,0,0.55)" : undefined }}>
+          <span className="truncate">{name || username}</span>
+          {verified ? <VerifiedBadge size={tone === "photo" ? "sm" : "md"} type={kind} /> : null}
         </p>
         {username ? (
           <p className={tone === "photo" ? "text-[11px] truncate leading-tight" : "text-[13px] truncate leading-tight"} style={{ color: handleColor, textShadow: tone === "photo" ? "0 1px 2px rgba(0,0,0,0.45)" : undefined }}>

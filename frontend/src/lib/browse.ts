@@ -1,4 +1,5 @@
 import type { Listing } from "./api";
+import { VERIFIED_BOOST } from "./productFlags";
 
 export const REGIONS = [
   "Dar es Salaam",
@@ -10,7 +11,7 @@ export const REGIONS = [
   "Zanzibar",
 ] as const;
 
-export type SortKey = "new" | "price_asc" | "price_desc" | "views" | "featured";
+export type SortKey = "new" | "price_asc" | "price_desc" | "views" | "featured" | "verified";
 export type ViewMode = "grid" | "large";
 
 export const VIEW_KEY = "jengo_listing_view";
@@ -23,11 +24,12 @@ export type BrowsePersist = {
   y: number;
   nearLat?: number | null;
   nearLng?: number | null;
+  verifiedOnly?: boolean;
 };
 
 export type NearPoint = { lat: number; lng: number };
 
-const SORTS = new Set<SortKey>(["new", "price_asc", "price_desc", "views", "featured"]);
+const SORTS = new Set<SortKey>(["new", "price_asc", "price_desc", "views", "featured", "verified"]);
 
 export function asView(value: unknown): ViewMode {
   return value === "grid" ? "grid" : "large";
@@ -80,9 +82,16 @@ export function isSortKey(value: string): value is SortKey {
 }
 
 export function sellerVerified(item: Listing): boolean {
-  if (item.owner && typeof item.owner.verified === "boolean") return item.owner.verified;
+  if (typeof item.is_verified === "boolean") return item.is_verified;
+  if (item.owner && typeof item.owner.is_verified === "boolean") return item.owner.is_verified;
   if (typeof item.owner_verified === "boolean") return item.owner_verified;
-  return item.verified === true;
+  if (item.owner && typeof item.owner.verified === "boolean") return item.owner.verified;
+  return false;
+}
+
+export function verifiedType(item: Listing): "individual" | "business" | null {
+  const value = item.verified_type || item.owner?.verified_type;
+  return value === "business" || value === "individual" ? value : null;
 }
 
 function asCount(value: unknown): number | null {
@@ -225,7 +234,9 @@ export function sortListings(items: Listing[], sort: SortKey): Listing[] {
     if (sort === "price_desc") return priceOf(b) - priceOf(a) || createdAt(b) - createdAt(a) || tie(a, b);
     if (sort === "views") return (viewCount(b) || 0) - (viewCount(a) || 0) || createdAt(b) - createdAt(a) || tie(a, b);
     if (sort === "featured") return Number(b.featured === true) - Number(a.featured === true) || createdAt(b) - createdAt(a) || tie(a, b);
-    return createdAt(b) - createdAt(a) || tie(a, b);
+    if (sort === "verified") return Number(sellerVerified(b)) - Number(sellerVerified(a)) || createdAt(b) - createdAt(a) || tie(a, b);
+    const boost = VERIFIED_BOOST ? Number(sellerVerified(b)) - Number(sellerVerified(a)) : 0;
+    return createdAt(b) - createdAt(a) || boost || tie(a, b);
   });
   return next;
 }

@@ -1,3 +1,5 @@
+import { getDeviceId } from "./deviceId";
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://jengo-qkq1.onrender.com";
 
 export type Listing = {
@@ -20,7 +22,9 @@ export type Listing = {
   owner_username?: string | null;
   owner_name?: string | null;
   owner_verified?: boolean;
-  owner?: { verified?: boolean } | null;
+  is_verified?: boolean;
+  verified_type?: "individual" | "business" | null;
+  owner?: { verified?: boolean; is_verified?: boolean; verified_type?: "individual" | "business" | null } | null;
   phones?: string[];
   phone?: string;
   /** Optional. Present only when the API sends coordinates. */
@@ -30,6 +34,7 @@ export type Listing = {
   views?: number | null;
   views_count?: number | null;
   view_count?: number | null;
+  views_7d?: number | null;
   bedrooms?: number | null;
   beds?: number | null;
   rooms?: number | null;
@@ -50,6 +55,9 @@ export type AuthUser = {
   role?: "user" | "admin" | string;
   is_admin?: boolean;
   needs_username?: boolean;
+  is_verified?: boolean;
+  verified_type?: "individual" | "business" | null;
+  revoked_reason?: string | null;
 };
 
 export function afterAuthPath(user: AuthUser) {
@@ -210,12 +218,17 @@ export function stopSilentRenew() {
 }
 
 async function request<T>(path: string, options: RequestInit = {}, retried = false): Promise<T> {
+  const form = typeof FormData !== "undefined" && options.body instanceof FormData;
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+    ...(form ? {} : { "Content-Type": "application/json" }),
     ...(options.headers as Record<string, string>),
   };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined" && !headers["X-Device-Id"]) {
+    const device = getDeviceId();
+    if (device) headers["X-Device-Id"] = device;
+  }
   const res = await fetch(`${API_URL}${path}`, { ...options, headers });
   const data = await parseJson(await res.text());
   if (!res.ok) {
@@ -226,6 +239,10 @@ async function request<T>(path: string, options: RequestInit = {}, retried = fal
     throw errorFrom(data, res.status);
   }
   return data as T;
+}
+
+export function apiSend<T>(path: string, options: RequestInit = {}) {
+  return request<T>(path, options);
 }
 
 export async function register(body: {
@@ -517,7 +534,16 @@ function persistFeeds() {
 
 function rememberListings(items: Listing[]) {
   for (const item of items) {
-    if (item?.id) listingMem.set(item.id, slimListing(item));
+    if (!item?.id) continue;
+    const prev = listingMem.get(item.id);
+    const next = slimListing(item);
+    const prevN = prev?.views_count ?? prev?.views ?? prev?.view_count;
+    const nextN = next.views_count ?? next.views ?? next.view_count;
+    if (typeof prevN === "number" && (typeof nextN !== "number" || prevN > nextN)) {
+      next.views_count = prevN;
+      next.views = prevN;
+    }
+    listingMem.set(item.id, next);
   }
 }
 
@@ -663,10 +689,80 @@ export function writeHomeListingsCache(items: Listing[]) {
 export async function fetchListing(id: string): Promise<Listing> {
   const data = await request<Listing>(`/listings/${id}`);
   if (data?.id) {
+    const prev = listingMem.get(data.id);
+    const prevN = prev?.views_count ?? prev?.views ?? prev?.view_count;
+    const nextN = data.views_count ?? data.views ?? data.view_count;
+    if (typeof prevN === "number" && (typeof nextN !== "number" || prevN > nextN)) {
+      data.views_count = prevN;
+      data.views = prevN;
+    }
     listingMem.set(data.id, data);
     persistFeeds();
   }
   return data;
+}
+
+const viewSession = new Set<string>();
+
+export function patchListingCount(id: string, views_count: number) {
+  hydrateFeeds();
+  hydrateShown();
+  const apply = (item: Listing): Listing => (item.id === id ? { ...item, views_count, views: views_count } : item);
+  const cur = listingMem.get(id);
+  if (cur) listingMem.set(id, apply(cur));
+  for (const [key, items] of feedMem) {
+    if (items.some((item) => item.id === id)) feedMem.set(key, items.map(apply));
+  }
+  for (const [key, items] of shownMem) {
+    if (items.some((item) => item.id === id)) shownMem.set(key, items.map(apply));
+  }
+  persistFeeds();
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("jengo-views", { detail: { id, views_count } }));
+  }
+}
+
+/** One count per listing per session. Network errors retry once, then stay quiet. */
+export async function recordListingView(id: string): Promise<number | null> {
+  if (!id || viewSession.has(id)) return null;
+  const storeKey = `jengo_view_${id}`;
+  try {
+    if (sessionStorage.getItem(storeKey) === "1") {
+      viewSession.add(id);
+      return null;
+    }
+  } catch {
+    /* ignore */
+  }
+  viewSession.add(id);
+  const send = () => request<{ counted?: boolean; views_count?: number }>(`/listings/${id}/views`, { method: "POST", body: "{}" });
+  try {
+    let res: { counted?: boolean; views_count?: number };
+    try {
+      res = await send();
+    } catch (err) {
+      const status = (err as { status?: number }).status;
+      if (status) throw err;
+      res = await send();
+    }
+    try {
+      sessionStorage.setItem(storeKey, "1");
+    } catch {
+      /* ignore */
+    }
+    if (res.counted && typeof res.views_count === "number") {
+      patchListingCount(id, res.views_count);
+      return res.views_count;
+    }
+    return null;
+  } catch {
+    try {
+      sessionStorage.setItem(storeKey, "1");
+    } catch {
+      /* ignore */
+    }
+    return null;
+  }
 }
 
 export async function setListingStatus(id: string, status: "active" | "hidden" | "rejected") {
@@ -833,6 +929,8 @@ export type Reel = {
   owner_id?: string;
   owner_username?: string | null;
   owner_name?: string | null;
+  is_verified?: boolean;
+  verified_type?: "individual" | "business" | null;
 };
 
 export async function fetchReels(limit = 40) {
@@ -1117,6 +1215,8 @@ export type ChatMessage = {
   sender_name?: string;
   title?: string;
   href?: string;
+  is_verified?: boolean;
+  verified_type?: "individual" | "business" | null;
 };
 
 const INBOX_KEY = "jengo_inbox_cache";
@@ -1155,7 +1255,7 @@ export async function sendBookingMessage(bookingId: string, body: string) {
 
 export async function fetchListingDm(listingId: string, peer?: string) {
   const q = peer ? `?peer=${encodeURIComponent(peer)}` : "";
-  return request<{ items: ChatMessage[]; title?: string; owner_id?: string }>(`/listings/${listingId}/dm${q}`);
+  return request<{ items: ChatMessage[]; title?: string; owner_id?: string; is_verified?: boolean; verified_type?: "individual" | "business" | null }>(`/listings/${listingId}/dm${q}`);
 }
 
 export async function sendListingDm(listingId: string, body: string, peer?: string) {

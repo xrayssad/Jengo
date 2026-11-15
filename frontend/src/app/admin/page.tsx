@@ -143,9 +143,14 @@ function AdminDesk() {
             <h1 className="page-title">Desk</h1>
             <p className="page-note">Users, listings, requests</p>
           </div>
-          <Link href="/home" className="text-sm font-semibold pb-0.5" style={{ color: "var(--mocha)" }}>
-            Back to market
-          </Link>
+          <div className="flex items-center gap-4 pb-0.5">
+            <Link href="/admin/verification" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>
+              Verification
+            </Link>
+            <Link href="/home" className="text-sm font-semibold" style={{ color: "var(--mocha)" }}>
+              Back to market
+            </Link>
+          </div>
         </div>
         <div className="max-w-5xl mx-auto px-5 mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1">
           {TABS.map((item) => {

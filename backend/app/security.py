@@ -129,6 +129,9 @@ def public_profile(user, token: str | None = None, refresh_token: str | None = N
         "is_admin": role == "admin",
         "status": account_status(p, user),
         "needs_username": needs_username(p),
+        "is_verified": badge_public(p)["is_verified"],
+        "verified_type": badge_public(p)["verified_type"],
+        "revoked_reason": p.get("revoked_reason") if p.get("revoked_at") and not p.get("is_verified") else None,
     }
     if token:
         out["access_token"] = token
@@ -175,11 +178,59 @@ def _as_phones(val) -> list[str]:
     return []
 
 
+def badge_public(profile: dict | None) -> dict:
+    """Account tick only. Never includes document numbers or storage keys."""
+    p = profile or {}
+    on = bool(p.get("is_verified"))
+    kind = p.get("verified_type")
+    if kind not in ("individual", "business"):
+        kind = None
+    locked = str(p.get("verified_name") or "").strip().lower()
+    shown = str(p.get("full_name") or "").strip().lower()
+    if on and locked and shown and locked != shown:
+        on = False
+    if not on:
+        kind = None
+    return {"is_verified": on, "verified_type": kind}
+
+
+_wide_profiles = True
+
+
+def profiles_by_ids(ids: list[str]) -> dict[str, dict]:
+    global _wide_profiles
+    clean = [item for item in ids if item]
+    if not clean:
+        return {}
+    if _wide_profiles:
+        try:
+            res = (
+                db()
+                .table("profiles")
+                .select("id,username,full_name,is_verified,verified_type,verified_name,avatar_url,phone,status,created_at,revoked_at,revoked_reason")
+                .in_("id", clean)
+                .execute()
+            )
+            return {str(row.get("id")): row for row in (res.data or [])}
+        except Exception as exc:
+            msg = str(exc).lower()
+            if "column" in msg or "schema cache" in msg or "pgrst204" in msg:
+                _wide_profiles = False
+            else:
+                raise
+    res = db().table("profiles").select("id,username,full_name").in_("id", clean).execute()
+    return {str(row.get("id")): row for row in (res.data or [])}
+
+
 def _owner_fields(profile: dict | None) -> dict:
     p = profile or {}
+    badge = badge_public(p)
     return {
         "owner_username": str(p.get("username") or "").strip(),
         "owner_name": str(p.get("full_name") or "").strip(),
+        "is_verified": badge["is_verified"],
+        "verified_type": badge["verified_type"],
+        "owner_verified": badge["is_verified"],
     }
 
 
@@ -216,8 +267,7 @@ def decorate_listings(rows: list | None) -> list:
             ids.append(oid)
     owners: dict[str, dict] = {}
     if ids:
-        res = db().table("profiles").select("id,username,full_name").in_("id", ids).execute()
-        owners = {str(r.get("id")): r for r in (res.data or [])}
+        owners = profiles_by_ids(ids)
     return [
         decorate_listing(row, owners.get(str(row.get("owner_id") or "")), lookup_owner=False)
         for row in items

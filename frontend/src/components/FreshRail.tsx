@@ -30,9 +30,9 @@ export default function FreshRail({ items, version = 0 }: { items: Listing[]; ve
         </Link>
       </div>
       <div ref={railRef} className="fresh-rail no-scrollbar">
-        {fresh.map((item) => (
+        {fresh.map((item, index) => (
           <div key={item.id} className="fresh-slide">
-            <ListingCard item={item} frame="rail" listIds={pickedIds} />
+            <ListingCard item={item} frame="rail" eager={index < 2} priority={index === 0} listIds={pickedIds} />
           </div>
         ))}
       </div>

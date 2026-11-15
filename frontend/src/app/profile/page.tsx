@@ -3,14 +3,18 @@
 import { useEffect, useState } from "react";
 import {
   ArrowLeft, Mail, FileText, Heart, Settings, LogOut,
-  ChevronRight, Home, Plus
+  ChevronRight, Home, Plus, BadgeCheck
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { clearAuth, getAuthUser } from "@/lib/api";
 import AuthGate from "@/components/AuthGate";
 import AdminLink from "@/components/AdminLink";
+import ReportImpersonation from "@/components/ReportImpersonation";
+import VerifiedBadge from "@/components/VerifiedBadge";
 import { ProfileSkeleton } from "@/components/Skeletons";
+import { useT } from "@/lib/i18n";
+import { fetchVerificationMe } from "@/lib/trust";
 
 const menuItems = [
   { icon: FileText, label: "My requests", desc: "Requests you sent", href: "/maombi-yangu" },
@@ -20,17 +24,31 @@ const menuItems = [
 ];
 
 export default function ProfilePage() {
+  const t = useT();
   const [name, setName] = useState("User");
   const [email, setEmail] = useState("");
   const [ready, setReady] = useState(false);
+  const [verified, setVerified] = useState(false);
+  const [kind, setKind] = useState<"individual" | "business" | null>(null);
+  const [revoked, setRevoked] = useState("");
 
   useEffect(() => {
     const user = getAuthUser();
     if (user) {
       setName(user.username || user.full_name || user.email || "User");
       setEmail(user.email || "");
+      setVerified(Boolean(user.is_verified));
+      setKind(user.verified_type === "business" || user.verified_type === "individual" ? user.verified_type : null);
+      setRevoked(user.revoked_reason || "");
     }
     setReady(true);
+    fetchVerificationMe()
+      .then((me) => {
+        setVerified(Boolean(me.is_verified));
+        setKind(me.verified_type === "business" || me.verified_type === "individual" ? me.verified_type : null);
+        setRevoked(me.request?.status === "revoked" ? (me.request.revoked_reason || "") : "");
+      })
+      .catch(() => {});
   }, []);
 
   return (
@@ -53,7 +71,10 @@ export default function ProfilePage() {
           <Image src="/real/apartment.jpg" alt="" fill className="object-cover" />
           <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.55), rgba(var(--veil-rgb),0.12))" }} />
           <div className="photo-dock">
-            <p className="text-2xl font-bold leading-none" style={{ color: "var(--ink)" }}>{name}</p>
+            <p className="name-line text-2xl font-bold leading-none" style={{ color: "var(--ink)" }}>
+              <span className="truncate">{name}</span>
+              {verified ? <VerifiedBadge size="lg" type={kind} shine /> : null}
+            </p>
             <p className="flex items-center gap-1.5 mt-1 text-sm" style={{ color: "var(--muted)" }}>
               <Mail size={12} color="var(--mocha)" />
               {email || "Account"}
@@ -61,6 +82,21 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {revoked ? (
+          <p className="sheet px-4 py-3 text-sm" style={{ color: "var(--text)" }}>
+            {t("verify.revoked")} {revoked} {t("verify.support")}
+          </p>
+        ) : null}
+        <Link href="/hakiki" className="sheet flex items-center gap-3 px-4 py-4">
+          <div className="soft-icon-btn shrink-0">
+            <BadgeCheck size={18} color="var(--mocha)" strokeWidth={1.8} />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>{t("verify.menu")}</p>
+            <p className="text-xs" style={{ color: "var(--muted)" }}>{verified ? t("badge.label") : t("verify.menuHint")}</p>
+          </div>
+          <ChevronRight size={16} color="var(--mocha)" />
+        </Link>
         <Link
           href="/weka-tangazo"
           className="btn-primary flex items-center justify-center gap-2 w-full py-3.5 rounded-full font-semibold text-sm"
@@ -97,6 +133,7 @@ export default function ProfilePage() {
           })}
         </div>
 
+        <ReportImpersonation targetType="profile" />
         <button
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-full text-sm sheet"
           style={{ color: "var(--error)" }}

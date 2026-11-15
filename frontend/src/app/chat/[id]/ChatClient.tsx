@@ -5,12 +5,15 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Send } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { ChatThreadSkeleton } from "@/components/Skeletons";
+import VerifiedBadge from "@/components/VerifiedBadge";
 import { fetchListingDm, sendListingDm, type ChatMessage } from "@/lib/api";
 
 export default function ChatClient({ id, title, peer }: { id: string; title: string; peer?: string }) {
   const router = useRouter();
   const [items, setItems] = useState<ChatMessage[]>([]);
   const [heading, setHeading] = useState(title);
+  const [verified, setVerified] = useState(false);
+  const [kind, setKind] = useState<"individual" | "business" | null>(null);
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -21,6 +24,8 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
       .then((res) => {
         setItems(res.items || []);
         if (res.title) setHeading(res.title);
+        setVerified(Boolean(res.is_verified));
+        setKind(res.verified_type === "business" || res.verified_type === "individual" ? res.verified_type : null);
         setError("");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"))
@@ -63,7 +68,10 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
               <ArrowLeft size={18} color="var(--ink)" />
             </button>
             <div className="min-w-0">
-              <h1 className="text-lg font-bold truncate" style={{ color: "var(--ink)" }}>{heading}</h1>
+              <h1 className="name-line text-lg font-bold" style={{ color: "var(--ink)" }}>
+                <span className="truncate">{heading}</span>
+                {verified ? <VerifiedBadge size="md" type={kind} /> : null}
+              </h1>
               <p className="page-note">Direct message</p>
             </div>
           </div>

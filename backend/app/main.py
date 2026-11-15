@@ -7,7 +7,7 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app import cloudinary_media, jobs, mqtt_bus, phone_auth, places, posts, reels, social
+from app import cloudinary_media, jobs, mqtt_bus, phone_auth, places, posts, reels, social, trust
 from app.uploads import save_listing_photo
 from app.security import (
     LOGIN_ERROR,
@@ -17,6 +17,7 @@ from app.security import (
     assert_active_account,
     booking_message,
     commission_from_booking,
+    badge_public,
     current_user,
     db,
     decorate_listing,
@@ -299,6 +300,7 @@ def _upsert_profile(user_id: str, email: str | None, username: str, full_name: s
         except Exception:
             patch.pop("phone", None)
             db().table("profiles").update(patch).eq("id", user_id).execute()
+        trust.on_display_name_change(user_id, existing, full_name)
         return
     try:
         db().table("profiles").insert(row).execute()
@@ -1097,6 +1099,9 @@ def admin_set_user(user_id: str, body: UserStatusIn, user=Depends(current_user))
     return _admin_user_row(fresh, _get_auth_user(user_id))
 
 
+app.include_router(trust.router)
+
+
 @app.api_route("/admin/{rest:path}", methods=["POST", "PUT", "PATCH", "DELETE"])
 def admin_writes(rest: str, user=Depends(current_user)):
     require_admin(user)
@@ -1149,6 +1154,11 @@ def list_listings(
     column = "likes_count" if sort == "likes" else "created_at"
     res = query.order(column, desc=True).limit(cap).execute()
     items = decorate_listings(res.data or [])
+    if mine:
+        try:
+            trust.attach_week_views(items)
+        except Exception:
+            pass
     return {"items": items}
 
 
@@ -1508,7 +1518,14 @@ def listing_dm(listing_id: str, request: Request, user=Depends(current_user)):
     key = social.listing_dm_key(listing_id, other, owner)
     if not social.can_see_listing_dm(user, listing, key):
         raise HTTPException(status_code=403, detail="This is not your message")
-    return {"items": social.list_thread(key, user.id), "title": listing.get("title"), "owner_id": owner}
+    badge = badge_public(profile_of(owner) if owner else None)
+    return {
+        "items": social.list_thread(key, user.id),
+        "title": listing.get("title"),
+        "owner_id": owner,
+        "is_verified": badge["is_verified"],
+        "verified_type": badge["verified_type"],
+    }
 
 
 @app.post("/listings/{listing_id}/dm")

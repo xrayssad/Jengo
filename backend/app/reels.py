@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 
 from app import cloudinary_media
-from app.security import db, profile_of
+from app.security import badge_public, db, profile_of, profiles_by_ids
 
 
 def decorate_reel(row: dict | None, owner: dict | None = None, *, lookup_owner: bool = True) -> dict | None:
@@ -13,6 +13,7 @@ def decorate_reel(row: dict | None, owner: dict | None = None, *, lookup_owner: 
     p = owner or {}
     item["owner_username"] = str(p.get("username") or "").strip()
     item["owner_name"] = str(p.get("full_name") or "").strip()
+    item.update(badge_public(p))
     if item.get("public_id"):
         play = cloudinary_media.play_from_public_id(str(item["public_id"]))
         if play:
@@ -33,8 +34,7 @@ def decorate_reels(rows: list | None) -> list:
             ids.append(oid)
     owners: dict[str, dict] = {}
     if ids:
-        res = db().table("profiles").select("id,username,full_name").in_("id", ids).execute()
-        owners = {str(r.get("id")): r for r in (res.data or [])}
+        owners = profiles_by_ids(ids)
     return [
         decorate_reel(row, owners.get(str(row.get("owner_id") or "")), lookup_owner=False)
         for row in items

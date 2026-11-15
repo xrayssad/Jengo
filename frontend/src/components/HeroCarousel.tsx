@@ -151,7 +151,7 @@ export default function HeroCarousel({ items, loading, version = 0 }: { items: L
           : featured.map((item, index) => (
               <div key={item.id} className="hero-slide">
                 <div className="hero-slide-frame">
-                  <ListingCard item={item} frame="hero" eager={index < 2} listIds={pickedIds} />
+                  <ListingCard item={item} frame="hero" eager={index < 2} priority={index === 0} listIds={pickedIds} />
                 </div>
               </div>
             ))}

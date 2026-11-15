@@ -16,6 +16,7 @@ import {
   readBrowse,
   readView,
   regionsFor,
+  sellerVerified,
   sortListings,
   writeBrowse,
   writeView,
@@ -23,13 +24,14 @@ import {
   type SortKey,
   type ViewMode,
 } from "@/lib/browse";
+import { VERIFIED_FIRST_SORT } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { disarmReturn, listRoute, peekReturn, pulseReturn, returnFrame } from "@/lib/listSession";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import ListingCard from "./ListingCard";
 import { ListingFeedSkeleton } from "./Skeletons";
 
-const SORT_KEYS: SortKey[] = ["new", "price_asc", "price_desc", "views", "featured"];
+const SORT_KEYS: SortKey[] = ["new", "price_asc", "price_desc", "views", "featured", ...(VERIFIED_FIRST_SORT ? ["verified" as const] : [])];
 
 export default function ListingBrowse({
   items,
@@ -60,6 +62,7 @@ export default function ListingBrowse({
   const [sort, setSort] = useState<SortKey>("new");
   const [view, setView] = useState<ViewMode>("large");
   const [near, setNear] = useState<NearPoint | null>(null);
+  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [locating, setLocating] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [toast, setToast] = useState("");
@@ -108,13 +111,15 @@ export default function ListingBrowse({
     seenRoute.current = route;
     const saved = readBrowse(route);
     const nextView = saved?.view ? asView(saved.view) : readView();
-    const nextSort = saved?.sort && isSortKey(saved.sort) ? saved.sort : "new";
+    const savedSort = saved?.sort && isSortKey(saved.sort) ? saved.sort : "new";
+    const nextSort = savedSort === "verified" && !VERIFIED_FIRST_SORT ? "new" : savedSort;
     const hasNear = typeof saved?.nearLat === "number" && typeof saved?.nearLng === "number";
     const nextRegion = saved?.region === "near" && hasNear ? "near" : saved?.region && saved.region !== "near" ? saved.region : "all";
     setView(nextView);
     setSort(nextSort);
     setRegion(nextRegion);
     setNear(hasNear ? { lat: saved!.nearLat as number, lng: saved!.nearLng as number } : null);
+    setVerifiedOnly(Boolean(saved?.verifiedOnly));
     want.current = {
       region: nextRegion,
       sort: nextSort,
@@ -153,13 +158,14 @@ export default function ListingBrowse({
         y: window.scrollY,
         nearLat: near?.lat ?? null,
         nearLng: near?.lng ?? null,
+        verifiedOnly,
       });
       if (scrollTop) setShowTop(window.scrollY > window.innerHeight * 2);
     };
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
-  }, [booted, route, region, sort, view, near, scrollTop]);
+  }, [booted, route, region, sort, view, near, scrollTop, verifiedOnly]);
 
   useEffect(() => {
     const prev = window.history.scrollRestoration;
@@ -215,9 +221,10 @@ export default function ListingBrowse({
     let next = items;
     if (region === "near" && near) next = nearListings(next, near);
     else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
+    if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
     if (region === "near" && near && sort === "new") return next;
     return sortListings(next, sort === "featured" && !featured ? "new" : sort);
-  }, [items, region, near, sort, featured]);
+  }, [items, region, near, sort, featured, verifiedOnly]);
 
   const listIds = useMemo(() => shown.map((item) => item.id), [shown]);
 
@@ -270,7 +277,7 @@ export default function ListingBrowse({
   };
 
   const regionLabel = region === "all" || region === "near" ? t("region.all") : region;
-  const filtered = region !== "all" || sort !== "new";
+  const filtered = region !== "all" || sort !== "new" || verifiedOnly;
 
   return (
     <section className="browse">
@@ -292,6 +299,14 @@ export default function ListingBrowse({
           onClick={() => pickRegion("all")}
         >
           {t("region.all")}
+        </button>
+        <button
+          type="button"
+          className={verifiedOnly ? "loc-chip is-on" : "loc-chip"}
+          aria-pressed={verifiedOnly}
+          onClick={() => commit(() => setVerifiedOnly((on) => !on))}
+        >
+          {t("filter.verified")}
         </button>
         {regions.map((name) => (
           <button
@@ -349,7 +364,7 @@ export default function ListingBrowse({
             </p>
             <div className="browse-empty-actions">
               {filtered ? (
-                <button type="button" className="btn-secondary browse-empty-btn" onClick={() => commit(() => { setRegion("all"); setNear(null); setSort("new"); })}>
+                <button type="button" className="btn-secondary browse-empty-btn" onClick={() => commit(() => { setRegion("all"); setNear(null); setSort("new"); setVerifiedOnly(false); })}>
                   {t("clear")}
                 </button>
               ) : null}
@@ -365,7 +380,8 @@ export default function ListingBrowse({
               <ListingCard
                 key={item.id}
                 item={item}
-                eager={i < 2}
+                eager={i < 4}
+                priority={i === 0}
                 delay={i < 6 ? i * 60 : -1}
                 layout={view}
                 listIds={listIds}

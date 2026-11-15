@@ -1,63 +1,145 @@
 "use client";
 
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { fetchListings, peekListings } from "@/lib/api";
+import { isLiteDevice } from "@/lib/device";
 import { useT } from "@/lib/i18n";
+import { INTRO_DURATION_MS, INTRO_EVERY_LAUNCH, INTRO_SKIP_AFTER_MS, INTRO_SKIPPABLE } from "@/lib/productFlags";
 
-const DOTS = [
-  [8, 18], [18, 70], [28, 30], [36, 82], [46, 12], [54, 58],
-  [62, 24], [70, 78], [78, 40], [86, 16], [14, 48], [24, 90],
-  [40, 44], [58, 86], [72, 8], [90, 62], [32, 64], [84, 34],
-  [6, 40], [48, 72], [66, 50], [94, 22],
-];
+const LINES = ["splash.line1", "splash.line2", "splash.line3"] as const;
+
+function markSeen() {
+  try {
+    sessionStorage.setItem("jengo_splash", "1");
+  } catch {
+    /* ignore */
+  }
+  document.documentElement.dataset.splash = "off";
+}
 
 export default function Splash() {
   const t = useT();
   const [phase, setPhase] = useState<"off" | "in" | "out">("off");
+  const [progress, setProgress] = useState(0);
+  const [line, setLine] = useState(0);
+  const [canSkip, setCanSkip] = useState(false);
+  const [reduce, setReduce] = useState(false);
+  const [lite, setLite] = useState(false);
+  const stop = useRef(false);
 
-  useLayoutEffect(() => {
-    if (document.documentElement.dataset.splash === "off") return;
-    setPhase("in");
-    const out = window.setTimeout(() => setPhase("out"), 1300);
-    const done = window.setTimeout(() => {
-      try {
-        sessionStorage.setItem("jengo_splash", "1");
-      } catch {
-        /* ignore */
+  useEffect(() => {
+    let cancelled = false;
+    const job = fetchListings({ status: "active", limit: 40 }).catch(() => ({ items: peekListings({ status: "active", limit: 40 }) }));
+    void job.then((res) => {
+      if (cancelled) return;
+      const urls = (res.items || []).flatMap((item) => item.images || []).filter(Boolean).slice(0, 4);
+      for (const url of urls) {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = url;
       }
-      document.documentElement.dataset.splash = "off";
-      setPhase("off");
-    }, 1600);
+    });
+    void document.fonts?.ready;
     return () => {
-      window.clearTimeout(out);
-      window.clearTimeout(done);
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const saved = (() => {
+      try {
+        return sessionStorage.getItem("jengo_splash") === "1";
+      } catch {
+        return false;
+      }
+    })();
+    const deep = window.location.pathname.startsWith("/tangazo/") || window.location.pathname.startsWith("/listing/");
+    if (deep || (saved && !INTRO_EVERY_LAUNCH) || document.documentElement.dataset.splash === "off" && !INTRO_EVERY_LAUNCH) {
+      setPhase("off");
+      return;
+    }
+    setReduce(motion);
+    setLite(isLiteDevice());
+    setPhase("in");
+    stop.current = false;
+    const duration = motion ? 1500 : INTRO_DURATION_MS;
+    const started = performance.now();
+    let frame = 0;
+    const tick = (now: number) => {
+      if (stop.current) return;
+      const elapsed = now - started;
+      setProgress(Math.max(0, Math.min(1, elapsed / duration)));
+      if (!motion) {
+        if (elapsed >= 1200 && elapsed < 2800) setLine(0);
+        else if (elapsed >= 2800 && elapsed < 4400) setLine(1);
+        else if (elapsed >= 4400) setLine(2);
+        if (INTRO_SKIPPABLE && elapsed >= INTRO_SKIP_AFTER_MS) setCanSkip(true);
+        if (elapsed >= duration - 300) setPhase("out");
+      }
+      if (elapsed >= duration) {
+        markSeen();
+        setPhase("off");
+        return;
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => {
+      stop.current = true;
+      cancelAnimationFrame(frame);
     };
   }, []);
 
   const skip = () => {
-    if (phase !== "in") return;
+    if (!canSkip && !reduce) return;
+    stop.current = true;
     setPhase("out");
     window.setTimeout(() => {
-      try {
-        sessionStorage.setItem("jengo_splash", "1");
-      } catch {
-        /* ignore */
-      }
-      document.documentElement.dataset.splash = "off";
+      markSeen();
       setPhase("off");
     }, 300);
   };
 
   if (phase === "off") return null;
 
+  const dots = lite || reduce ? [] : Array.from({ length: 22 }, (_, i) => i);
+
   return (
-    <button type="button" className={phase === "out" ? "splash is-out" : "splash"} onClick={skip} aria-label={t("splash.skip")}>
-      <span className="splash-field" aria-hidden>
-        {DOTS.map(([left, delay], i) => (
-          <span key={i} className="splash-dot" style={{ left: `${left}%`, animationDelay: `${delay / 80}s` }} />
-        ))}
+    <div
+      className={["splash", phase === "out" ? "is-out" : "", reduce ? "is-static" : ""].filter(Boolean).join(" ")}
+      role="dialog"
+      aria-label="Jengo"
+      onClick={() => {
+        if (canSkip || reduce) skip();
+      }}
+    >
+      {dots.length ? (
+        <span className="splash-field" aria-hidden>
+          {dots.map((i) => (
+            <span key={i} className="splash-dot" style={{ left: `${6 + ((i * 17) % 90)}%`, animationDelay: `${(i % 8) * 0.35}s` }} />
+          ))}
+        </span>
+      ) : null}
+      <p className="splash-logo">Jengo</p>
+      {reduce ? <p className="splash-tag">{t("splash.line1")}</p> : (
+        <p className="splash-tag" key={line}>{t(LINES[line])}</p>
+      )}
+      {INTRO_SKIPPABLE && canSkip ? (
+        <button
+          type="button"
+          className="splash-skip"
+          onClick={(event) => {
+            event.stopPropagation();
+            skip();
+          }}
+        >
+          {t("splash.skip")}
+        </button>
+      ) : null}
+      <span className="splash-progress" aria-hidden>
+        <span style={{ transform: `scaleX(${progress})` }} />
       </span>
-      <span className="splash-logo">Jengo</span>
-      <span className="splash-tag">{t("splash.tag")}</span>
-    </button>
+    </div>
   );
 }

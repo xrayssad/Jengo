@@ -1,11 +1,18 @@
 from fastapi import HTTPException
 
-from app.security import db, is_admin, profile_of
+from app.security import badge_public, db, is_admin, profile_of, profiles_by_ids
 
 
 def _name(user_id: str) -> str:
     p = profile_of(user_id) or {}
     return str(p.get("username") or p.get("full_name") or p.get("email") or "User")
+
+
+def _author_public(user_id: str, profiles: dict | None = None) -> dict:
+    p = (profiles or {}).get(user_id) if profiles is not None else (profile_of(user_id) or {})
+    p = p or {}
+    name = str(p.get("username") or p.get("full_name") or p.get("email") or "User")
+    return {"author": name, **badge_public(p)}
 
 
 def listing_row(listing_id: str) -> dict:
@@ -210,7 +217,20 @@ def inbox_for(user_id: str) -> list[dict]:
             }
         )
     items.sort(key=lambda x: x.get("created_at") or "", reverse=True)
-    return items[:80]
+    items = items[:80]
+    listing_ids = [str(item.get("listing_id")) for item in items if item.get("listing_id")]
+    owners: dict[str, str] = {}
+    if listing_ids:
+        try:
+            rows = db().table("listings").select("id,owner_id").in_("id", listing_ids).execute().data or []
+            owners = {str(row.get("id")): str(row.get("owner_id") or "") for row in rows}
+        except Exception:
+            owners = {}
+    profiles = profiles_by_ids([oid for oid in owners.values() if oid])
+    for item in items:
+        oid = owners.get(str(item.get("listing_id") or ""))
+        item.update(badge_public(profiles.get(oid)))
+    return items
 
 
 def comment_counts(listing_ids: list[str]) -> dict[str, int]:
@@ -259,6 +279,7 @@ def list_comments(listing_id: str, me_id: str | None) -> list[dict]:
             .execute()
         )
         liked = {x["comment_id"] for x in (likes.data or [])}
+    profiles = profiles_by_ids([str(row.get("user_id") or "") for row in rows])
     items = []
     for row in rows:
         items.append(
@@ -270,7 +291,7 @@ def list_comments(listing_id: str, me_id: str | None) -> list[dict]:
                 "body": row.get("body"),
                 "likes_count": int(row.get("likes_count") or 0),
                 "created_at": row.get("created_at"),
-                "author": _name(str(row.get("user_id") or "")),
+                **_author_public(str(row.get("user_id") or ""), profiles),
                 "liked": row.get("id") in liked,
             }
         )
@@ -306,7 +327,7 @@ def add_comment(listing_id: str, user_id: str, body: str, parent_id: str | None)
         "body": text,
         "likes_count": 0,
         "created_at": item.get("created_at"),
-        "author": _name(user_id),
+        **_author_public(user_id),
         "liked": False,
     }
 

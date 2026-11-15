@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { Send } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
+import VerifiedBadge from "@/components/VerifiedBadge";
 import { ChatListSkeleton } from "@/components/Skeletons";
 import { fetchInbox, peekInbox, type ChatMessage } from "@/lib/api";
 import { useInboxLive } from "@/components/MqttInbox";
@@ -67,7 +68,10 @@ export default function MessagesPage() {
               <p className="text-xs font-semibold" style={{ color: "var(--mocha)" }}>
                 {c.kind === "booking" ? "Request" : "Direct message"}
               </p>
-              <h2 className="text-lg font-bold mt-1" style={{ color: "var(--ink)" }}>{c.title || "Message"}</h2>
+              <h2 className="name-line text-lg font-bold mt-1" style={{ color: "var(--ink)" }}>
+                <span className="truncate">{c.title || "Message"}</span>
+                {c.is_verified ? <VerifiedBadge size="sm" type={c.verified_type} /> : null}
+              </h2>
               <p className="text-sm truncate mt-1" style={{ color: "var(--muted)" }}>{c.body}</p>
             </Link>
           ))}
