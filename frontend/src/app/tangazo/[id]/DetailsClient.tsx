@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ViewTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
-import { ArrowLeft, Check, ChevronLeft, ChevronRight, Eye, Mail, MapPin, Phone, Share2 } from "lucide-react";
+import { ArrowLeft, Check, ChevronLeft, ChevronRight, Eye, Mail, MapPin, Phone, Send, Share2 } from "lucide-react";
 import { motionDur, moveSpring, usePrefersReducedMotion } from "@/lib/motion";
 import {
   catLabel,
@@ -32,6 +33,42 @@ import PhotoGallery from "@/components/PhotoGallery";
 import PosterName from "@/components/PosterName";
 import ReportImpersonation from "@/components/ReportImpersonation";
 import { DetailSkeleton } from "@/components/Skeletons";
+
+function DetailCtaBar({ children }: { children: ReactNode }) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const [host, setHost] = useState<HTMLElement | null>(null);
+
+  useLayoutEffect(() => {
+    setHost(document.body);
+  }, []);
+
+  useLayoutEffect(() => {
+    const el = barRef.current;
+    if (!el) return;
+    const root = document.documentElement;
+    const apply = () => {
+      const box = el.getBoundingClientRect().height;
+      const pad = Number.parseFloat(getComputedStyle(el).paddingBottom) || 0;
+      const safe = Math.max(0, pad - 12);
+      root.style.setProperty("--cta-h", `${Math.max(0, Math.ceil(box - safe))}px`);
+    };
+    apply();
+    const observer = new ResizeObserver(apply);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      root.style.removeProperty("--cta-h");
+    };
+  }, [host]);
+
+  if (!host) return null;
+  return createPortal(
+    <div ref={barRef} className="detail-cta-bar">
+      {children}
+    </div>,
+    host,
+  );
+}
 
 function shownPlace(location?: string | null, city?: string | null) {
   const parts = [location, city]
@@ -63,17 +100,44 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
   const [sent, setSent] = useState(false);
   const [browseReady, setBrowseReady] = useState(false);
   const [rev, setRev] = useState(0);
-  const swapHolder = useRef({ id: "", dir: "" as "" | "next" | "prev" });
-  if (swapHolder.current.id !== id) {
+  const [swap, setSwap] = useState<"" | "next" | "prev">("");
+  const [sheetSettled, setSheetSettled] = useState(false);
+  const trackedId = useRef("");
+  const pageRef = useRef<HTMLElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
+  if (trackedId.current !== id) {
+    trackedId.current = id;
     const dir = takeBrowseDir();
-    swapHolder.current = { id, dir: dir === "next" || dir === "prev" ? dir : "" };
+    setSwap(dir === "next" || dir === "prev" ? dir : "");
+    setSheetSettled(false);
   }
-  const swap = swapHolder.current.dir;
   const reduce = usePrefersReducedMotion();
 
   useLayoutEffect(() => {
     setId(routeId);
   }, [routeId]);
+
+  useEffect(() => {
+    if (!swap) return;
+    const node = pageRef.current;
+    if (!node) return;
+    let finished = false;
+    const clear = (event?: Event) => {
+      if (event && event.target !== node) return;
+      if (finished) return;
+      finished = true;
+      node.style.removeProperty("transform");
+      node.style.removeProperty("will-change");
+      node.style.removeProperty("filter");
+      setSwap("");
+    };
+    node.addEventListener("animationend", clear);
+    const backup = window.setTimeout(clear, reduce ? 0 : 320);
+    return () => {
+      node.removeEventListener("animationend", clear);
+      window.clearTimeout(backup);
+    };
+  }, [swap, id, reduce]);
 
   useEffect(() => {
     setBrowseReady(true);
@@ -276,7 +340,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
   }, [inContext, prevId, nextId]);
 
   return (
-    <main key={id} className={`detail-page min-h-screen${swap ? ` is-swap-${swap}` : ""}`}>
+    <main ref={pageRef} key={id} className={`detail-page${swap ? ` is-swap-${swap}` : ""}`}>
       {loading && <DetailSkeleton />}
       {!loading && error && (
         <div className="text-center py-16 px-5">
@@ -367,10 +431,20 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
           </div>
 
           <motion.div
-            className="detail-sheet canvas-read px-4 pt-5"
-            initial={reduce ? false : { y: 36, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            ref={sheetRef}
+            className={`detail-sheet canvas-read px-4 pt-5${sheetSettled ? " is-settled" : ""}`}
+            initial={reduce ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={reduce ? { duration: motionDur.fast } : moveSpring}
+            onAnimationComplete={() => {
+              const node = sheetRef.current;
+              if (node) {
+                node.style.removeProperty("transform");
+                node.style.removeProperty("will-change");
+                node.style.removeProperty("filter");
+              }
+              setSheetSettled(true);
+            }}
           >
             <ViewTransition enter="detail-copy" default="none">
             <div>
@@ -445,20 +519,20 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
             )}
           </motion.div>
 
-          <div className="detail-cta-bar">
+          <DetailCtaBar>
             <div className="detail-cta-row">
               {callHref ? (
                 <a href={callHref} className="detail-cta">
                   <Phone size={16} />
-                  Call
+                  {t("cta.call")}
                 </a>
               ) : (
                 <Link
                   href={`/tuma-ombi?listing=${item.id}&title=${encodeURIComponent(item.title)}&category=${encodeURIComponent(item.category || "")}&qty=${encodeURIComponent(qty)}`}
                   className="detail-cta"
                 >
-                  <Phone size={16} />
-                  Request
+                  <Send size={16} />
+                  {t("cta.request")}
                 </Link>
               )}
               <Link
@@ -473,10 +547,10 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
                 }}
               >
                 {sent ? <Check size={16} /> : <Mail size={16} />}
-                {sent ? "Sent" : "Message"}
+                {sent ? t("cta.sent") : t("cta.message")}
               </Link>
             </div>
-          </div>
+          </DetailCtaBar>
         </>
       )}
       {inContext && frozen && frozen.ids.length > 1 ? (

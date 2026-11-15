@@ -64,6 +64,7 @@
   --dur-micro: 180ms;
   --dur-std: 280ms;
   --bottom-nav-space: calc(64px + 12px + env(safe-area-inset-bottom, 0px));
+  --nav-offset: var(--bottom-nav-space);
 }
 
 html.dark,
@@ -109,6 +110,7 @@ html[data-theme="dark"] {
     0 1px 0 rgba(236, 232, 220, 0.06) inset,
     0 16px 36px rgba(0, 0, 0, 0.34);
   --bottom-nav-space: calc(64px + 12px + env(safe-area-inset-bottom, 0px));
+  --nav-offset: var(--bottom-nav-space);
 }
 
 html, body {
@@ -1725,7 +1727,8 @@ html.dark .skel-bone {
 
 .detail-page {
   background: var(--bg);
-  padding-bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  min-height: 100dvh;
+  padding-bottom: calc(var(--cta-h, 76px) + env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 .detail-hero {
@@ -1891,7 +1894,7 @@ html.dark .skel-bone {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 35;
+  z-index: 50;
   background: var(--bg);
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
@@ -3770,11 +3773,17 @@ html[data-lite="1"] .wizard-pane {
 .detail-overlay {
   position: fixed;
   inset: 0;
+  height: 100dvh;
   z-index: 40;
   overflow: auto;
   overscroll-behavior: contain;
   background: var(--bg);
-  transform: translateZ(0);
+}
+
+.detail-sheet.is-settled {
+  transform: none !important;
+  filter: none !important;
+  will-change: auto !important;
 }
 
 .detail-step {
@@ -3890,6 +3899,11 @@ html[data-lite="1"] .wizard-pane {
     left: 42%;
     width: 58%;
     box-shadow: -16px 0 40px rgba(0, 0, 0, 0.12);
+  }
+
+  html[data-detail-overlay="1"] .detail-cta-bar {
+    left: 42%;
+    right: 0;
   }
 }
 

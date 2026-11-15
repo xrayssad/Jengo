@@ -47,6 +47,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     return () => obs.disconnect();
   }, [path]);
 
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    if (show) root.style.removeProperty("--nav-offset");
+    else root.style.setProperty("--nav-offset", "0px");
+    return () => {
+      root.style.removeProperty("--nav-offset");
+    };
+  }, [show]);
+
   useEffect(() => {
     if (skipUsernameGate(path)) return;
     if (getAuthUser()?.needs_username) {
