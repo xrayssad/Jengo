@@ -69,3 +69,15 @@ begin
 end $$;
 
 grant execute on function public.record_listing_view(uuid, text, int) to service_role;
+
+-- Until the new API is deployed, an older server inserts a row without window_start.
+-- A daily default keeps that old insert to one row per day instead of one row per request.
+update public.listing_views
+  set window_start = created_at
+  where window_start is null;
+
+alter table public.listing_views
+  alter column window_start set default date_trunc('day', now());
+
+alter table public.listing_views
+  alter column window_start set not null;
