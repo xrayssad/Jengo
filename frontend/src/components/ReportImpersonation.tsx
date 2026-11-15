@@ -14,8 +14,10 @@ export default function ReportImpersonation({
   const t = useT();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(targetId);
+  const [reason, setReason] = useState(targetType === "listing" ? "scam" : "impersonation");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
+  const reasons = ["scam", "wrong_info", "fake_photos", "photo_mismatch", "fee_before_viewing", "already_taken", "impersonation", "harassment", "other"];
 
   const submit = async () => {
     const ident = (targetType === "listing" ? targetId : name).trim();
@@ -24,7 +26,7 @@ export default function ReportImpersonation({
     try {
       await apiSend("/reports", {
         method: "POST",
-        body: JSON.stringify({ target_type: targetType, target_id: ident, reason_code: "impersonation" }),
+        body: JSON.stringify({ target_type: targetType, target_id: ident, reason_code: targetType === "listing" ? reason : "impersonation" }),
       });
       setSent(true);
     } catch (err) {
@@ -48,7 +50,13 @@ export default function ReportImpersonation({
               aria-label={t("report.username")}
             />
           ) : (
-            <p>{t("report.listing")}</p>
+            <div className="wizard-chips">
+              {reasons.map((code) => (
+                <button key={code} type="button" className={reason === code ? "filter-chip is-on" : "filter-chip"} onClick={() => setReason(code)}>
+                  {t(`report.${code}`)}
+                </button>
+              ))}
+            </div>
           )}
           {error ? <p className="report-error">{error}</p> : null}
           {sent ? <p className="report-ok">{t("report.sent")}</p> : (

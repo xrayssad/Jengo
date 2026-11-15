@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Eye, MapPin } from "lucide-react";
 import { catShort, formatPrice, listingUnit, type Listing } from "@/lib/api";
+import { quoteStay, readFit } from "@/lib/pricing";
+import PriceBreakdown from "./PriceBreakdown";
 import { bedCount, formatViews, sellerVerified, shortPlace, verifiedType, viewCount, warnMissingViews, type ViewMode } from "@/lib/browse";
 import { useT } from "@/lib/i18n";
 import { freezeBrowse, useOpenListing, useReturnPulse } from "@/lib/listSession";
@@ -115,6 +117,14 @@ export default function ListingCard({
           <span>TSh {formatPrice(item.price)}</span>
           {!grid && shownRate ? <span className="immerse-rate">{shownRate}</span> : null}
         </p>
+        {!grid && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
+        {!grid && (readFit(item).costs_confirmed || readFit(item).direct_owner || readFit(item).free_viewing) ? (
+          <p className="fit-badges">
+            {readFit(item).direct_owner ? <span className="fit-badge">{t("fit.direct")}</span> : null}
+            {readFit(item).free_viewing ? <span className="fit-badge">{t("fit.free")}</span> : null}
+            {readFit(item).costs_confirmed ? <span className="fit-badge">{t("fit.costs")}</span> : null}
+          </p>
+        ) : null}
         {views != null ? (
           <p className="immerse-views">
             <Eye size={12} strokeWidth={2} aria-hidden />

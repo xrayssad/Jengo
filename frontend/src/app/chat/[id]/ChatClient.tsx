@@ -7,9 +7,11 @@ import AuthGate from "@/components/AuthGate";
 import { ChatThreadSkeleton } from "@/components/Skeletons";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { fetchListingDm, sendListingDm, type ChatMessage } from "@/lib/api";
+import { useT } from "@/lib/i18n";
 
 export default function ChatClient({ id, title, peer }: { id: string; title: string; peer?: string }) {
   const router = useRouter();
+  const t = useT();
   const [items, setItems] = useState<ChatMessage[]>([]);
   const [heading, setHeading] = useState(title);
   const [verified, setVerified] = useState(false);
@@ -81,6 +83,9 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
         ) : (
           <div className="flex-1 canvas-read w-full px-5 py-4 space-y-2">
             {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
+            {items.some((m) => !m.mine && /mpesa|m-pesa|tigo\s*pesa|airtel\s*money|lipa|tuma pesa|akaunti|send money/i.test(m.body || "")) ? (
+              <p className="fit-note">{t("fit.payWarning")}</p>
+            ) : null}
             {items.length === 0 && !error && (
               <p className="text-sm text-center py-10" style={{ color: "var(--muted)" }}>Write a direct message to the listing owner.</p>
             )}
@@ -101,7 +106,12 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
           </div>
         )}
         <form onSubmit={submit} className="sticky bottom-0 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
-          <div className="nav-island canvas-read w-full px-3 py-2 flex gap-2">
+          <div className="nav-island canvas-read w-full px-3 py-2 flex flex-col gap-2">
+            <div className="flex gap-2 overflow-x-auto">
+              {(["fit.quick.view", "fit.quick.where", "fit.quick.cost"] as const).map((key) => (
+                <button key={key} type="button" className="filter-chip shrink-0" onClick={() => setText(t(key))}>{t(key)}</button>
+              ))}
+            </div>
             <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "var(--ink)" }} />
             <button
               type="submit"

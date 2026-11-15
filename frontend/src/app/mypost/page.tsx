@@ -8,6 +8,9 @@ import ListingCard from "@/components/ListingCard";
 import PosterName from "@/components/PosterName";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
 import { fetchMyPosts, type Job, type Listing, type Reel } from "@/lib/api";
+import { photoMinimum } from "@/lib/categories.config";
+import { useT } from "@/lib/i18n";
+import { readFit } from "@/lib/pricing";
 import { readIds } from "@/lib/mine";
 
 type Row =
@@ -95,7 +98,21 @@ function JobPost({ item }: { item: Job }) {
   );
 }
 
+function health(item: Listing, label: (key: string) => string) {
+  const fit = readFit(item);
+  const tips: string[] = [];
+  if ((item.images || []).length < photoMinimum(item.category)) tips.push(label("fit.health.photos"));
+  if (!fit.costs_confirmed) tips.push(label("fit.health.costs"));
+  if (item.lat == null && !fit.landmark) tips.push(label("fit.health.pin"));
+  if (fit.last_confirmed_at) {
+    const age = Date.now() - Date.parse(fit.last_confirmed_at);
+    if (Number.isFinite(age) && age > 14 * 86400000) tips.push(label("fit.health.confirm"));
+  }
+  return tips;
+}
+
 export default function Page() {
+  const t = useT();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -171,7 +188,10 @@ export default function Page() {
               return (
                 <div key={`listings-${block.key}`} className="listing-grid">
                   {block.items.map((item, i) => (
-                    <ListingCard key={item.id} item={item} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
+                    <div key={item.id}>
+                      <ListingCard item={item} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
+                      {health(item, t).map((tip) => <p key={tip} className="fit-note">{tip}</p>)}
+                    </div>
                   ))}
                 </div>
               );

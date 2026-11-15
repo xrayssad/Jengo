@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, Loader2, Store, Warehouse } from "lucide-react";
 import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
+import { categoryConfig, photoMinimum } from "@/lib/categories.config";
 import { rememberListing } from "@/lib/mine";
 import { useT } from "@/lib/i18n";
 import { usePrefersReducedMotion } from "@/lib/motion";
@@ -100,6 +101,29 @@ type Draft = {
   phones: string[];
   whatsapp: string;
   sameWa: boolean;
+  posterRole: string;
+  freeViewing: boolean;
+  directOwner: boolean;
+  costsOk: boolean;
+  advance: string;
+  agentFee: string;
+  cleaning: string;
+  extraGuest: string;
+  goodwill: string;
+  landmark: string;
+  directions: string;
+  water: string;
+  power: string;
+  cancelPolicy: string;
+  subtype: string;
+  floor: string;
+  suitable: string;
+  condition: string;
+  truck: string;
+  allowedGoods: string;
+  deliveryNote: string;
+  ceiling: string;
+  licenseNote: string;
 };
 
 function digits(value: string) {
@@ -170,6 +194,29 @@ export default function WekaTangazoPage() {
   const [phones, setPhones] = useState<string[]>([""]);
   const [whatsapp, setWhatsapp] = useState("");
   const [sameWa, setSameWa] = useState(false);
+  const [posterRole, setPosterRole] = useState("owner");
+  const [freeViewing, setFreeViewing] = useState(true);
+  const [directOwner, setDirectOwner] = useState(true);
+  const [costsOk, setCostsOk] = useState(false);
+  const [advance, setAdvance] = useState("1");
+  const [agentFee, setAgentFee] = useState("");
+  const [cleaning, setCleaning] = useState("");
+  const [extraGuest, setExtraGuest] = useState("");
+  const [goodwill, setGoodwill] = useState("");
+  const [landmark, setLandmark] = useState("");
+  const [directions, setDirections] = useState("");
+  const [water, setWater] = useState("");
+  const [power, setPower] = useState("");
+  const [cancelPolicy, setCancelPolicy] = useState("flexible");
+  const [subtype, setSubtype] = useState("shop");
+  const [floor, setFloor] = useState("");
+  const [suitable, setSuitable] = useState("");
+  const [condition, setCondition] = useState("new");
+  const [truck, setTruck] = useState("");
+  const [allowedGoods, setAllowedGoods] = useState("");
+  const [deliveryNote, setDeliveryNote] = useState("");
+  const [ceiling, setCeiling] = useState("");
+  const [licenseNote, setLicenseNote] = useState("");
   const [tried, setTried] = useState(false);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
@@ -229,11 +276,36 @@ export default function WekaTangazoPage() {
       phones,
       whatsapp,
       sameWa,
+      posterRole,
+      freeViewing,
+      directOwner,
+      costsOk,
+      advance,
+      agentFee,
+      cleaning,
+      extraGuest,
+      goodwill,
+      landmark,
+      directions,
+      water,
+      power,
+      cancelPolicy,
+      subtype,
+      floor,
+      suitable,
+      condition,
+      truck,
+      allowedGoods,
+      deliveryNote,
+      ceiling,
+      licenseNote,
     }),
     [
       step, category, title, description, price, negotiable, period, unit, stock, bedrooms, bathrooms,
       roomType, deposit, available, guests, minNights, size, frontage, market, frameSize, minOrder,
-      amenities, photos, place, phones, whatsapp, sameWa,
+      amenities, photos, place, phones, whatsapp, sameWa, posterRole, freeViewing, directOwner, costsOk,
+      advance, agentFee, cleaning, extraGuest, goodwill, landmark, directions, water, power, cancelPolicy,
+      subtype, floor, suitable, condition, truck, allowedGoods, deliveryNote, ceiling, licenseNote,
     ],
   );
 
@@ -278,6 +350,29 @@ export default function WekaTangazoPage() {
       if (Array.isArray(saved.phones) && saved.phones.length) setPhones(saved.phones.slice(0, 3));
       if (typeof saved.whatsapp === "string") setWhatsapp(saved.whatsapp);
       if (typeof saved.sameWa === "boolean") setSameWa(saved.sameWa);
+      if (typeof saved.posterRole === "string") setPosterRole(saved.posterRole);
+      if (typeof saved.freeViewing === "boolean") setFreeViewing(saved.freeViewing);
+      if (typeof saved.directOwner === "boolean") setDirectOwner(saved.directOwner);
+      if (typeof saved.costsOk === "boolean") setCostsOk(saved.costsOk);
+      if (typeof saved.advance === "string") setAdvance(saved.advance);
+      if (typeof saved.agentFee === "string") setAgentFee(saved.agentFee);
+      if (typeof saved.cleaning === "string") setCleaning(saved.cleaning);
+      if (typeof saved.extraGuest === "string") setExtraGuest(saved.extraGuest);
+      if (typeof saved.goodwill === "string") setGoodwill(saved.goodwill);
+      if (typeof saved.landmark === "string") setLandmark(saved.landmark);
+      if (typeof saved.directions === "string") setDirections(saved.directions);
+      if (typeof saved.water === "string") setWater(saved.water);
+      if (typeof saved.power === "string") setPower(saved.power);
+      if (typeof saved.cancelPolicy === "string") setCancelPolicy(saved.cancelPolicy);
+      if (typeof saved.subtype === "string") setSubtype(saved.subtype);
+      if (typeof saved.floor === "string") setFloor(saved.floor);
+      if (typeof saved.suitable === "string") setSuitable(saved.suitable);
+      if (typeof saved.condition === "string") setCondition(saved.condition);
+      if (typeof saved.truck === "string") setTruck(saved.truck);
+      if (typeof saved.allowedGoods === "string") setAllowedGoods(saved.allowedGoods);
+      if (typeof saved.deliveryNote === "string") setDeliveryNote(saved.deliveryNote);
+      if (typeof saved.ceiling === "string") setCeiling(saved.ceiling);
+      if (typeof saved.licenseNote === "string") setLicenseNote(saved.licenseNote);
       if (typeof saved.step === "number") setStep(Math.min(5, Math.max(1, saved.step)));
     } catch {
       try {
@@ -307,9 +402,10 @@ export default function WekaTangazoPage() {
     if (step === 2) {
       if (title.trim().length < 3 || !price) return false;
       if (category === "vifaa" && (stock === "" || Number(stock) < 0)) return false;
+      if (posterRole === "agent" && !agentFee) return false;
       return true;
     }
-    if (step === 3) return photos.length > 0 && pending.every((item) => item.error);
+    if (step === 3) return photos.length >= photoMinimum(category) && pending.every((item) => item.error);
     if (step === 4) {
       if (place.location.trim().length < 2) return false;
       if (phoneErrors.some(Boolean) || waError) return false;
@@ -416,6 +512,29 @@ export default function WekaTangazoPage() {
 
   const optional = () => {
     const extra: Record<string, string | number | boolean | string[]> = {};
+    extra.poster_role = posterRole;
+    extra.free_viewing = category !== "vifaa" && category !== "apartment_airbnb" && freeViewing;
+    extra.direct_owner = posterRole === "owner" || directOwner;
+    extra.costs_confirmed = costsOk;
+    if (advance) extra.months_advance = Number(advance) || 1;
+    if (agentFee) extra.agent_fee = Number(agentFee);
+    if (cleaning) extra.cleaning_fee = Number(cleaning);
+    if (extraGuest) extra.extra_guest_fee = Number(extraGuest);
+    if (goodwill) extra.goodwill = Number(goodwill);
+    if (landmark.trim()) extra.landmark = landmark.trim();
+    if (directions.trim()) extra.directions = directions.trim();
+    if (water) extra.water = water;
+    if (power) extra.electricity = power;
+    if (category === "apartment_airbnb") extra.cancellation = cancelPolicy;
+    if (category === "store_godown") extra.subtype = subtype;
+    if (floor.trim()) extra.floor = floor.trim();
+    if (suitable.trim()) extra.suitable = suitable.trim();
+    if (category === "vifaa") extra.condition = condition;
+    if (truck.trim()) extra.truck = truck.trim();
+    if (allowedGoods.trim()) extra.allowed_goods = allowedGoods.trim();
+    if (deliveryNote.trim()) extra.delivery_note = deliveryNote.trim();
+    if (ceiling.trim()) extra.ceiling = ceiling.trim();
+    if (licenseNote.trim()) extra.license_note = licenseNote.trim();
     if (negotiable) extra.negotiable = true;
     if (amenities.length) extra.amenities = amenities;
     if (category === "chumba_nyumba") {
@@ -524,6 +643,20 @@ export default function WekaTangazoPage() {
     images: photos,
     unit: category === "vifaa" ? unit : undefined,
     stock: category === "vifaa" && stock !== "" ? Number(stock) : undefined,
+    fit: {
+      poster_role: posterRole === "agent" || posterRole === "caretaker" || posterRole === "business" ? posterRole : "owner",
+      free_viewing: category !== "vifaa" && category !== "apartment_airbnb" && freeViewing,
+      direct_owner: posterRole === "owner" || directOwner,
+      costs_confirmed: costsOk,
+      months_advance: Number(advance) || 1,
+      deposit: deposit ? Number(deposit) : 0,
+      agent_fee: agentFee ? Number(agentFee) : 0,
+      cleaning_fee: cleaning ? Number(cleaning) : 0,
+      extra_guest_fee: extraGuest ? Number(extraGuest) : 0,
+      goodwill: goodwill ? Number(goodwill) : 0,
+      guests,
+      subtype,
+    },
   };
 
   const share = () => {
@@ -667,6 +800,143 @@ export default function WekaTangazoPage() {
                     <i />
                   </button>
                 </div>
+                <div className="wizard-field">
+                  <span className="wizard-label">{t("fit.role.owner")}</span>
+                  <div className="wizard-chips">
+                    {(["owner", "agent", "caretaker", "business"] as const).map((role) =>
+                      chip(role, t(`fit.role.${role}`), posterRole === role, () => {
+                        setPosterRole(role);
+                        if (role === "owner") setDirectOwner(true);
+                      }),
+                    )}
+                  </div>
+                </div>
+                {category !== "vifaa" ? (
+                  <label className="wizard-field">
+                    <span className="wizard-label">{t("fit.advance")}</span>
+                    <input className="wizard-input" inputMode="numeric" value={advance} onChange={(e) => setAdvance(digits(e.target.value).slice(0, 2))} />
+                  </label>
+                ) : null}
+                {posterRole === "agent" ? (
+                  <label className="wizard-field">
+                    <span className="wizard-label">{t("fit.agentFee")} <i>*</i></span>
+                    <input className="wizard-input" inputMode="numeric" value={grouped(agentFee)} onChange={(e) => setAgentFee(digits(e.target.value))} />
+                    {tried && !agentFee ? <span className="wizard-error">{t("fit.agentFee")}</span> : null}
+                  </label>
+                ) : null}
+                {category === "apartment_airbnb" ? (
+                  <div className="wizard-row">
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.cleaningFee")}</span>
+                      <input className="wizard-input" inputMode="numeric" value={grouped(cleaning)} onChange={(e) => setCleaning(digits(e.target.value))} />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.extraGuest")}</span>
+                      <input className="wizard-input" inputMode="numeric" value={grouped(extraGuest)} onChange={(e) => setExtraGuest(digits(e.target.value))} />
+                    </label>
+                  </div>
+                ) : null}
+                {category === "frame" || category === "store_godown" ? (
+                  <label className="wizard-field">
+                    <span className="wizard-label">{t("fit.goodwill")}</span>
+                    <input className="wizard-input" inputMode="numeric" value={grouped(goodwill)} onChange={(e) => setGoodwill(digits(e.target.value))} />
+                  </label>
+                ) : null}
+                {category === "store_godown" ? (
+                  <div className="wizard-field">
+                    <span className="wizard-label">{t("fit.subtype")}</span>
+                    <div className="wizard-chips">
+                      {(["shop", "godown"] as const).map((kind) => chip(kind, t(`fit.subtype.${kind}`), subtype === kind, () => setSubtype(kind)))}
+                    </div>
+                  </div>
+                ) : null}
+                {category === "frame" || category === "store_godown" ? (
+                  <>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.floor")}</span>
+                      <input className="wizard-input" value={floor} onChange={(e) => setFloor(e.target.value)} />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.suitable")}</span>
+                      <input className="wizard-input" value={suitable} onChange={(e) => setSuitable(e.target.value)} />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.license")}</span>
+                      <input className="wizard-input" value={licenseNote} onChange={(e) => setLicenseNote(e.target.value)} />
+                    </label>
+                  </>
+                ) : null}
+                {category === "store_godown" && subtype === "godown" ? (
+                  <>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.truck")}</span>
+                      <input className="wizard-input" value={truck} onChange={(e) => setTruck(e.target.value)} placeholder="lorry, trailer, 20ft" />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.ceiling")}</span>
+                      <input className="wizard-input" value={ceiling} onChange={(e) => setCeiling(e.target.value)} />
+                    </label>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.allowed")}</span>
+                      <input className="wizard-input" value={allowedGoods} onChange={(e) => setAllowedGoods(e.target.value)} />
+                    </label>
+                  </>
+                ) : null}
+                {category === "vifaa" ? (
+                  <>
+                    <div className="wizard-field">
+                      <span className="wizard-label">{t("fit.condition")}</span>
+                      <div className="wizard-chips">
+                        {(["new", "used", "refurbished"] as const).map((kind) => chip(kind, t(`fit.condition.${kind}`), condition === kind, () => setCondition(kind)))}
+                      </div>
+                    </div>
+                    <label className="wizard-field">
+                      <span className="wizard-label">{t("fit.deliveryNote")}</span>
+                      <input className="wizard-input" value={deliveryNote} onChange={(e) => setDeliveryNote(e.target.value)} />
+                    </label>
+                  </>
+                ) : null}
+                {category === "chumba_nyumba" ? (
+                  <>
+                    <div className="wizard-field">
+                      <span className="wizard-label">{t("fit.water")}</span>
+                      <div className="wizard-chips">
+                        {(["mains", "borehole", "tank"] as const).map((kind) => chip(kind, t(`fit.water.${kind}`), water === kind, () => setWater(kind)))}
+                      </div>
+                    </div>
+                    <div className="wizard-field">
+                      <span className="wizard-label">{t("fit.power")}</span>
+                      <div className="wizard-chips">
+                        {(["luku", "shared", "included"] as const).map((kind) => chip(kind, t(`fit.power.${kind}`), power === kind, () => setPower(kind)))}
+                      </div>
+                    </div>
+                  </>
+                ) : null}
+                {category === "apartment_airbnb" ? (
+                  <div className="wizard-field">
+                    <span className="wizard-label">{t("fit.cancel")}</span>
+                    <div className="wizard-chips">
+                      {(["flexible", "moderate", "strict"] as const).map((kind) => chip(kind, t(`fit.cancel.chip.${kind}`), cancelPolicy === kind, () => setCancelPolicy(kind)))}
+                    </div>
+                    <p className="fit-note">{t(`fit.cancel.${cancelPolicy}`)}</p>
+                  </div>
+                ) : null}
+                {category !== "vifaa" && category !== "apartment_airbnb" ? (
+                <div className="wizard-toggle">
+                  <span>{t("fit.freeViewing")}</span>
+                  <button type="button" className={freeViewing ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={freeViewing} onClick={() => setFreeViewing((v) => !v)}><i /></button>
+                </div>
+                ) : null}
+                {posterRole !== "owner" ? (
+                  <div className="wizard-toggle">
+                    <span>{t("fit.directOwner")}</span>
+                    <button type="button" className={directOwner ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={directOwner} onClick={() => setDirectOwner((v) => !v)}><i /></button>
+                  </div>
+                ) : null}
+                <div className="wizard-toggle">
+                  <span>{t("fit.costsConfirm")}</span>
+                  <button type="button" className={costsOk ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={costsOk} onClick={() => setCostsOk((v) => !v)}><i /></button>
+                </div>
                 {category !== "vifaa" ? (
                   <div className="wizard-field">
                     <span className="wizard-label">Rent period</span>
@@ -762,6 +1032,14 @@ export default function WekaTangazoPage() {
             {step === 3 && (
               <div>
                 <p className="wizard-label">{t("wizard.photos", { n: photos.length })}</p>
+                {categoryConfig(category) ? (
+                  <p className="wizard-tip">
+                    {t("fit.photos")}: {categoryConfig(category)?.photos.map((slot) => `${slot.en}${slot.required ? "" : ""}`).join(", ")}. {categoryConfig(category)?.photoTip.en}
+                  </p>
+                ) : null}
+                {tried && photos.length < photoMinimum(category) ? (
+                  <p className="wizard-error">Add at least {photoMinimum(category)} photos.</p>
+                ) : null}
                 <div className="shot-grid" style={{ marginTop: 10 }}>
                   {photos.map((url, index) => (
                     <div key={url} className="shot" data-shot={index} onPointerDown={hold(index)}>
@@ -829,6 +1107,14 @@ export default function WekaTangazoPage() {
                   />
                   {tried && place.location.trim().length < 2 ? <span className="wizard-error">Add a street or area.</span> : null}
                 </div>
+                <label className="wizard-field">
+                  <span className="wizard-label">{t("fit.landmark")} <span className="wizard-optional">({t("optional")})</span></span>
+                  <input className="wizard-input" value={landmark} maxLength={160} onChange={(e) => setLandmark(e.target.value)} placeholder="Near the market, opposite the school" />
+                </label>
+                <label className="wizard-field">
+                  <span className="wizard-label">{t("fit.directions")} <span className="wizard-optional">({t("optional")})</span></span>
+                  <textarea className="wizard-input" rows={3} maxLength={400} value={directions} onChange={(e) => setDirections(e.target.value)} />
+                </label>
                 <div className="wizard-field">
                   <span className="wizard-label">Phone numbers <span className="wizard-optional">({t("optional")})</span></span>
                   {phones.map((value, index) => (

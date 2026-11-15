@@ -39,6 +39,8 @@ export type Listing = {
   beds?: number | null;
   rooms?: number | null;
   featured?: boolean;
+  fit?: import("./pricing").Fit | null;
+  move_in?: number | null;
 };
 
 const TOKEN_KEY = "jengo_token";
@@ -799,11 +801,73 @@ export async function createListing(body: {
   frame_size?: string;
   min_order?: number;
   whatsapp?: string;
+  poster_role?: string;
+  free_viewing?: boolean;
+  direct_owner?: boolean;
+  costs_confirmed?: boolean;
+  months_advance?: number;
+  agent_fee?: number;
+  other_fee?: number;
+  cleaning_fee?: number;
+  extra_guest_fee?: number;
+  goodwill?: number;
+  landmark?: string;
+  directions?: string;
+  water?: string;
+  electricity?: string;
+  cancellation?: string;
+  subtype?: string;
+  delivery_fee?: number;
+  power_backup?: string;
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export async function requestViewing(id: string, body: { visit_date: string; slot: string }) {
+  return request(`/listings/${id}/viewings`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function quoteStayApi(id: string, body: { start_date: string; end_date: string; guests: number }) {
+  return request<import("./pricing").Quote>(`/listings/${id}/stays/quote`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function requestStay(id: string, body: { start_date: string; end_date: string; guests: number }) {
+  return request(`/listings/${id}/stays`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function setAvailability(id: string, status: "active" | "rented" | "sold" | "paused") {
+  return request(`/listings/${id}/availability`, { method: "POST", body: JSON.stringify({ status }) });
+}
+
+export async function listViewings(id: string) {
+  return request<{ items: { id: string; visit_date: string; slot: string; status: string }[] }>(`/listings/${id}/viewings`);
+}
+
+export async function decideViewing(id: string, status: "accepted" | "declined") {
+  return request(`/viewings/${id}`, { method: "POST", body: JSON.stringify({ status }) });
+}
+
+export async function listStays(id: string) {
+  return request<{ items: { id: string; start_date: string; end_date: string; guests: number; status: string; total: number }[] }>(`/listings/${id}/stays`);
+}
+
+export async function decideStay(id: string, status: "confirmed" | "declined" | "completed") {
+  return request(`/stays/${id}`, { method: "POST", body: JSON.stringify({ status }) });
+}
+
+export async function reviewEligibility(id: string) {
+  return request<{ can: boolean; interaction_id?: string; interaction_kind?: string }>(`/listings/${id}/review-eligibility`);
+}
+
+export async function writeReview(id: string, body: { interaction_id: string; interaction_kind: string; ratings: Record<string, number>; body: string }) {
+  return request(`/listings/${id}/reviews`, { method: "POST", body: JSON.stringify(body) });
+}
+
+export async function requestStorage(id: string, body: { goods: string; notes?: string; start_date: string; months: number; business?: string }) {
+  return request<{ summary?: Record<string, string | number | null> }>(`/listings/${id}/storage`, { method: "POST", body: JSON.stringify(body) });
 }
 
 export function formatPrice(price: number | string) {

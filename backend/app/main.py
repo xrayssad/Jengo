@@ -1,5 +1,6 @@
 import os
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -7,7 +8,9 @@ from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app import cloudinary_media, jobs, mqtt_bus, phone_auth, places, posts, reels, social, trust
+from app import cloudinary_media, fit, jobs, mqtt_bus, phone_auth, places, posts, reels, social, trust
+from app.fit import merge_body_fit
+from app.pricing import clean_fit, is_stale
 from app.uploads import save_listing_photo
 from app.security import (
     LOGIN_ERROR,
@@ -67,6 +70,48 @@ class ListingIn(BaseModel):
     lng: float | None = None
     phones: list[str] = Field(default_factory=list)
     phone: str = ""
+    attributes: dict | None = None
+    poster_role: str | None = None
+    free_viewing: bool | None = None
+    direct_owner: bool | None = None
+    costs_confirmed: bool | None = None
+    negotiable: bool | None = None
+    instant_book: bool | None = None
+    amenities: list[str] = Field(default_factory=list)
+    bedrooms: int | None = None
+    bathrooms: int | None = None
+    beds: int | None = None
+    room_type: str | None = None
+    deposit: float | None = None
+    available_from: str | None = None
+    guests: int | None = None
+    min_nights: int | None = None
+    max_nights: int | None = None
+    included_guests: int | None = None
+    size_m2: float | None = None
+    price_per_sqm: float | None = None
+    frontage: str | None = None
+    market_name: str | None = None
+    frame_size: str | None = None
+    min_order: float | None = None
+    whatsapp: str | None = None
+    landmark: str | None = None
+    directions: str | None = None
+    months_advance: int | None = None
+    agent_fee: float | None = None
+    other_fee: float | None = None
+    cleaning_fee: float | None = None
+    extra_guest_fee: float | None = None
+    goodwill: float | None = None
+    water: str | None = None
+    electricity: str | None = None
+    cancellation: str | None = None
+    subtype: str | None = None
+    truck: str | None = None
+    vat: str | None = None
+    currency: str | None = None
+    power_backup: str | None = None
+    delivery_fee: float | None = None
 
 
 class BookingIn(BaseModel):
@@ -1100,6 +1145,7 @@ def admin_set_user(user_id: str, body: UserStatusIn, user=Depends(current_user))
 
 
 app.include_router(trust.router)
+app.include_router(fit.router)
 
 
 @app.api_route("/admin/{rest:path}", methods=["POST", "PUT", "PATCH", "DELETE"])
@@ -1154,6 +1200,8 @@ def list_listings(
     column = "likes_count" if sort == "likes" else "created_at"
     res = query.order(column, desc=True).limit(cap).execute()
     items = decorate_listings(res.data or [])
+    if not mine:
+        items = [item for item in items if not is_stale(item)]
     if mine:
         try:
             trust.attach_week_views(items)
@@ -1202,6 +1250,15 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         meta["stock"] = body.stock
     if phones:
         meta["phones"] = phones
+    try:
+        fit = clean_fit(body.category, merge_body_fit(body))
+    except ValueError as exc:
+        if str(exc) == "agent_fee":
+            raise HTTPException(status_code=400, detail="An agent must enter the agent fee") from exc
+        raise
+    now = datetime.now(timezone.utc).isoformat()
+    fit["last_confirmed_at"] = now
+    meta["fit"] = fit
     if meta:
         desc = with_meta(desc, meta)
     row = {
@@ -1230,6 +1287,12 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         extras["lng"] = body.lng
     if phones:
         extras["phones"] = phones
+    extras["attributes"] = fit
+    extras["poster_role"] = fit.get("poster_role")
+    extras["free_viewing"] = fit.get("free_viewing")
+    extras["direct_owner"] = fit.get("direct_owner")
+    extras["costs_confirmed"] = fit.get("costs_confirmed")
+    extras["last_confirmed_at"] = now
     res = _save_row("listings", extras, row)
     if not res.data:
         raise HTTPException(status_code=400, detail="Could not save")
@@ -1540,7 +1603,12 @@ def send_listing_dm(listing_id: str, body: MessageIn, user=Depends(current_user)
     key = social.listing_dm_key(listing_id, other, owner)
     if not social.can_see_listing_dm(user, listing, key):
         raise HTTPException(status_code=403, detail="This is not your message")
-    return social.add_message(key, "listing_dm", user.id, body.body, listing_id=listing_id)
+    saved = social.add_message(key, "listing_dm", user.id, body.body, listing_id=listing_id)
+    try:
+        fit.note_reply(listing, user.id)
+    except Exception:
+        pass
+    return saved
 
 
 @app.get("/listings/{listing_id}/comments")

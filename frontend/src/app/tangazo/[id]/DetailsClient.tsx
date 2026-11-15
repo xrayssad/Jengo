@@ -27,6 +27,7 @@ import { formatViews, viewCount, warnMissingViews } from "@/lib/browse";
 import { VIEW_DWELL_MS } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
+import ListingFacts, { shareText } from "@/components/ListingFacts";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -416,12 +417,15 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
                 aria-label="Share"
                 onClick={() => {
                   const url = `${window.location.origin}/tangazo/${item.id}`;
-                  const data = { title: item.title, url };
+                  const text = shareText(item);
+                  const data = { title: item.title, text, url };
                   if (navigator.share) {
-                    navigator.share(data).catch(() => {});
+                    navigator.share(data).catch(() => {
+                      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
+                    });
                     return;
                   }
-                  navigator.clipboard?.writeText(url).catch(() => {});
+                  window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank", "noopener");
                 }}
               >
                 <Share2 size={16} />
@@ -480,6 +484,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
             <p className="detail-accent">{catLabel[item.category || ""] || catShort[item.category || ""] || ""}</p>
             </div>
             </ViewTransition>
+            <ListingFacts item={item} />
             <div className="seller-card">
               <PosterName item={item} />
             </div>

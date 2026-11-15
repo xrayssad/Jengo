@@ -1,5 +1,6 @@
 import type { Listing } from "./api";
 import { VERIFIED_BOOST } from "./productFlags";
+import { moveInAmount } from "./pricing";
 
 export const REGIONS = [
   "Dar es Salaam",
@@ -167,6 +168,8 @@ export function inRegion(item: Listing, region: string): boolean {
 }
 
 export function priceOf(item: Listing): number {
+  const total = moveInAmount(item);
+  if (total > 0) return total;
   const n = typeof item.price === "string" ? parseFloat(item.price) : Number(item.price);
   return Number.isFinite(n) ? n : 0;
 }

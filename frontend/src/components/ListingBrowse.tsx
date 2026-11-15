@@ -24,6 +24,8 @@ import {
   type SortKey,
   type ViewMode,
 } from "@/lib/browse";
+import { categoryConfig } from "@/lib/categories.config";
+import { readFit } from "@/lib/pricing";
 import { VERIFIED_FIRST_SORT } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { disarmReturn, listRoute, peekReturn, pulseReturn, returnFrame } from "@/lib/listSession";
@@ -42,6 +44,7 @@ export default function ListingBrowse({
   pending = 0,
   stale = false,
   onRefresh,
+  category = "",
 }: {
   items: Listing[];
   loading?: boolean;
@@ -51,6 +54,7 @@ export default function ListingBrowse({
   pending?: number;
   stale?: boolean;
   onRefresh?: () => void;
+  category?: string;
 }) {
   const t = useT();
   const path = usePathname() || "/";
@@ -63,6 +67,8 @@ export default function ListingBrowse({
   const [view, setView] = useState<ViewMode>("large");
   const [near, setNear] = useState<NearPoint | null>(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
+  const [fitFilters, setFitFilters] = useState<string[]>([]);
+  const fitConfig = categoryConfig(category);
   const [locating, setLocating] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [toast, setToast] = useState("");
@@ -222,9 +228,17 @@ export default function ListingBrowse({
     if (region === "near" && near) next = nearListings(next, near);
     else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
     if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
+    if (fitFilters.includes("direct")) next = next.filter((item) => readFit(item).direct_owner);
+    if (fitFilters.includes("free_viewing")) next = next.filter((item) => readFit(item).free_viewing);
+    if (fitFilters.includes("costs")) next = next.filter((item) => readFit(item).costs_confirmed);
+    if (fitFilters.includes("self")) next = next.filter((item) => readFit(item).room_type === "self");
+    if (fitFilters.includes("power")) next = next.filter((item) => Boolean(readFit(item).power_backup));
+    if (fitFilters.includes("wifi")) {
+      next = next.filter((item) => (readFit(item).amenities || []).some((name) => /wi-?fi/i.test(name)));
+    }
     if (region === "near" && near && sort === "new") return next;
     return sortListings(next, sort === "featured" && !featured ? "new" : sort);
-  }, [items, region, near, sort, featured, verifiedOnly]);
+  }, [items, region, near, sort, featured, verifiedOnly, fitFilters]);
 
   const listIds = useMemo(() => shown.map((item) => item.id), [shown]);
 
@@ -277,7 +291,7 @@ export default function ListingBrowse({
   };
 
   const regionLabel = region === "all" || region === "near" ? t("region.all") : region;
-  const filtered = region !== "all" || sort !== "new" || verifiedOnly;
+  const filtered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0;
 
   return (
     <section className="browse">
@@ -320,6 +334,37 @@ export default function ListingBrowse({
           </button>
         ))}
       </div>
+      {fitConfig && fitConfig.filters.length ? (
+        <div className="loc-rail no-scrollbar" aria-label={t("sort")}>
+          {fitConfig.filters.map((key) => (
+            <button
+              key={key}
+              type="button"
+              className={fitFilters.includes(key) ? "loc-chip is-on" : "loc-chip"}
+              aria-pressed={fitFilters.includes(key)}
+              onClick={() => commit(() => setFitFilters((cur) => (cur.includes(key) ? cur.filter((item) => item !== key) : [...cur, key])))}
+            >
+              {t(`fit.filter.${key}`)}
+            </button>
+          ))}
+        </div>
+      ) : null}
+
+      {fitConfig ? (
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ margin: "8px 0" }}
+          onClick={() => {
+            const saved = JSON.parse(localStorage.getItem("jengo_saved_searches") || "[]") as { path: string; at: string }[];
+            saved.unshift({ path, at: new Date().toISOString() });
+            localStorage.setItem("jengo_saved_searches", JSON.stringify(saved.slice(0, 8)));
+            setToast(t("fit.savedSearch"));
+          }}
+        >
+          {t("fit.saveSearch")}
+        </button>
+      ) : null}
 
       {beforeFeed}
 
@@ -364,7 +409,7 @@ export default function ListingBrowse({
             </p>
             <div className="browse-empty-actions">
               {filtered ? (
-                <button type="button" className="btn-secondary browse-empty-btn" onClick={() => commit(() => { setRegion("all"); setNear(null); setSort("new"); setVerifiedOnly(false); })}>
+                <button type="button" className="btn-secondary browse-empty-btn" onClick={() => commit(() => { setRegion("all"); setNear(null); setSort("new"); setVerifiedOnly(false); setFitFilters([]); })}>
                   {t("clear")}
                 </button>
               ) : null}

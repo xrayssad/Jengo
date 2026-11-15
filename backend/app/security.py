@@ -262,6 +262,21 @@ def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owne
         count = 0
     item["views_count"] = count
     item["views"] = count
+    from app.pricing import public_fit, quote_stay
+
+    raw_fit = {}
+    if isinstance(meta.get("fit"), dict):
+        raw_fit.update(meta["fit"])
+    if isinstance(item.get("attributes"), dict):
+        raw_fit.update(item["attributes"])
+    confirmed = item.get("last_confirmed_at")
+    if confirmed and "last_confirmed_at" not in raw_fit:
+        raw_fit["last_confirmed_at"] = confirmed
+    fit = public_fit(str(item.get("category") or ""), raw_fit)
+    if confirmed:
+        fit["last_confirmed_at"] = str(confirmed)
+    item["fit"] = fit
+    item["move_in"] = quote_stay(str(item.get("category") or ""), item.get("price"), fit)["due"]
     return item
 
 

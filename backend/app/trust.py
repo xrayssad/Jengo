@@ -906,7 +906,19 @@ def create_report(body: ReportIn, user=Depends(current_user)):
     target = body.target_type.strip().lower()
     if target not in {"listing", "profile"}:
         raise HTTPException(status_code=400, detail="Unsupported report")
-    if body.reason_code.strip().lower() != "impersonation":
+    reason = body.reason_code.strip().lower()
+    allowed = {
+        "impersonation",
+        "scam",
+        "wrong_info",
+        "fake_photos",
+        "photo_mismatch",
+        "fee_before_viewing",
+        "already_taken",
+        "harassment",
+        "other",
+    }
+    if reason not in allowed:
         raise HTTPException(status_code=400, detail="Unsupported report")
     ident = body.target_id.strip()[:80]
     if len(ident) < 2:
@@ -917,10 +929,17 @@ def create_report(body: ReportIn, user=Depends(current_user)):
                 "reporter_id": user.id,
                 "target_type": target,
                 "target_id": ident,
-                "reason_code": "impersonation",
+                "reason_code": reason,
                 "note": (body.note or "")[:240] or None,
             }
         ).execute()
     except Exception:
         raise HTTPException(status_code=503, detail="Reports are not ready")
+    if target == "listing":
+        try:
+            found = db().table("reports").select("id").eq("target_type", "listing").eq("target_id", ident).execute()
+            if len(found.data or []) >= 3:
+                db().table("listings").update({"status": "hidden"}).eq("id", ident).execute()
+        except Exception:
+            pass
     return {"ok": True}

@@ -53,7 +53,7 @@ export default function ListingFeed({
         </div>
       </header>
       <div className="canvas px-4 pt-6">
-        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} onRefresh={() => { void refresh(); }} />
+        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} category={cats[0]} onRefresh={() => { void refresh(); }} />
       </div>
     </main>
   );

@@ -4158,3 +4158,72 @@ html[data-lite="1"] .wizard-pane {
   filter: none;
 }
 
+.fit-block {
+  margin-top: 16px;
+}
+
+.fit-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.fit-badge {
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 650;
+  display: inline-flex;
+  align-items: center;
+}
+
+.fit-sheet,
+.fit-form {
+  margin-top: 12px;
+}
+
+.fit-line,
+.fit-compact {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  color: var(--text);
+  font-size: 14px;
+}
+
+.fit-compact {
+  margin: 4px 0 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.fit-due {
+  font-weight: 700;
+  padding-top: 8px;
+  border-top: 1px solid rgba(var(--caramel-rgb), 0.28);
+}
+
+.fit-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.fit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.fit-actions .btn-secondary,
+.fit-actions .btn-primary,
+.fit-form .btn-primary {
+  min-height: 44px;
+}
+
