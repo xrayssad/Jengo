@@ -151,6 +151,34 @@ export default function Page() {
     };
   }, []);
 
+  useEffect(() => {
+    const onView = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { id?: string; views_count?: number };
+      if (!detail?.id || typeof detail.views_count !== "number") return;
+      setRows((cur) => cur.map((row) => (
+        row.kind === "listing" && row.item.id === detail.id
+          ? { ...row, item: { ...row.item, views_count: detail.views_count, views: detail.views_count } }
+          : row
+      )));
+    };
+    window.addEventListener("jengo-views", onView);
+    return () => window.removeEventListener("jengo-views", onView);
+  }, []);
+
+  useEffect(() => {
+    const onView = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { id?: string; views_count?: number };
+      if (!detail?.id || typeof detail.views_count !== "number") return;
+      setRows((cur) => cur.map((row) => (
+        row.kind === "listing" && row.item.id === detail.id
+          ? { ...row, item: { ...row.item, views_count: detail.views_count, views: detail.views_count } }
+          : row
+      )));
+    };
+    window.addEventListener("jengo-views", onView);
+    return () => window.removeEventListener("jengo-views", onView);
+  }, []);
+
   return (
     <AuthGate>
       <main className="min-h-screen" style={{ backgroundColor: "var(--paper)" }}>

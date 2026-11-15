@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Hammer, Loader2, MapPin } from "lucide-react";
 import AppAlert, { type AlertKind } from "@/components/AppAlert";
 import PhotoGallery from "@/components/PhotoGallery";
-import { awardJob, createJobOffer, fetchJob, formatPrice, getAuthUser, type Job, type JobOffer } from "@/lib/api";
+import { awardJob, createJobOffer, fetchJob, formatPrice, getAuthUser, rememberReturn, type Job, type JobOffer } from "@/lib/api";
 
 function feeCopy(job: Job) {
   const fee = formatPrice(job.connection_fee || 0);
@@ -73,6 +73,7 @@ export default function JobClient({ id }: { id: string }) {
   const sendOffer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!getAuthUser()) {
+      rememberReturn();
       router.push("/login");
       return;
     }

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Cormorant_Garamond, Source_Sans_3 } from "next/font/google";
 import AppShell from "@/components/AppShell";
@@ -24,6 +24,12 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   title: "Jengo",
   description: "Rooms & Houses, Apartment & Airbnb, Shops Store & Godown, Shop Frames and Building Materials",
+  applicationName: "Jengo",
+  appleWebApp: { capable: true, title: "Jengo", statusBarStyle: "default" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#4F5A3A",
 };
 
 export default function RootLayout({

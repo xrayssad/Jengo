@@ -1224,6 +1224,11 @@ def get_listing(request: Request, listing_id: str):
         raise HTTPException(status_code=404, detail="Listing not found")
     out = decorate_listing(item)
     social.attach_comment_counts([out])
+    if user is not None and str(item.get("owner_id") or "") == str(user.id):
+        try:
+            trust.attach_week_views([out])
+        except Exception:
+            pass
     return out
 
 

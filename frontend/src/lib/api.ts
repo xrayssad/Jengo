@@ -1,4 +1,5 @@
 import { getDeviceId } from "./deviceId";
+import { mergeCounts, mergeRefresh } from "./views";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://jengo-qkq1.onrender.com";
 
@@ -62,10 +63,51 @@ export type AuthUser = {
   revoked_reason?: string | null;
 };
 
+const RETURN_KEY = "jengo_return";
+
+function safeReturn(value: string) {
+  return value.startsWith("/") && !value.startsWith("//") && !value.startsWith("/login") && !value.startsWith("/register") && !value.startsWith("/auth");
+}
+
+/** Remember the page that asked the person to log in. */
+export function rememberReturn(path?: string) {
+  if (typeof window === "undefined") return;
+  const value = path || `${window.location.pathname}${window.location.search}`;
+  if (!safeReturn(value)) return;
+  try {
+    sessionStorage.setItem(RETURN_KEY, value);
+  } catch {
+    /* ignore */
+  }
+}
+
+export function takeReturn() {
+  if (typeof window === "undefined") return "";
+  try {
+    const value = sessionStorage.getItem(RETURN_KEY) || "";
+    sessionStorage.removeItem(RETURN_KEY);
+    return safeReturn(value) ? value : "";
+  } catch {
+    return "";
+  }
+}
+
+export function redirectToLogin() {
+  rememberReturn();
+  window.location.assign("/login");
+}
+
+export function needsLogin(err: unknown) {
+  return Boolean(err && typeof err === "object" && "status" in err && Number((err as { status?: number }).status) === 401);
+}
+
 export function afterAuthPath(user: AuthUser) {
   if (user.needs_username) return "/username";
-  if (user.role === "admin" || user.is_admin) return "/admin";
-  return "/home";
+  if (user.role === "admin" || user.is_admin) {
+    takeReturn();
+    return "/admin";
+  }
+  return takeReturn() || "/home";
 }
 
 async function dropSupabaseSession() {
@@ -635,7 +677,14 @@ export function absorbListings(params: ListingQuery | undefined, fresh: Listing[
   for (const item of fresh) {
     if (item?.id && !seen.has(item.id)) pending += 1;
   }
-  return { items: shown, pending };
+  const merged = mergeCounts(shown, fresh);
+  shownMem.set(key, merged);
+  persistShown();
+  return { items: merged, pending };
+}
+
+export function mergeShown(shown: Listing[], fresh: Listing[]) {
+  return mergeRefresh(shown, fresh);
 }
 
 export async function fetchListings(params?: ListingQuery): Promise<{ items: Listing[] }> {
@@ -704,7 +753,17 @@ export async function fetchListing(id: string): Promise<Listing> {
   return data;
 }
 
-const viewSession = new Set<string>();
+function stampStored(raw: string, id: string, views_count: number) {
+  const parsed = JSON.parse(raw) as { id?: string; views_count?: number; views?: number }[];
+  if (!Array.isArray(parsed)) return "";
+  let changed = false;
+  const next = parsed.map((item) => {
+    if (!item || item.id !== id) return item;
+    changed = true;
+    return { ...item, views_count, views: views_count };
+  });
+  return changed ? JSON.stringify(next) : "";
+}
 
 export function patchListingCount(id: string, views_count: number) {
   hydrateFeeds();
@@ -719,52 +778,73 @@ export function patchListingCount(id: string, views_count: number) {
     if (items.some((item) => item.id === id)) shownMem.set(key, items.map(apply));
   }
   persistFeeds();
+  persistShown();
   if (typeof window !== "undefined") {
+    try {
+      const home = sessionStorage.getItem(HOME_LISTINGS_KEY);
+      const stamped = home ? stampStored(home, id, views_count) : "";
+      if (stamped) sessionStorage.setItem(HOME_LISTINGS_KEY, stamped);
+    } catch {
+      /* ignore */
+    }
+    try {
+      const saved = localStorage.getItem("jengo_saved_posts");
+      const stamped = saved ? stampStored(saved, id, views_count) : "";
+      if (stamped) {
+        localStorage.setItem("jengo_saved_posts", stamped);
+        window.dispatchEvent(new Event("jengo-saved"));
+      }
+    } catch {
+      /* ignore */
+    }
     window.dispatchEvent(new CustomEvent("jengo-views", { detail: { id, views_count } }));
   }
 }
 
-/** One count per listing per session. Network errors retry once, then stay quiet. */
-export async function recordListingView(id: string): Promise<number | null> {
-  if (!id || viewSession.has(id)) return null;
-  const storeKey = `jengo_view_${id}`;
-  try {
-    if (sessionStorage.getItem(storeKey) === "1") {
-      viewSession.add(id);
-      return null;
-    }
-  } catch {
-    /* ignore */
-  }
-  viewSession.add(id);
-  const send = () => request<{ counted?: boolean; views_count?: number }>(`/listings/${id}/views`, { method: "POST", body: "{}" });
-  try {
-    let res: { counted?: boolean; views_count?: number };
+export type ViewReceipt = { counted: boolean; views_count: number; reason: string };
+
+const viewFlights = new Map<string, Promise<ViewReceipt>>();
+
+function logView(res: ViewReceipt) {
+  if (process.env.NODE_ENV === "production") return;
+  console.info(res.counted ? "view counted" : `view skipped: ${res.reason}`);
+}
+
+/** Ask the server after a real dwell. The server window, not this tab, decides a repeat. */
+export function recordListingView(id: string): Promise<ViewReceipt> {
+  if (!id) return Promise.resolve({ counted: false, views_count: 0, reason: "missing" });
+  const existing = viewFlights.get(id);
+  if (existing) return existing;
+  const send = () => request<{ counted?: boolean; views_count?: number; reason?: string }>(`/listings/${id}/views`, { method: "POST", body: "{}" });
+  const job = (async (): Promise<ViewReceipt> => {
     try {
-      res = await send();
+      let res: { counted?: boolean; views_count?: number; reason?: string };
+      try {
+        res = await send();
+      } catch (err) {
+        const status = (err as { status?: number }).status;
+        if (status) throw err;
+        res = await send();
+      }
+      const receipt: ViewReceipt = {
+        counted: Boolean(res.counted),
+        views_count: typeof res.views_count === "number" ? res.views_count : 0,
+        reason: res.reason || (res.counted ? "counted" : "duplicate"),
+      };
+      logView(receipt);
+      if (receipt.counted) patchListingCount(id, receipt.views_count);
+      return receipt;
     } catch (err) {
       const status = (err as { status?: number }).status;
-      if (status) throw err;
-      res = await send();
+      const receipt: ViewReceipt = { counted: false, views_count: 0, reason: status === 429 ? "rate" : "error" };
+      logView(receipt);
+      return receipt;
     }
-    try {
-      sessionStorage.setItem(storeKey, "1");
-    } catch {
-      /* ignore */
-    }
-    if (res.counted && typeof res.views_count === "number") {
-      patchListingCount(id, res.views_count);
-      return res.views_count;
-    }
-    return null;
-  } catch {
-    try {
-      sessionStorage.setItem(storeKey, "1");
-    } catch {
-      /* ignore */
-    }
-    return null;
-  }
+  })().finally(() => {
+    viewFlights.delete(id);
+  });
+  viewFlights.set(id, job);
+  return job;
 }
 
 export async function setListingStatus(id: string, status: "active" | "hidden" | "rejected") {

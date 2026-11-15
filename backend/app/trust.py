@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import os
 import re
 import unicodedata
@@ -51,6 +52,7 @@ BUSINESS_DOCS = {"business_license", "tin"}
 REASON_CODES = {"blurry", "name_mismatch", "expired", "unsupported_document", "suspected_fake", "duplicate"}
 SLOTS = {"front", "back", "selfie", "business", "shop"}
 BOT_MARKERS = ("bot", "crawl", "spider", "slurp", "facebookexternalhit", "preview", "wget", "curl/")
+_view_log = logging.getLogger("uvicorn.error")
 
 
 class ProfilePatch(BaseModel):
@@ -428,6 +430,49 @@ def _optional_user(request: Request):
         return None
 
 
+def _is_dev() -> bool:
+    env = os.getenv("APP_ENV", os.getenv("ENV", "development")).strip().lower()
+    return env not in {"production", "prod"}
+
+
+def view_window_minutes() -> int:
+    try:
+        minutes = int(os.getenv("VIEW_DEDUP_WINDOW_MINUTES", "30") or "30")
+    except ValueError:
+        minutes = 30
+    return max(1, min(minutes, 24 * 60))
+
+
+def count_own_views() -> bool:
+    flag = os.getenv("COUNT_OWN_VIEWS_IN_DEV", "").strip().lower() in {"1", "true", "yes"}
+    return flag and _is_dev()
+
+
+def window_start(now: datetime, minutes: int) -> datetime:
+    seconds = max(1, minutes) * 60
+    epoch = int(now.timestamp())
+    return datetime.fromtimestamp(epoch - (epoch % seconds), tz=timezone.utc)
+
+
+def view_skip_reason(*, ua: str, status: str, owner_id: str, user_id: str | None) -> str | None:
+    if (status or "active") != "active":
+        return "inactive"
+    if any(marker in (ua or "").lower() for marker in BOT_MARKERS):
+        return "bot"
+    if user_id and str(owner_id or "") == str(user_id) and not count_own_views():
+        return "owner"
+    return None
+
+
+def _log_view(listing_id: str, counted: bool, reason: str) -> None:
+    if not _is_dev():
+        return
+    if counted:
+        _view_log.info("view counted %s", listing_id)
+    else:
+        _view_log.info("view skipped: %s %s", reason, listing_id)
+
+
 def _viewer_key(request: Request, user) -> str:
     if user is not None:
         return f"u:{user.id}"
@@ -438,49 +483,45 @@ def _viewer_key(request: Request, user) -> str:
     return f"d:{digest}"
 
 
-def record_view(listing_id: str, viewer_key: str) -> tuple[bool, int]:
-    day = _now().date().isoformat()
+def record_view(listing_id: str, viewer_key: str) -> tuple[bool, int, str]:
+    minutes = view_window_minutes()
+    start = window_start(_now(), minutes)
     try:
         res = db().rpc(
             "record_listing_view",
-            {"p_listing": listing_id, "p_viewer": viewer_key, "p_day": day},
+            {"p_listing": listing_id, "p_viewer": viewer_key, "p_window_minutes": minutes},
         ).execute()
         row = res.data[0] if isinstance(res.data, list) and res.data else res.data
         if isinstance(row, dict) and "counted" in row:
-            return bool(row.get("counted")), int(row.get("views_count") or 0)
+            counted = bool(row.get("counted"))
+            return counted, int(row.get("views_count") or 0), "counted" if counted else "duplicate"
     except Exception:
         pass
     inserted = False
     try:
-        db().table("listing_views").insert({"listing_id": listing_id, "viewer_key": viewer_key, "day": day}).execute()
+        db().table("listing_views").insert(
+            {
+                "listing_id": listing_id,
+                "viewer_key": viewer_key,
+                "day": start.date().isoformat(),
+                "window_start": start.isoformat(),
+            }
+        ).execute()
         inserted = True
     except Exception as exc:
         msg = str(exc).lower()
         if "duplicate" in msg or "unique" in msg or "23505" in msg:
             inserted = False
-        elif _missing_column(exc):
-            return False, _views_count(listing_id)
         else:
-            return False, _views_count(listing_id)
-    column = None
-    try:
-        res = db().table("listings").select("views_count").eq("id", listing_id).limit(1).execute()
-        rows = res.data or []
-        if rows and "views_count" in rows[0] and rows[0].get("views_count") is not None:
-            column = int(rows[0]["views_count"])
-        elif rows and "views_count" in rows[0]:
-            column = 0
-    except Exception:
-        column = None
-    if column is not None:
-        total = column + (1 if inserted else 0)
-        if inserted:
-            try:
-                db().table("listings").update({"views_count": total}).eq("id", listing_id).execute()
-            except Exception:
-                pass
-        return inserted, total
-    return inserted, _views_count(listing_id)
+            return False, _views_count(listing_id), "error"
+    total = _views_count(listing_id)
+    if inserted:
+        total += 1
+        try:
+            db().table("listings").update({"views_count": total}).eq("id", listing_id).execute()
+        except Exception:
+            pass
+    return inserted, total, "counted" if inserted else "duplicate"
 
 
 def attach_week_views(items: list[dict]) -> None:
@@ -883,22 +924,32 @@ def revoke_badge(user_id: str, body: RevokeIn, user=Depends(_admin)):
 
 @router.post("/listings/{listing_id}/views")
 def post_listing_view(listing_id: str, request: Request):
-    ua = (request.headers.get("user-agent") or "").lower()
+    ua = request.headers.get("user-agent") or ""
     listing = _listing_brief(listing_id)
-    if (listing.get("status") or "active") != "active":
-        raise HTTPException(status_code=404, detail="Listing not found")
-    total = _views_count(listing_id)
-    if any(marker in ua for marker in BOT_MARKERS):
-        return {"counted": False, "views_count": total}
     user = _optional_user(request)
-    if user is not None and str(listing.get("owner_id") or "") == str(user.id):
-        return {"counted": False, "views_count": total}
+    reason = view_skip_reason(
+        ua=ua,
+        status=str(listing.get("status") or "active"),
+        owner_id=str(listing.get("owner_id") or ""),
+        user_id=str(user.id) if user is not None else None,
+    )
+    total = _views_count(listing_id)
+    if reason == "inactive":
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if reason:
+        _log_view(listing_id, False, reason)
+        return {"counted": False, "views_count": total, "reason": reason}
     host = request.client.host if request.client else "unknown"
     device = (request.headers.get("x-device-id") or host)[:80]
-    limiter.check(f"view:{host}", 60, 60, "Try again later")
-    limiter.check(f"viewdev:{device}", 40, 60, "Try again later")
-    counted, views = record_view(listing_id, _viewer_key(request, user))
-    return {"counted": counted, "views_count": views}
+    try:
+        limiter.check(f"view:{host}", 60, 60, "Try again later")
+        limiter.check(f"viewdev:{device}", 40, 60, "Try again later")
+    except HTTPException:
+        _log_view(listing_id, False, "rate")
+        raise
+    counted, views, reason = record_view(listing_id, _viewer_key(request, user))
+    _log_view(listing_id, counted, reason)
+    return {"counted": counted, "views_count": views, "reason": reason}
 
 
 @router.post("/reports")

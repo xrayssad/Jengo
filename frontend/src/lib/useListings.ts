@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useState, type SetStateAction } from "react";
-import { absorbListings, commitShown, fetchListings, peekListings, readShown, type Listing, type ListingQuery } from "./api";
+import { absorbListings, commitShown, fetchListings, mergeShown, peekListings, readShown, type Listing, type ListingQuery } from "./api";
 
 /** Paint the saved feed immediately. A background refresh never reorders or drops those rows. */
 export function useListings(params: ListingQuery) {
@@ -86,12 +86,13 @@ export function useListings(params: ListingQuery) {
     return fetchListings(query)
       .then((res) => {
         const fresh = res.items || [];
-        commitShown(query, fresh);
-        setItems(fresh);
+        const shown = readShown(query);
+        const next = shown.length ? mergeShown(shown, fresh) : fresh;
+        commitShown(query, next);
+        setItems(next);
         setPending(0);
         setStale(false);
         setError("");
-        setVersion((n) => n + 1);
       })
       .catch(() => {
         setStale(true);

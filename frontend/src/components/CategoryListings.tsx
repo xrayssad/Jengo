@@ -46,6 +46,26 @@ export default function CategoryListings({
     };
   }, [category]);
 
+  useEffect(() => {
+    const onView = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { id?: string; views_count?: number };
+      if (!detail?.id || typeof detail.views_count !== "number") return;
+      setItems((cur) => cur.map((item) => item.id === detail.id ? { ...item, views_count: detail.views_count, views: detail.views_count } : item));
+    };
+    window.addEventListener("jengo-views", onView);
+    return () => window.removeEventListener("jengo-views", onView);
+  }, []);
+
+  useEffect(() => {
+    const onView = (event: Event) => {
+      const detail = (event as CustomEvent).detail as { id?: string; views_count?: number };
+      if (!detail?.id || typeof detail.views_count !== "number") return;
+      setItems((cur) => cur.map((item) => item.id === detail.id ? { ...item, views_count: detail.views_count, views: detail.views_count } : item));
+    };
+    window.addEventListener("jengo-views", onView);
+    return () => window.removeEventListener("jengo-views", onView);
+  }, []);
+
   return (
     <main className="min-h-screen pb-4" style={{ backgroundColor: "var(--bg)" }}>
       <header className="topbar">

@@ -13,3 +13,6 @@ export const VERIFIED_FIRST_SORT = false;
 export const VERIFIED_BOOST = false;
 
 export const VIEW_DWELL_MS = 1500;
+
+/** `/` goes straight to Home. The old marketing page lives at `/about`. */
+export const SHOW_LANDING_PAGE = false;

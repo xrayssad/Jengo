@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
+import { SHOW_LANDING_PAGE } from "@/lib/productFlags";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";
 import MqttInbox from "./MqttInbox";
@@ -38,6 +39,10 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "";
   const show = !hideNav(path);
   const [holdSpace, setHoldSpace] = useState(false);
+
+  useLayoutEffect(() => {
+    if (path === "/" && !SHOW_LANDING_PAGE) window.location.replace("/home");
+  }, [path]);
 
   useLayoutEffect(() => {
     const sync = () => setHoldSpace(document.documentElement.dataset.detailOverlay === "1");

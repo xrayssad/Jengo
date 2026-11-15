@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthUser, hasUsableSession, refreshAuth } from "@/lib/api";
+import { getAuthUser, hasUsableSession, refreshAuth, rememberReturn } from "@/lib/api";
 
 export default function AuthGate({
   children,
@@ -20,6 +20,7 @@ export default function AuthGate({
     (async () => {
       const local = getAuthUser();
       if (!local?.access_token && !local?.refresh_token) {
+        rememberReturn();
         router.replace("/login");
         return;
       }
@@ -40,11 +41,13 @@ export default function AuthGate({
         // Only bounce to login when the session is truly gone (definitive expiry cleared tokens,
         // or there was never a usable local session). Transient renew/network failures keep tokens.
         if (!hasUsableSession()) {
+          rememberReturn();
           router.replace("/login");
           return;
         }
         const live = me || getAuthUser();
         if (!live) {
+          rememberReturn();
           router.replace("/login");
           return;
         }
@@ -61,6 +64,7 @@ export default function AuthGate({
         if (stop) return;
         if (!hasUsableSession()) {
           const status = err && typeof err === "object" && "status" in err ? Number((err as { status?: number }).status) : 0;
+          if (!(admin && status !== 401)) rememberReturn();
           router.replace(admin && status !== 401 ? "/home" : "/login");
           return;
         }

@@ -22,9 +22,12 @@ create table if not exists public.listing_views (
   listing_id uuid not null,
   viewer_key text not null,
   day date not null,
-  created_at timestamptz not null default now(),
-  unique (listing_id, viewer_key, day)
+  window_start timestamptz,
+  created_at timestamptz not null default now()
 );
+
+-- Existing databases still have the old daily unique key.
+-- backend/scripts/views_window.sql drops it and adds the window key.
 
 create index if not exists listing_views_listing_day_idx
   on public.listing_views (listing_id, day);
@@ -78,18 +81,23 @@ create table if not exists public.reports (
   created_at timestamptz not null default now()
 );
 
--- Atomic view: insert the daily row, then increment only when that insert is new.
-create or replace function public.record_listing_view(p_listing uuid, p_viewer text, p_day date)
+-- Atomic view: insert the window row, then increment only when that insert is new.
+-- The window length is passed by the API (VIEW_DEDUP_WINDOW_MINUTES, default 30).
+drop function if exists public.record_listing_view(uuid, text, date);
+create or replace function public.record_listing_view(p_listing uuid, p_viewer text, p_window_minutes int default 30)
 returns table(counted boolean, views_count integer)
 language plpgsql
 as $$
+#variable_conflict use_column
 declare
   inserted integer;
   total integer;
+  mins integer := greatest(1, least(coalesce(p_window_minutes, 30), 1440));
+  start_at timestamptz := to_timestamp(floor(extract(epoch from now()) / (mins * 60)) * (mins * 60));
 begin
-  insert into public.listing_views (listing_id, viewer_key, day)
-  values (p_listing, p_viewer, p_day)
-  on conflict (listing_id, viewer_key, day) do nothing;
+  insert into public.listing_views (listing_id, viewer_key, day, window_start)
+  values (p_listing, p_viewer, start_at::date, start_at)
+  on conflict (listing_id, viewer_key, window_start) do nothing;
   get diagnostics inserted = row_count;
   if inserted = 1 then
     update public.listings

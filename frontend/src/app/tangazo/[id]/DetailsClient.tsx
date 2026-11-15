@@ -90,7 +90,10 @@ function shownPlace(location?: string | null, city?: string | null) {
 export default function DetailsClient({ id: routeId, overlay = false }: { id: string; overlay?: boolean }) {
   const [id, setId] = useState(routeId);
   const router = useRouter();
-  const from = useSearchParams().get("from");
+  const params = useSearchParams();
+  const from = params.get("from");
+  const debugViews = process.env.NODE_ENV !== "production" && params.get("debugViews") === "1";
+  const [viewDebug, setViewDebug] = useState("");
   const t = useT();
   const vtName = from === "hero" || from === "rail" ? `listing-${from}-${id}` : `listing-${id}`;
   const [item, setItem] = useState<Listing | null>(null);
@@ -206,9 +209,13 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
       if (stop || document.hidden) return;
       timer = window.setTimeout(() => {
         if (stop || document.hidden) return;
-        void recordListingView(item.id).then((count) => {
-          if (count == null || stop) return;
-          setItem((cur) => (cur && cur.id === item.id ? { ...cur, views: count, views_count: count } : cur));
+        void recordListingView(item.id).then((res) => {
+          if (stop || !res.counted) {
+            if (debugViews) setViewDebug(res.counted ? "" : `skipped: ${res.reason}`);
+            return;
+          }
+          if (debugViews) setViewDebug(`counted ${res.views_count}`);
+          setItem((cur) => (cur && cur.id === item.id ? { ...cur, views: res.views_count, views_count: res.views_count } : cur));
         });
       }, VIEW_DWELL_MS);
     };
@@ -476,6 +483,10 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
                     {t("views", { n: formatViews(viewCount(item) || 0) })}
                   </span>
                 ) : null}
+                {viewDebug ? <span className="fit-note">{viewDebug}</span> : null}
+                {item.views_7d != null ? <span className="fit-note">{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
+                {viewDebug ? <span className="fit-note">{viewDebug}</span> : null}
+                {item.views_7d != null ? <span className="fit-note">{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
                 {ago ? <span className="time-pill shrink-0">{ago}</span> : null}
               </div>
             </div>

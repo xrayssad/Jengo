@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { getAuthUser, setUsername } from "@/lib/api";
+import { getAuthUser, setUsername, takeReturn } from "@/lib/api";
 
 export default function UsernamePage() {
   const [username, setName] = useState("");
@@ -15,7 +15,7 @@ export default function UsernamePage() {
       return;
     }
     if (!user.needs_username) {
-      window.location.href = "/home";
+      window.location.replace(takeReturn() || "/home");
     }
   }, []);
 
@@ -30,7 +30,7 @@ export default function UsernamePage() {
     setBusy(true);
     try {
       await setUsername(value);
-      window.location.href = "/home";
+      window.location.replace(takeReturn() || "/home");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not save username");
     } finally {

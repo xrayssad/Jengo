@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { decideStay, decideViewing, formatPrice, getAuthUser, listStays, listViewings, quoteStayApi, requestStay, requestStorage, requestViewing, reviewEligibility, setAvailability, writeReview, type Listing } from "@/lib/api";
+import { decideStay, decideViewing, formatPrice, getAuthUser, listStays, listViewings, needsLogin, quoteStayApi, redirectToLogin, requestStay, requestStorage, requestViewing, reviewEligibility, setAvailability, writeReview, type Listing } from "@/lib/api";
 import { categoryConfig } from "@/lib/categories.config";
 import { useT } from "@/lib/i18n";
 import { quoteStay, readFit, type Quote } from "@/lib/pricing";
@@ -70,6 +70,10 @@ export default function ListingFacts({ item }: { item: Listing }) {
       await requestViewing(item.id, { visit_date: visitDate, slot });
       setNote(t("fit.sent"));
     } catch (err) {
+      if (needsLogin(err)) {
+        redirectToLogin();
+        return;
+      }
       setNote(err instanceof Error ? err.message : t("fit.sent"));
     } finally {
       setBusy(false);
@@ -99,6 +103,10 @@ export default function ListingFacts({ item }: { item: Listing }) {
       await requestStay(item.id, { start_date: start, end_date: end, guests });
       setNote(t("fit.sent"));
     } catch (err) {
+      if (needsLogin(err)) {
+        redirectToLogin();
+        return;
+      }
       setNote(err instanceof Error ? err.message : "");
     } finally {
       setBusy(false);
@@ -218,6 +226,10 @@ export default function ListingFacts({ item }: { item: Listing }) {
                   setNote(t("fit.sent"));
                 })
                 .catch((err) => {
+                  if (needsLogin(err)) {
+                    redirectToLogin();
+                    return;
+                  }
                   setSummary({ title: item.title, goods, start_date: storeStart, price: Number(item.price) || 0 });
                   setNote(err instanceof Error ? err.message : "");
                 })
