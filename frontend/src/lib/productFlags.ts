@@ -3,7 +3,7 @@
 export const INTRO_DURATION_MS = 7000;
 export const INTRO_SKIP_AFTER_MS = 2000;
 export const INTRO_SKIPPABLE = true;
-/** When false, the intro plays once per browser session. */
+/** Kept for callers. The intro is not gated by a once-per-session flag. */
 export const INTRO_EVERY_LAUNCH = false;
 
 export const VERIFIED_BADGE_ENABLED = true;

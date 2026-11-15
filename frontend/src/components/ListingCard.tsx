@@ -1,11 +1,12 @@
 "use client";
 
+import { useEffect } from "react";
 import { ViewTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Eye, MapPin } from "lucide-react";
 import { catShort, formatPrice, listingUnit, type Listing } from "@/lib/api";
-import { bedCount, formatViews, sellerVerified, shortPlace, verifiedType, viewCount, type ViewMode } from "@/lib/browse";
+import { bedCount, formatViews, sellerVerified, shortPlace, verifiedType, viewCount, warnMissingViews, type ViewMode } from "@/lib/browse";
 import { useT } from "@/lib/i18n";
 import { freezeBrowse, useOpenListing, useReturnPulse } from "@/lib/listSession";
 import ListingPhoto from "./ListingPhoto";
@@ -58,6 +59,9 @@ export default function ListingCard({
   const kindVerified = verifiedType(item);
   const seller = (item.owner_name || item.owner_username || "").trim();
   const views = viewCount(item);
+  useEffect(() => {
+    if (views == null) warnMissingViews(item.id, "GET /listings");
+  }, [item.id, views]);
   const beds = bedCount(item);
   const stock = item.category === "vifaa" && item.stock != null ? item.stock : null;
   const chip = stock != null ? t("stock", { n: stock }) : beds != null ? t("bed", { n: beds }) : "";
@@ -111,7 +115,7 @@ export default function ListingCard({
           <span>TSh {formatPrice(item.price)}</span>
           {!grid && shownRate ? <span className="immerse-rate">{shownRate}</span> : null}
         </p>
-        {views != null && frame !== "feed" ? (
+        {views != null ? (
           <p className="immerse-views">
             <Eye size={12} strokeWidth={2} aria-hidden />
             {t("views", { n: formatViews(views) })}
@@ -151,15 +155,9 @@ export default function ListingCard({
           </ViewTransition>
         )}
       </div>
-      {frame === "feed" && (views != null || chip || item.views_7d != null) ? (
+      {frame === "feed" && (chip || item.views_7d != null) ? (
         <p className="immerse-foot">
           {chip ? <span>{chip}</span> : null}
-          {views != null ? (
-            <span>
-              <Eye size={12} strokeWidth={2} aria-hidden />
-              {t("views", { n: formatViews(views) })}
-            </span>
-          ) : null}
           {item.views_7d != null ? <span>{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
         </p>
       ) : null}

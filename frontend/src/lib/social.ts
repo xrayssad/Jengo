@@ -18,6 +18,8 @@ export type SavedPost = {
   thumb_url?: string;
   owner_name?: string | null;
   owner_username?: string | null;
+  views_count?: number | null;
+  views?: number | null;
   saved_at: string;
 };
 
@@ -56,6 +58,8 @@ export function toggleSaved(item: Listing): boolean {
     category: item.category,
     description: item.description,
     images: item.images,
+    views_count: item.views_count ?? item.views ?? item.view_count,
+    views: item.views ?? item.views_count ?? item.view_count,
     saved_at: new Date().toISOString(),
   });
 }

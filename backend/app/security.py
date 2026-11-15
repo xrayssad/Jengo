@@ -253,6 +253,15 @@ def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owne
     if owner is None and lookup_owner and item.get("owner_id"):
         owner = profile_of(str(item["owner_id"]))
     item.update(_owner_fields(owner))
+    raw = item.get("views_count", item.get("views"))
+    try:
+        count = int(raw) if raw is not None and raw != "" else 0
+    except (TypeError, ValueError):
+        count = 0
+    if count < 0:
+        count = 0
+    item["views_count"] = count
+    item["views"] = count
     return item
 
 

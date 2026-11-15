@@ -3,17 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { fetchListings, peekListings } from "@/lib/api";
 import { isLiteDevice } from "@/lib/device";
+import { clearIntroPending, introPending, introShouldPlay } from "@/lib/intro";
 import { useT } from "@/lib/i18n";
-import { INTRO_DURATION_MS, INTRO_EVERY_LAUNCH, INTRO_SKIP_AFTER_MS, INTRO_SKIPPABLE } from "@/lib/productFlags";
+import { INTRO_DURATION_MS, INTRO_SKIP_AFTER_MS, INTRO_SKIPPABLE } from "@/lib/productFlags";
 
 const LINES = ["splash.line1", "splash.line2", "splash.line3"] as const;
 
-function markSeen() {
-  try {
-    sessionStorage.setItem("jengo_splash", "1");
-  } catch {
-    /* ignore */
-  }
+function finish() {
+  clearIntroPending();
   document.documentElement.dataset.splash = "off";
 }
 
@@ -26,6 +23,7 @@ export default function Splash() {
   const [reduce, setReduce] = useState(false);
   const [lite, setLite] = useState(false);
   const stop = useRef(false);
+  const playing = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -46,57 +44,68 @@ export default function Splash() {
   }, []);
 
   useEffect(() => {
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const saved = (() => {
-      try {
-        return sessionStorage.getItem("jengo_splash") === "1";
-      } catch {
-        return false;
-      }
-    })();
-    const deep = window.location.pathname.startsWith("/tangazo/") || window.location.pathname.startsWith("/listing/");
-    if (deep || (saved && !INTRO_EVERY_LAUNCH) || document.documentElement.dataset.splash === "off" && !INTRO_EVERY_LAUNCH) {
-      setPhase("off");
-      return;
-    }
-    setReduce(motion);
-    setLite(isLiteDevice());
-    setPhase("in");
-    stop.current = false;
-    const duration = motion ? 1500 : INTRO_DURATION_MS;
-    const started = performance.now();
     let frame = 0;
-    const tick = (now: number) => {
-      if (stop.current) return;
-      const elapsed = now - started;
-      setProgress(Math.max(0, Math.min(1, elapsed / duration)));
-      if (!motion) {
-        if (elapsed >= 1200 && elapsed < 2800) setLine(0);
-        else if (elapsed >= 2800 && elapsed < 4400) setLine(1);
-        else if (elapsed >= 4400) setLine(2);
-        if (INTRO_SKIPPABLE && elapsed >= INTRO_SKIP_AFTER_MS) setCanSkip(true);
-        if (elapsed >= duration - 300) setPhase("out");
-      }
-      if (elapsed >= duration) {
-        markSeen();
+    const play = () => {
+      if (playing.current) return;
+      if (!introShouldPlay() && document.documentElement.dataset.splash !== "on") {
+        finish();
         setPhase("off");
         return;
       }
+      const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      playing.current = true;
+      stop.current = false;
+      setReduce(motion);
+      setLite(isLiteDevice());
+      setProgress(0);
+      setLine(0);
+      setCanSkip(false);
+      setPhase("in");
+      document.documentElement.dataset.splash = "on";
+      const duration = motion ? 1500 : INTRO_DURATION_MS;
+      const started = performance.now();
+      const tick = (now: number) => {
+        if (stop.current) return;
+        const elapsed = now - started;
+        setProgress(Math.max(0, Math.min(1, elapsed / duration)));
+        if (!motion) {
+          if (elapsed < 2800) setLine(0);
+          else if (elapsed < 4400) setLine(1);
+          else setLine(2);
+          if (INTRO_SKIPPABLE && elapsed >= INTRO_SKIP_AFTER_MS) setCanSkip(true);
+          if (elapsed >= duration - 300) setPhase("out");
+        }
+        if (elapsed >= duration) {
+          playing.current = false;
+          finish();
+          setPhase("off");
+          return;
+        }
+        frame = requestAnimationFrame(tick);
+      };
       frame = requestAnimationFrame(tick);
     };
-    frame = requestAnimationFrame(tick);
+
+    play();
+    const onLogin = () => {
+      if (introPending()) play();
+    };
+    window.addEventListener("jengo-intro", onLogin);
     return () => {
       stop.current = true;
+      playing.current = false;
       cancelAnimationFrame(frame);
+      window.removeEventListener("jengo-intro", onLogin);
     };
   }, []);
 
   const skip = () => {
     if (!canSkip && !reduce) return;
     stop.current = true;
+    playing.current = false;
     setPhase("out");
     window.setTimeout(() => {
-      markSeen();
+      finish();
       setPhase("off");
     }, 300);
   };

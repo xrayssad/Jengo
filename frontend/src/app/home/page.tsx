@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import FreshRail from "@/components/FreshRail";
 import HeroCarousel from "@/components/HeroCarousel";
 import PromoBanner from "@/components/PromoBanner";
-import Splash from "@/components/Splash";
 import {
   Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
@@ -126,7 +125,6 @@ export default function HomePage() {
 
   return (
     <main className="home-settle min-h-screen overflow-x-hidden">
-      <Splash />
       <header className={scrolled ? "topbar is-scrolled" : "topbar"}>
         <div className="canvas home-top px-4">
           <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn home-icon-btn" aria-label={t("menu")}>

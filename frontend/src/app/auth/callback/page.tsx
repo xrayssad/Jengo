@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { adoptSession, afterAuthPath, confirmEmailLink } from "@/lib/api";
+import { markIntroPending } from "@/lib/intro";
 import { getSupabase } from "@/lib/supabase";
 
 function readParams() {
@@ -48,6 +49,7 @@ function errorTitle(raw: string) {
 
 async function finishSession(accessToken: string, refreshToken?: string) {
   const user = await adoptSession(accessToken, refreshToken);
+  markIntroPending();
   window.location.replace(afterAuthPath(user));
 }
 
@@ -92,6 +94,7 @@ function completeCallback() {
     }
     if (tokenHash) {
       const user = await confirmEmailLink(tokenHash, type);
+      markIntroPending();
       window.location.replace(afterAuthPath(user));
       return;
     }

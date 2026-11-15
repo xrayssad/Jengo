@@ -101,7 +101,15 @@ function asCount(value: unknown): number | null {
 }
 
 export function viewCount(item: Listing): number | null {
-  return asCount(item.views ?? item.views_count ?? item.view_count);
+  return asCount(item.views_count ?? item.views ?? item.view_count);
+}
+
+const warnedViews = new Set<string>();
+
+export function warnMissingViews(id: string, endpoint: string) {
+  if (process.env.NODE_ENV === "production" || !id || warnedViews.has(id)) return;
+  warnedViews.add(id);
+  console.warn(`views_count missing for ${id} from ${endpoint}`);
 }
 
 export function formatViews(n: number): string {

@@ -2587,6 +2587,20 @@ a,
   -webkit-backdrop-filter: blur(16px);
 }
 
+html[data-splash="on"] body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 79;
+  background: #24301c;
+  pointer-events: none;
+}
+
+html.dark[data-splash="on"] body::before,
+html[data-theme="dark"][data-splash="on"] body::before {
+  background: var(--bg-bottom);
+}
+
 .splash {
   position: fixed;
   inset: 0;
@@ -2987,6 +3001,31 @@ html[data-lite="1"] .splash-dot {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.immerse-views {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.detail-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+}
+
+.detail-views {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .immerse-price {

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
 import { afterAuthPath, login as apiLogin, resendOtp, startGoogle } from "@/lib/api";
+import { markIntroPending } from "@/lib/intro";
 import SignedInHome from "@/components/SignedInHome";
 
 const slides = [
@@ -36,6 +37,7 @@ export default function LoginPage() {
     setBusy(true);
     try {
       const user = await apiLogin(email.trim(), password);
+      markIntroPending();
       window.location.href = afterAuthPath(user);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Username or password is incorrect";

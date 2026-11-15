@@ -22,7 +22,7 @@ import {
   unitLabel,
   type Listing,
 } from "@/lib/api";
-import { formatViews, viewCount } from "@/lib/browse";
+import { formatViews, viewCount, warnMissingViews } from "@/lib/browse";
 import { VIEW_DWELL_MS } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
@@ -159,6 +159,10 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
       document.removeEventListener("visibilitychange", onVis);
     };
   }, [id, loading, gone, item?.id]);
+
+  useEffect(() => {
+    if (item && viewCount(item) == null) warnMissingViews(item.id, `GET /listings/${item.id}`);
+  }, [item]);
 
   const phones = item ? listingPhones(item) : [];
   const callHref = phones[0] ? phoneTelHref(phones[0]) : "";

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { afterAuthPath, register as apiRegister, startGoogle } from "@/lib/api";
+import { markIntroPending } from "@/lib/intro";
 import SignedInHome from "@/components/SignedInHome";
 
 const slides = [
@@ -52,6 +53,7 @@ export default function RegisterPage() {
         full_name: fullName.trim(),
       });
       if (created.access_token) {
+        markIntroPending();
         window.location.href = afterAuthPath(created);
         return;
       }

@@ -4,6 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { afterAuthPath, resendOtp, verifyOtp } from "@/lib/api";
+import { markIntroPending } from "@/lib/intro";
 import OtpBoxes from "@/components/OtpBoxes";
 import { OTP_LEN } from "@/lib/theme";
 
@@ -32,6 +33,7 @@ function VerifyForm() {
     setBusy(true);
     try {
       const user = await verifyOtp({ email: email.trim() }, code.trim());
+      markIntroPending();
       window.location.href = afterAuthPath(user);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Code is incorrect");

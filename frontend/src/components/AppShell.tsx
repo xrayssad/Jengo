@@ -6,6 +6,7 @@ import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";
 import MqttInbox from "./MqttInbox";
+import Splash from "./Splash";
 import VerificationNotice from "./VerificationNotice";
 
 function skipUsernameGate(path: string) {
@@ -65,6 +66,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
 
   return (
     <MqttInbox>
+      <Splash />
       <VerificationNotice />
       {children}
       {(show || holdSpace || path.startsWith("/tangazo/")) && !fullBleed(path) ? <div aria-hidden className="nav-spacer" /> : null}
