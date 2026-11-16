@@ -1531,21 +1531,39 @@ export async function awardJob(jobId: string, offerId: string) {
   return request<Job>(`/jobs/${jobId}/award`, { method: "POST", body: JSON.stringify({ offer_id: offerId }) });
 }
 
-export async function uploadPhoto(file: File, retried = false) {
+export function uploadPhoto(file: File, retried = false, onProgress?: (pct: number) => void): Promise<{ url: string }> {
   const headers: Record<string, string> = {};
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
   const body = new FormData();
   body.append("file", file);
-  const res = await fetch(`${API_URL}/uploads`, { method: "POST", headers, body });
-  const data = await parseJson(await res.text());
-  if (!res.ok) {
-    if (res.status === 401 && !retried) {
-      const renewed = await renewSession();
-      if (renewed) return uploadPhoto(file, true);
-    }
-    throw errorFrom(data, res.status);
-  }
-  return data as { url: string };
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_URL}/uploads`);
+    for (const [key, value] of Object.entries(headers)) xhr.setRequestHeader(key, value);
+    xhr.upload.onprogress = (event) => {
+      if (!onProgress || !event.lengthComputable || !event.total) return;
+      onProgress(Math.max(0, Math.min(100, Math.round((event.loaded / event.total) * 100))));
+    };
+    xhr.onerror = () => reject(new Error("Could not upload the photo"));
+    xhr.onload = () => {
+      void (async () => {
+        const data = await parseJson(xhr.responseText || "");
+        if (xhr.status >= 200 && xhr.status < 300) {
+          resolve(data as { url: string });
+          return;
+        }
+        if (xhr.status === 401 && !retried) {
+          const renewed = await renewSession();
+          if (renewed) {
+            resolve(await uploadPhoto(file, true, onProgress));
+            return;
+          }
+        }
+        reject(errorFrom(data, xhr.status));
+      })().catch(reject);
+    };
+    xhr.send(body);
+  });
 }
 

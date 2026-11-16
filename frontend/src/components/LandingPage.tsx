@@ -1,5 +1,6 @@
 import Link from "next/link";
 import NextImage from "next/image";
+import Brand from "@/components/Brand";
 import SignedInHome from "@/components/SignedInHome";
 
 const categories = [
@@ -16,9 +17,9 @@ export default function LandingPage() {
       <SignedInHome />
       <header className="topbar px-5">
         <div className="max-w-3xl mx-auto flex items-center justify-between gap-3">
-          <p className="text-[22px] font-bold leading-none tracking-tight" style={{ color: "var(--ink)" }}>
-            Jengo
-          </p>
+          <Link href="/home" className="home-brand-link" aria-label="Jengo">
+            <Brand variant="wordmark" size={26} />
+          </Link>
           <div className="flex items-center gap-2">
             <Link href="/login" className="px-4 py-2 text-sm font-semibold rounded-full" style={{ color: "var(--ink)" }}>
               Log in

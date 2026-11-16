@@ -3,9 +3,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUp, House, LayoutGrid, Loader2, LocateFixed, RectangleVertical, X } from "lucide-react";
+import { ArrowUp, LayoutGrid, LocateFixed, RectangleVertical, X } from "lucide-react";
 import type { ReactNode } from "react";
 import type { Listing } from "@/lib/api";
+import JengoLoader from "@/components/JengoLoader";
+import JengoLogo from "@/components/JengoLogo";
 import {
   anyFeatured,
   asView,
@@ -15,6 +17,8 @@ import {
   nearListings,
   readBrowse,
   readView,
+  regionFromParam,
+  regionSlug,
   regionsFor,
   sellerVerified,
   sortListings,
@@ -45,6 +49,9 @@ export default function ListingBrowse({
   stale = false,
   onRefresh,
   category = "",
+  query = "",
+  scope = "",
+  onClear,
 }: {
   items: Listing[];
   loading?: boolean;
@@ -55,6 +62,9 @@ export default function ListingBrowse({
   stale?: boolean;
   onRefresh?: () => void;
   category?: string;
+  query?: string;
+  scope?: string;
+  onClear?: () => void;
 }) {
   const t = useT();
   const path = usePathname() || "/";
@@ -79,6 +89,16 @@ export default function ListingBrowse({
   const fadeTimer = useRef<number | null>(null);
   const seenRoute = useRef("");
   const want = useRef<{ region: string; sort: SortKey; view: ViewMode; y: number; highlight: string } | null>(null);
+  const chipsRef = useRef<HTMLDivElement>(null);
+  const parkedScroll = useRef<number | null>(null);
+  const filterKey = useRef("");
+  const urlReady = useRef(false);
+  const fromHistory = useRef(false);
+  const regionsRef = useRef<string[]>([]);
+  const [pull, setPull] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [pullDone, setPullDone] = useState(false);
+  const [mountExtras, setMountExtras] = useState(true);
 
   const regions = useMemo(() => {
     const list = regionsFor(items);
@@ -120,17 +140,20 @@ export default function ListingBrowse({
     const savedSort = saved?.sort && isSortKey(saved.sort) ? saved.sort : "new";
     const nextSort = savedSort === "verified" && !VERIFIED_FIRST_SORT ? "new" : savedSort;
     const hasNear = typeof saved?.nearLat === "number" && typeof saved?.nearLng === "number";
-    const nextRegion = saved?.region === "near" && hasNear ? "near" : saved?.region && saved.region !== "near" ? saved.region : "all";
+    const storedRegion = saved?.region === "near" && hasNear ? "near" : saved?.region && saved.region !== "near" ? saved.region : "all";
+    const param = new URLSearchParams(window.location.search).get("region") || "";
+    const nextRegion = param ? regionFromParam(param, regionsFor(items)) : storedRegion;
     setView(nextView);
     setSort(nextSort);
     setRegion(nextRegion);
     setNear(hasNear ? { lat: saved!.nearLat as number, lng: saved!.nearLng as number } : null);
     setVerifiedOnly(Boolean(saved?.verifiedOnly));
+    const openingFilter = nextRegion !== "all" || nextSort !== "new" || Boolean(saved?.verifiedOnly);
     want.current = {
       region: nextRegion,
       sort: nextSort,
       view: nextView,
-      y: typeof saved?.y === "number" ? saved.y : 0,
+      y: openingFilter ? -1 : (typeof saved?.y === "number" ? saved.y : 0),
       highlight: peekReturn() || "",
     };
     ready.current = true;
@@ -141,7 +164,7 @@ export default function ListingBrowse({
     const target = want.current;
     if (!target || loading) return;
     if (region !== target.region || sort !== target.sort || view !== target.view) return;
-    window.scrollTo(0, target.y);
+    if (target.y >= 0) window.scrollTo(0, target.y);
     const highlight = target.highlight;
     want.current = null;
     setBooted(true);
@@ -185,21 +208,45 @@ export default function ListingBrowse({
     if (!onRefresh) return;
     let startY = 0;
     let tracking = false;
+    let dragged = 0;
     const onStart = (event: TouchEvent) => {
       if (window.scrollY > 2) return;
       startY = event.touches[0]?.clientY || 0;
       tracking = true;
+      dragged = 0;
     };
-    const onEnd = (event: TouchEvent) => {
+    const onMove = (event: TouchEvent) => {
+      if (!tracking) return;
+      const dy = (event.touches[0]?.clientY || 0) - startY;
+      dragged = dy;
+      if (dy > 0 && window.scrollY <= 2) setPull(Math.min(dy, 120));
+    };
+    const onEnd = () => {
       if (!tracking) return;
       tracking = false;
-      const dy = (event.changedTouches[0]?.clientY || 0) - startY;
-      if (dy > 72) onRefresh();
+      const dy = dragged;
+      dragged = 0;
+      if (dy > 72) {
+        setRefreshing(true);
+        setPull(72);
+        Promise.resolve(onRefresh()).finally(() => {
+          setRefreshing(false);
+          setPullDone(true);
+          window.setTimeout(() => {
+            setPullDone(false);
+            setPull(0);
+          }, 280);
+        });
+        return;
+      }
+      setPull(0);
     };
     window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchmove", onMove, { passive: true });
     window.addEventListener("touchend", onEnd);
     return () => {
       window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchmove", onMove);
       window.removeEventListener("touchend", onEnd);
     };
   }, [onRefresh]);
@@ -241,6 +288,112 @@ export default function ListingBrowse({
   }, [items, region, near, sort, featured, verifiedOnly, fitFilters]);
 
   const listIds = useMemo(() => shown.map((item) => item.id), [shown]);
+  const queryText = query.trim();
+  const userFiltered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0 || Boolean(queryText);
+  const summaryLabel = region === "near"
+    ? t("near")
+    : region !== "all"
+      ? region
+      : queryText
+        ? queryText
+        : verifiedOnly
+          ? t("filter.verified")
+          : fitFilters.length
+            ? fitFilters.map((key) => t(`fit.filter.${key}`)).join(", ")
+            : sort !== "new"
+              ? t(`sort.${sort === "featured" && !featured ? "new" : sort}`)
+              : scope || t("region.all");
+
+  regionsRef.current = regions;
+
+  const scrollToChips = () => {
+    const el = chipsRef.current;
+    if (!el) return;
+    const header = document.querySelector("header.topbar");
+    const height = Math.ceil(header?.getBoundingClientRect().height || 0);
+    if (height) document.documentElement.style.setProperty("--header-h", `${height}px`);
+    el.style.scrollMarginTop = `${height}px`;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
+    });
+  };
+
+  useLayoutEffect(() => {
+    const header = document.querySelector("header.topbar");
+    const height = Math.ceil(header?.getBoundingClientRect().height || 0);
+    if (height) document.documentElement.style.setProperty("--header-h", `${height}px`);
+  }, [path, userFiltered]);
+
+  const showExtras = Boolean(beforeFeed);
+  useLayoutEffect(() => {
+    if (!showExtras) return;
+    if (!userFiltered) {
+      setMountExtras(true);
+      return;
+    }
+    const id = window.setTimeout(() => setMountExtras(false), reduce ? 0 : 250);
+    return () => window.clearTimeout(id);
+  }, [userFiltered, showExtras, reduce]);
+
+  useEffect(() => {
+    if (!booted) return;
+    const signature = [region, sort, verifiedOnly ? "1" : "0", fitFilters.join(","), queryText].join("|");
+    if (!filterKey.current) {
+      filterKey.current = signature;
+      if (userFiltered && !peekReturn()) {
+        parkedScroll.current = 0;
+        scrollToChips();
+      }
+      return;
+    }
+    if (filterKey.current === signature) return;
+    filterKey.current = signature;
+    if (userFiltered) {
+      if (parkedScroll.current == null) parkedScroll.current = window.scrollY;
+      scrollToChips();
+      return;
+    }
+    const y = parkedScroll.current ?? 0;
+    parkedScroll.current = null;
+    requestAnimationFrame(() => {
+      window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
+    });
+  }, [booted, region, sort, verifiedOnly, fitFilters, queryText, userFiltered, reduce]);
+
+  useEffect(() => {
+    if (!booted) return;
+    if (fromHistory.current) {
+      fromHistory.current = false;
+      urlReady.current = true;
+      return;
+    }
+    const param = new URLSearchParams(window.location.search).get("region") || "";
+    const wantSlug = region === "all" ? "" : regionSlug(region);
+    if (param === wantSlug) {
+      urlReady.current = true;
+      return;
+    }
+    const url = new URL(window.location.href);
+    if (wantSlug) url.searchParams.set("region", wantSlug);
+    else url.searchParams.delete("region");
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    const state = { ...(window.history.state || {}), jengoRegion: region || "all" };
+    if (urlReady.current) window.history.pushState(state, "", nextUrl);
+    else window.history.replaceState(state, "", nextUrl);
+    urlReady.current = true;
+  }, [booted, region]);
+
+  useEffect(() => {
+    const onPop = () => {
+      const param = new URLSearchParams(window.location.search).get("region") || "";
+      const next = param ? regionFromParam(param, regionsRef.current) : "all";
+      fromHistory.current = true;
+      setRegion(next);
+      if (next !== "near") setNear(null);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   const commit = (fn: () => void) => {
     const y = window.scrollY;
@@ -254,11 +407,26 @@ export default function ListingBrowse({
     }, reduce ? 0 : 150);
   };
 
+  const clearBrowse = () => {
+    setRegion("all");
+    setNear(null);
+    setSort("new");
+    setVerifiedOnly(false);
+    setFitFilters([]);
+  };
+
+  const resetFilters = () => {
+    clearBrowse();
+    onClear?.();
+  };
+
   const pickRegion = (next: string) => {
-    commit(() => {
-      setRegion(next);
-      if (next !== "near") setNear(null);
-    });
+    if (next === "all") {
+      clearBrowse();
+      return;
+    }
+    setRegion(next);
+    if (next !== "near") setNear(null);
   };
 
   const locate = () => {
@@ -276,10 +444,8 @@ export default function ListingBrowse({
           return;
         }
         const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        commit(() => {
-          setNear(point);
-          setRegion("near");
-        });
+        setNear(point);
+        setRegion("near");
         setToast(t("near.ok"));
       },
       (err) => {
@@ -290,11 +456,17 @@ export default function ListingBrowse({
     );
   };
 
-  const regionLabel = region === "all" || region === "near" ? t("region.all") : region;
-  const filtered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0;
+  const regionLabel = region !== "all" && region !== "near" ? region : (queryText || scope || summaryLabel);
+  const showSummary = userFiltered || Boolean(scope);
 
   return (
     <section className="browse">
+      {(pull > 6 || refreshing || pullDone) ? (
+        <div className="pull-slot" aria-hidden={refreshing ? undefined : true}>
+          <JengoLoader variant="pull" size={22} pull={Math.min(pull / 72, 1)} refreshing={refreshing} done={pullDone} />
+        </div>
+      ) : null}
+      <div ref={chipsRef} className={showSummary ? "browse-pin" : "browse-stack"}>
       <div className="loc-rail no-scrollbar" role="tablist" aria-label={t("near")}>
         <button
           type="button"
@@ -303,7 +475,7 @@ export default function ListingBrowse({
           aria-busy={locating}
           onClick={locate}
         >
-          {locating ? <Loader2 size={14} className="loc-spin" aria-hidden /> : <LocateFixed size={14} aria-hidden />}
+          {locating ? <JengoLoader size={16} /> : <LocateFixed size={14} aria-hidden />}
           {t("near")}
         </button>
         <button
@@ -318,7 +490,7 @@ export default function ListingBrowse({
           type="button"
           className={verifiedOnly ? "loc-chip is-on" : "loc-chip"}
           aria-pressed={verifiedOnly}
-          onClick={() => commit(() => setVerifiedOnly((on) => !on))}
+          onClick={() => setVerifiedOnly((on) => !on)}
         >
           {t("filter.verified")}
         </button>
@@ -342,13 +514,20 @@ export default function ListingBrowse({
               type="button"
               className={fitFilters.includes(key) ? "loc-chip is-on" : "loc-chip"}
               aria-pressed={fitFilters.includes(key)}
-              onClick={() => commit(() => setFitFilters((cur) => (cur.includes(key) ? cur.filter((item) => item !== key) : [...cur, key])))}
+              onClick={() => setFitFilters((cur) => (cur.includes(key) ? cur.filter((item) => item !== key) : [...cur, key]))}
             >
               {t(`fit.filter.${key}`)}
             </button>
           ))}
         </div>
       ) : null}
+      {showSummary ? (
+        <div className="browse-summary">
+          <p>{summaryLabel} - {shown.length} {t("listings")}</p>
+          <button type="button" onClick={resetFilters}>{t("filter.clear")}</button>
+        </div>
+      ) : null}
+      </div>
 
       {fitConfig ? (
         <button
@@ -366,7 +545,11 @@ export default function ListingBrowse({
         </button>
       ) : null}
 
-      {beforeFeed}
+      {mountExtras && beforeFeed ? (
+        <div className={userFiltered ? "home-extras is-out" : "home-extras"}>
+          <div className="home-extras-inner">{beforeFeed}</div>
+        </div>
+      ) : null}
 
       {pending > 0 ? (
         <button type="button" className="new-pill" onClick={() => onRefresh?.()}>
@@ -376,10 +559,12 @@ export default function ListingBrowse({
       {stale ? <p className="stale-banner">{t("staleList")}</p> : null}
 
       <div className="browse-head">
-        <p className="browse-count-line">
-          <span className="browse-count">{shown.length}</span>
-          <span>{t("listings")}</span>
-        </p>
+        {showSummary ? <span /> : (
+          <p className="browse-count-line">
+            <span className="browse-count">{shown.length}</span>
+            <span>{t("listings")}</span>
+          </p>
+        )}
         <div className="browse-tools">
           <button type="button" className="browse-sort" aria-haspopup="dialog" aria-expanded={sheet} onClick={() => setSheet(true)}>
             {t(`sort.${sort === "featured" && !featured ? "new" : sort}`)}
@@ -398,18 +583,18 @@ export default function ListingBrowse({
       {error ? <p className="browse-error">{error}</p> : null}
 
       <div className={fading ? "listing-stage is-fading" : "listing-stage"}>
-        {loading && items.length === 0 && <ListingFeedSkeleton layout={view} />}
+        {loading && shown.length === 0 && <ListingFeedSkeleton layout={view} />}
         {!loading && !error && shown.length === 0 && (
           <div className="empty-panel browse-empty">
             <span className="browse-empty-mark" aria-hidden>
-              <House size={28} strokeWidth={1.6} />
+              <JengoLogo variant="mark" size={32} title="" />
             </span>
             <p className="lead">
               {region === "near" ? t("empty.near") : region !== "all" ? t("empty.region", { region: regionLabel }) : t("empty.all")}
             </p>
             <div className="browse-empty-actions">
-              {filtered ? (
-                <button type="button" className="btn-secondary browse-empty-btn" onClick={() => commit(() => { setRegion("all"); setNear(null); setSort("new"); setVerifiedOnly(false); setFitFilters([]); })}>
+              {showSummary ? (
+                <button type="button" className="btn-secondary browse-empty-btn" onClick={resetFilters}>
                   {t("clear")}
                 </button>
               ) : null}
@@ -452,7 +637,7 @@ export default function ListingBrowse({
                 className={sort === key ? "sort-option is-on" : "sort-option"}
                 aria-pressed={sort === key}
                 onClick={() => {
-                  commit(() => setSort(key));
+                  setSort(key);
                   setSheet(false);
                 }}
               >

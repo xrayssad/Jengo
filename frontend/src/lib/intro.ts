@@ -38,5 +38,12 @@ export function introShouldPlay() {
   const pending = introPending();
   const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
   if (nav?.type === "back_forward" && !pending) return false;
+  if (nav?.type === "reload" && !pending) {
+    try {
+      if (sessionStorage.getItem("jengo_intro_seen") === "1") return false;
+    } catch {
+      /* ignore */
+    }
+  }
   return true;
 }

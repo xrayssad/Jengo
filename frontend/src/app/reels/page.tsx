@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type MouseEvent, type PointerEvent, type R
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Clapperboard, Pause, Play, Plus, Volume2, VolumeX } from "lucide-react";
+import Brand from "@/components/Brand";
 import PosterName from "@/components/PosterName";
 import ReelActions from "@/components/ReelActions";
 import { fetchReels, getAuthUser, type Reel } from "@/lib/api";
@@ -568,7 +569,7 @@ export default function ReelsPage() {
       >
         <div className="w-full max-w-[480px] flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs font-semibold" style={{ color: "rgba(255,246,237,0.72)" }}>Jengo</p>
+            <span className="brand-on-dark"><Brand variant="mark" size={22} /></span>
             <h1 className="text-3xl font-bold leading-none tracking-tight" style={{ color: "#FFF6ED" }}>Reels</h1>
           </div>
           <Link

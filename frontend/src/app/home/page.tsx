@@ -12,6 +12,7 @@ import {
   Home, Warehouse, Building2, Store, Boxes, SlidersHorizontal,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
+import Brand from "@/components/Brand";
 import { LangCircle, LangDrawer, ThemeCircle } from "@/components/HeaderTools";
 import ListingBrowse from "@/components/ListingBrowse";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -124,14 +125,16 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="home-settle min-h-screen overflow-x-hidden">
+    <main className="home-settle min-h-screen overflow-x-clip">
       <header className={scrolled ? "topbar is-scrolled" : "topbar"}>
         <div className="canvas home-top px-4">
           <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn home-icon-btn" aria-label={t("menu")}>
             <Menu size={18} color="currentColor" />
           </button>
           <div className="home-brand">
-            <h1 className="font-heading home-logo">Jengo</h1>
+            <Link href="/home" className="home-brand-link" aria-label="Jengo">
+              <Brand variant={scrolled ? "mark" : "wordmark"} size={scrolled ? 28 : 26} />
+            </Link>
             <AdminLink />
           </div>
           <div className="home-tools">
@@ -156,7 +159,9 @@ export default function HomePage() {
         }}
       >
         <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: "1px solid var(--gold)" }}>
-          <p className="font-heading text-[28px] leading-none" style={{ color: "var(--gold)" }}>Jengo</p>
+          <Link href="/home" onClick={() => setOpen(false)} className="home-brand-link" aria-label="Jengo" style={{ color: "var(--gold)" }}>
+            <Brand variant="wordmark" size={26} />
+          </Link>
           <button type="button" onClick={() => setOpen(false)} className="drawer-close w-9 h-9 flex items-center justify-center" aria-label={t("close")}>
             <X size={16} color="var(--gold)" />
           </button>

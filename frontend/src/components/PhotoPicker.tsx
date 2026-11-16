@@ -1,12 +1,14 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { ImagePlus, X, Loader2 } from "lucide-react";
+import { ImagePlus, X } from "lucide-react";
+import JengoLoader from "@/components/JengoLoader";
 import { uploadPhoto } from "@/lib/api";
 
 export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChange: (urls: string[]) => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
+  const [pct, setPct] = useState(0);
   const [error, setError] = useState("");
 
   const add = async (files: FileList | null) => {
@@ -18,11 +20,15 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
       return;
     }
     setBusy(true);
+    setPct(0);
     setError("");
     try {
       const uploaded: string[] = [];
-      for (const file of batch) {
-        const res = await uploadPhoto(file);
+      for (let index = 0; index < batch.length; index += 1) {
+        const file = batch[index];
+        const res = await uploadPhoto(file, false, (value) => {
+          setPct(Math.round(((index + value / 100) / batch.length) * 100));
+        });
         if (res.url) uploaded.push(res.url);
       }
       onChange([...urls, ...uploaded]);
@@ -59,7 +65,7 @@ export default function PhotoPicker({ urls, onChange }: { urls: string[]; onChan
             className="flex flex-col items-center justify-center gap-1"
             style={{ height: 92, borderRadius: 16, border: "1px dashed var(--mocha)", color: "var(--mocha)" }}
           >
-            {busy ? <Loader2 size={18} className="animate-spin" /> : <ImagePlus size={18} />}
+            {busy ? <JengoLoader size={28} progress={pct} showValue /> : <ImagePlus size={18} />}
             <span className="text-[11px]">{busy ? "Uploading" : "Add photo"}</span>
           </button>
         )}

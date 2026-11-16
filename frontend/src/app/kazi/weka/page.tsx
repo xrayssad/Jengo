@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import JengoLoader from "@/components/JengoLoader";
 import AuthGate from "@/components/AuthGate";
 import AppAlert, { type AlertKind } from "@/components/AppAlert";
 import PhotoPicker from "@/components/PhotoPicker";
@@ -101,7 +102,7 @@ export default function Page() {
               The connection fee is shown after a worker offers, before you choose. No fee if nobody offers.
             </p>
             <button type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-sm" style={{ opacity: loading ? 0.7 : 1 }}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+              {loading ? <JengoLoader size={18} /> : null}
               {loading ? "Saving..." : "Post job"}
             </button>
           </div>

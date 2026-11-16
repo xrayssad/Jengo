@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Hammer, Loader2, MapPin } from "lucide-react";
+import { ArrowLeft, Hammer, MapPin } from "lucide-react";
+import JengoLoader from "@/components/JengoLoader";
 import AppAlert, { type AlertKind } from "@/components/AppAlert";
 import PhotoGallery from "@/components/PhotoGallery";
 import { awardJob, createJobOffer, fetchJob, formatPrice, getAuthUser, rememberReturn, type Job, type JobOffer } from "@/lib/api";
@@ -134,7 +135,7 @@ export default function JobClient({ id }: { id: string }) {
       <div className="canvas-read px-5 pt-6 space-y-4">
         {loading && (
           <div className="flex justify-center py-16">
-            <Loader2 className="animate-spin" color="var(--mocha)" />
+            <JengoLoader size={40} />
           </div>
         )}
         {!loading && error && (

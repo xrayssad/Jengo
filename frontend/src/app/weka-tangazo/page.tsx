@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, Loader2, Store, Warehouse } from "lucide-react";
+import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, Store, Warehouse } from "lucide-react";
+import JengoLoader from "@/components/JengoLoader";
 import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
 import { categoryConfig, photoMinimum } from "@/lib/categories.config";
 import { rememberListing } from "@/lib/mine";
@@ -71,7 +72,7 @@ const amenitySets: Record<string, string[]> = {
   vifaa: ["Delivery", "Parking"],
 };
 
-type Pending = { id: string; preview: string; file: File; error: boolean };
+type Pending = { id: string; preview: string; file: File; error: boolean; progress: number };
 
 type Draft = {
   step: number;
@@ -447,10 +448,12 @@ export default function WekaTangazoPage() {
     for (const file of batch) {
       const id = `${Date.now()}-${file.name}-${Math.random()}`;
       const preview = URL.createObjectURL(file);
-      setPending((cur) => [...cur, { id, preview, file, error: false }]);
+      setPending((cur) => [...cur, { id, preview, file, error: false, progress: 0 }]);
       const ready = await compress(file);
       try {
-        const res = await uploadPhoto(ready);
+        const res = await uploadPhoto(ready, false, (value) => {
+          setPending((cur) => cur.map((item) => (item.id === id ? { ...item, progress: value } : item)));
+        });
         if (res.url) setPhotos((cur) => (cur.length >= 10 ? cur : [...cur, res.url]));
         setPending((cur) => cur.filter((item) => item.id !== id));
         URL.revokeObjectURL(preview);
@@ -463,7 +466,9 @@ export default function WekaTangazoPage() {
   const retry = async (item: Pending) => {
     setPending((cur) => cur.map((row) => (row.id === item.id ? { ...row, error: false } : row)));
     try {
-      const res = await uploadPhoto(item.file);
+      const res = await uploadPhoto(item.file, false, (value) => {
+        setPending((cur) => cur.map((row) => (row.id === item.id ? { ...row, progress: value } : row)));
+      });
       if (res.url) setPhotos((cur) => (cur.length >= 10 ? cur : [...cur, res.url]));
       setPending((cur) => cur.filter((row) => row.id !== item.id));
       URL.revokeObjectURL(item.preview);
@@ -1062,7 +1067,9 @@ export default function WekaTangazoPage() {
                       {item.error ? (
                         <button type="button" className="shot-cover" onClick={() => retry(item)}>Retry</button>
                       ) : (
-                        <span className="shot-ring" />
+                        <span className="shot-progress">
+                          <JengoLoader size={32} progress={item.progress} showValue />
+                        </span>
                       )}
                     </div>
                   ))}
@@ -1208,7 +1215,7 @@ export default function WekaTangazoPage() {
             <button type="button" className="btn-primary" disabled={!stepValid} onClick={forward}>{t("wizard.next")}</button>
           ) : (
             <button type="button" className="btn-primary inline-flex items-center justify-center gap-2" disabled={loading} onClick={publish}>
-              {loading ? <Loader2 size={18} className="animate-spin" /> : null}
+              {loading ? <JengoLoader size={18} /> : null}
               {t("wizard.publish")}
             </button>
           )}

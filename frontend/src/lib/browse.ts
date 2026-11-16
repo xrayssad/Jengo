@@ -145,6 +145,20 @@ export function shortPlace(item: Listing): string {
   return parts.slice(0, 2).join(", ");
 }
 
+export function regionSlug(name: string) {
+  return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+export function regionFromParam(param: string, regions: readonly string[]) {
+  const raw = param.trim().toLowerCase();
+  if (!raw || raw === "all") return "all";
+  if (raw === "near") return "near";
+  const slug = regionSlug(raw);
+  const hit = regions.find((name) => regionSlug(name) === slug || name.toLowerCase() === raw);
+  if (hit) return hit;
+  return raw.replace(/-/g, " ");
+}
+
 export function regionsFor(items: Listing[]): string[] {
   const known = REGIONS.map((region) => region.toLowerCase());
   const extra: string[] = [];

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clapperboard, Loader2 } from "lucide-react";
+import { ArrowLeft, Clapperboard } from "lucide-react";
+import JengoLoader from "@/components/JengoLoader";
 import AuthGate from "@/components/AuthGate";
 import { createReel, REEL_MAX_BYTES, uploadReelVideo } from "@/lib/api";
 import { armReelVideo } from "@/lib/reelsMedia";
@@ -136,19 +137,8 @@ export default function NewReelPage() {
             <p className="text-[11px] mt-1" style={{ color: "var(--muted)" }}>{caption.length}/240</p>
           </div>
           {error ? <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p> : null}
-          {busy ? (
-            <div className="space-y-2">
-              <div className="h-1.5 overflow-hidden rounded-full" style={{ backgroundColor: "rgba(var(--ink-rgb), 0.12)" }}>
-                <div
-                  className="h-full rounded-full"
-                  style={{ width: `${pct}%`, backgroundColor: "var(--ink)", transition: "width 0.2s ease" }}
-                />
-              </div>
-              <p className="text-sm font-semibold" style={{ color: "var(--ink)" }}>Uploading {pct}%</p>
-            </div>
-          ) : null}
           <button type="button" disabled={busy} onClick={submit} className="btn-primary w-full py-4 text-sm">
-            {busy ? <span className="inline-flex items-center gap-2"><Loader2 size={16} className="animate-spin" /> Uploading {pct}%</span> : "Post reel"}
+            {busy ? <span className="inline-flex items-center gap-2"><JengoLoader size={22} progress={pct} showValue /> Uploading</span> : "Post reel"}
           </button>
         </div>
       </main>

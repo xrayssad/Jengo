@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react";
 import { afterAuthPath, register as apiRegister, startGoogle } from "@/lib/api";
 import { markIntroPending } from "@/lib/intro";
+import Brand from "@/components/Brand";
 import SignedInHome from "@/components/SignedInHome";
 
 const slides = [
@@ -94,7 +95,7 @@ export default function RegisterPage() {
       </div>
       <div className="px-5 -mt-14 relative z-10 pb-12">
         <div className="sheet max-w-sm mx-auto p-6 fade-up">
-          <p className="text-[12px] font-semibold" style={{ color: "var(--mocha)" }}>Jengo</p>
+          <Brand variant="wordmark" size={32} />
           <h1 className="text-[36px] font-bold leading-[1.05] tracking-tight mb-2" style={{ color: "var(--ink)" }}>Create account</h1>
           <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>Sign up with email. We send an 8-digit code there.</p>
           <form onSubmit={handleSubmit} className="space-y-4">

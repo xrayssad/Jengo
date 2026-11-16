@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import JengoLogo from "@/components/JengoLogo";
 import { fetchListings, peekListings } from "@/lib/api";
 import { isLiteDevice } from "@/lib/device";
 import { clearIntroPending, introPending, introShouldPlay } from "@/lib/intro";
@@ -12,16 +13,28 @@ const LINES = ["splash.line1", "splash.line2", "splash.line3"] as const;
 function finish() {
   clearIntroPending();
   document.documentElement.dataset.splash = "off";
+  document.documentElement.dataset.intro = "0";
+}
+
+function hideBoot(fade: boolean) {
+  const root = document.documentElement;
+  if (!fade) {
+    root.dataset.boot = "gone";
+    return;
+  }
+  root.dataset.boot = "fade";
+  window.setTimeout(() => {
+    root.dataset.boot = "gone";
+  }, 220);
 }
 
 export default function Splash() {
   const t = useT();
   const [phase, setPhase] = useState<"off" | "in" | "out">("off");
-  const [progress, setProgress] = useState(0);
-  const [line, setLine] = useState(0);
   const [canSkip, setCanSkip] = useState(false);
   const [reduce, setReduce] = useState(false);
   const [lite, setLite] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const stop = useRef(false);
   const playing = useRef(false);
 
@@ -37,19 +50,22 @@ export default function Splash() {
         img.src = url;
       }
     });
-    void document.fonts?.ready;
     return () => {
       cancelled = true;
     };
   }, []);
 
-  useEffect(() => {
-    let frame = 0;
+  useLayoutEffect(() => {
+    document.documentElement.dataset.app = "1";
+    let endTimer = 0;
+    let skipTimer = 0;
+
     const play = () => {
       if (playing.current) return;
       if (!introShouldPlay() && document.documentElement.dataset.splash !== "on") {
         finish();
         setPhase("off");
+        hideBoot(true);
         return;
       }
       const motion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -57,33 +73,17 @@ export default function Splash() {
       stop.current = false;
       setReduce(motion);
       setLite(isLiteDevice());
-      setProgress(0);
-      setLine(0);
-      setCanSkip(false);
+      setCanSkip(motion);
       setPhase("in");
       document.documentElement.dataset.splash = "on";
       const duration = motion ? 1500 : INTRO_DURATION_MS;
-      const started = performance.now();
-      const tick = (now: number) => {
+      endTimer = window.setTimeout(() => {
         if (stop.current) return;
-        const elapsed = now - started;
-        setProgress(Math.max(0, Math.min(1, elapsed / duration)));
-        if (!motion) {
-          if (elapsed < 2800) setLine(0);
-          else if (elapsed < 4400) setLine(1);
-          else setLine(2);
-          if (INTRO_SKIPPABLE && elapsed >= INTRO_SKIP_AFTER_MS) setCanSkip(true);
-          if (elapsed >= duration - 300) setPhase("out");
-        }
-        if (elapsed >= duration) {
-          playing.current = false;
-          finish();
-          setPhase("off");
-          return;
-        }
-        frame = requestAnimationFrame(tick);
-      };
-      frame = requestAnimationFrame(tick);
+        playing.current = false;
+        finish();
+        setPhase("off");
+      }, duration);
+      skipTimer = window.setTimeout(() => setCanSkip(true), motion ? 0 : INTRO_SKIP_AFTER_MS);
     };
 
     play();
@@ -94,10 +94,30 @@ export default function Splash() {
     return () => {
       stop.current = true;
       playing.current = false;
-      cancelAnimationFrame(frame);
+      window.clearTimeout(endTimer);
+      window.clearTimeout(skipTimer);
       window.removeEventListener("jengo-intro", onLogin);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (phase !== "in") return;
+    document.documentElement.dataset.intro = "1";
+    hideBoot(false);
+    const root = rootRef.current;
+    if (!root) return;
+    const seen = () => {
+      root.dataset.logo = "1";
+    };
+    root.addEventListener("animationstart", seen);
+    const forceTimer = window.setTimeout(() => {
+      if (root.dataset.logo !== "1") root.classList.add("is-forced");
+    }, 800);
+    return () => {
+      root.removeEventListener("animationstart", seen);
+      window.clearTimeout(forceTimer);
+    };
+  }, [phase]);
 
   const skip = () => {
     if (!canSkip && !reduce) return;
@@ -116,6 +136,7 @@ export default function Splash() {
 
   return (
     <div
+      ref={rootRef}
       className={["splash", phase === "out" ? "is-out" : "", reduce ? "is-static" : ""].filter(Boolean).join(" ")}
       role="dialog"
       aria-label="Jengo"
@@ -130,11 +151,15 @@ export default function Splash() {
           ))}
         </span>
       ) : null}
-      <p className="splash-logo">Jengo</p>
-      {reduce ? <p className="splash-tag">{t("splash.line1")}</p> : (
-        <p className="splash-tag" key={line}>{t(LINES[line])}</p>
-      )}
-      {INTRO_SKIPPABLE && canSkip ? (
+      <div className="splash-brand">
+        <JengoLogo variant="wordmark" size={78} animated={!reduce} title="Jengo" />
+      </div>
+      <div className="splash-tags">
+        {(reduce ? LINES.slice(0, 1) : LINES).map((key) => (
+          <p key={key} className="splash-tag">{t(key)}</p>
+        ))}
+      </div>
+      {INTRO_SKIPPABLE ? (
         <button
           type="button"
           className="splash-skip"
@@ -147,7 +172,7 @@ export default function Splash() {
         </button>
       ) : null}
       <span className="splash-progress" aria-hidden>
-        <span style={{ transform: `scaleX(${progress})` }} />
+        <span />
       </span>
     </div>
   );

@@ -3,7 +3,8 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send, CheckCircle2, Loader2 } from "lucide-react";
+import { ArrowLeft, Send, CheckCircle2 } from "lucide-react";
+import JengoLoader from "@/components/JengoLoader";
 import { createBooking, fetchListing, listingUnit, unitLabel, type Listing } from "@/lib/api";
 import { rememberBooking } from "@/lib/mine";
 import AppAlert, { AlertKind } from "@/components/AppAlert";
@@ -162,7 +163,7 @@ function TumaOmbiForm() {
           className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-sm"
           style={{ opacity: loading ? 0.7 : 1 }}
         >
-          {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
+          {loading ? <JengoLoader size={18} /> : <Send size={18} />}
           {loading ? "Sending..." : "Send request"}
         </button>
       </div>
@@ -183,7 +184,7 @@ export default function TumaOmbiPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--paper)" }}>
-        <Loader2 size={28} color="var(--mocha)" className="animate-spin" />
+        <JengoLoader variant="full" size={56} />
       </div>
     }>
       <AuthGate>

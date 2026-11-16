@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ImageIcon } from "lucide-react";
+import JengoLogo from "@/components/JengoLogo";
 import { sizedImage } from "@/lib/images";
 
 const loadedUrls = new Set<string>();
@@ -83,7 +83,7 @@ export default function ListingPhoto({
   if (!src || failed) {
     return (
       <div className="market-photo-empty">
-        <ImageIcon size={28} strokeWidth={1.6} aria-hidden />
+        <JengoLogo variant="mark" size={28} title="" />
       </div>
     );
   }

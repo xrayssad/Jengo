@@ -93,7 +93,21 @@ function SearchInner() {
       </header>
 
       <div className="canvas px-4 pt-6">
-        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} onRefresh={() => { void refresh(); }} />
+        <ListingBrowse
+          items={items}
+          loading={loading}
+          error={error}
+          pending={pending}
+          stale={stale}
+          query={debounced}
+          scope={category ? filters.find((item) => item.id === category)?.label || "" : ""}
+          onClear={() => {
+            setQuery("");
+            setDebounced("");
+            setCategory("");
+          }}
+          onRefresh={() => { void refresh(); }}
+        />
       </div>
     </main>
   );
