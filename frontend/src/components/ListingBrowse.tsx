@@ -28,7 +28,8 @@ import {
   type SortKey,
   type ViewMode,
 } from "@/lib/browse";
-import { categoryConfig } from "@/lib/categories.config";
+import { CATEGORIES, categoryConfig } from "@/lib/categories.config";
+import { rankListings, stickOrder } from "@/lib/productSearch";
 import { readFit } from "@/lib/pricing";
 import { VERIFIED_FIRST_SORT } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
@@ -52,6 +53,7 @@ export default function ListingBrowse({
   query = "",
   scope = "",
   onClear,
+  onQuery,
 }: {
   items: Listing[];
   loading?: boolean;
@@ -65,6 +67,7 @@ export default function ListingBrowse({
   query?: string;
   scope?: string;
   onClear?: () => void;
+  onQuery?: (next: string) => void;
 }) {
   const t = useT();
   const path = usePathname() || "/";
@@ -85,6 +88,7 @@ export default function ListingBrowse({
   const [fading, setFading] = useState(false);
   const [showTop, setShowTop] = useState(false);
   const [booted, setBooted] = useState(false);
+  const [regionEpoch, setRegionEpoch] = useState(0);
   const ready = useRef(false);
   const fadeTimer = useRef<number | null>(null);
   const seenRoute = useRef("");
@@ -270,25 +274,71 @@ export default function ListingBrowse({
     if (fadeTimer.current != null) window.clearTimeout(fadeTimer.current);
   }, []);
 
-  const shown = useMemo(() => {
-    let next = items;
-    if (region === "near" && near) next = nearListings(next, near);
-    else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
-    if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
-    if (fitFilters.includes("direct")) next = next.filter((item) => readFit(item).direct_owner);
-    if (fitFilters.includes("free_viewing")) next = next.filter((item) => readFit(item).free_viewing);
-    if (fitFilters.includes("costs")) next = next.filter((item) => readFit(item).costs_confirmed);
-    if (fitFilters.includes("self")) next = next.filter((item) => readFit(item).room_type === "self");
-    if (fitFilters.includes("power")) next = next.filter((item) => Boolean(readFit(item).power_backup));
-    if (fitFilters.includes("wifi")) {
-      next = next.filter((item) => (readFit(item).amenities || []).some((name) => /wi-?fi/i.test(name)));
+  const queryText = query.trim();
+  const orderRef = useRef<{ q: string; exact: string[]; related: string[] } | null>(null);
+  const categoryChoices = useMemo(
+    () => Object.values(CATEGORIES).map((item) => ({ id: item.id, label: `${item.en} ${item.sw}` })),
+    [],
+  );
+  const rankedFresh = useMemo(
+    () => (queryText ? rankListings(items, queryText, { origin: near, categories: categoryChoices }) : null),
+    [items, queryText, near, categoryChoices],
+  );
+  const ranked = useMemo(() => {
+    if (!rankedFresh || !queryText) return null;
+    const prev = orderRef.current;
+    const same = prev?.q === queryText;
+    return {
+      exact: stickOrder(same ? prev.exact : null, rankedFresh.exact),
+      related: stickOrder(same ? prev.related : null, rankedFresh.related),
+      correction: rankedFresh.correction,
+    };
+  }, [rankedFresh, queryText]);
+  useEffect(() => {
+    if (!ranked || !queryText) {
+      orderRef.current = null;
+      return;
     }
-    if (region === "near" && near && sort === "new") return next;
-    return sortListings(next, sort === "featured" && !featured ? "new" : sort);
-  }, [items, region, near, sort, featured, verifiedOnly, fitFilters]);
+    orderRef.current = {
+      q: queryText,
+      exact: ranked.exact.map((item) => item.id),
+      related: ranked.related.map((item) => item.id),
+    };
+  }, [ranked, queryText]);
+
+  const narrowed = useMemo(() => {
+    const apply = (list: Listing[]) => {
+      let next = list;
+      if (region === "near" && near) next = nearListings(next, near);
+      else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
+      if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
+      if (fitFilters.includes("direct")) next = next.filter((item) => readFit(item).direct_owner);
+      if (fitFilters.includes("free_viewing")) next = next.filter((item) => readFit(item).free_viewing);
+      if (fitFilters.includes("costs")) next = next.filter((item) => readFit(item).costs_confirmed);
+      if (fitFilters.includes("self")) next = next.filter((item) => readFit(item).room_type === "self");
+      if (fitFilters.includes("power")) next = next.filter((item) => Boolean(readFit(item).power_backup));
+      if (fitFilters.includes("wifi")) {
+        next = next.filter((item) => (readFit(item).amenities || []).some((name) => /wi-?fi/i.test(name)));
+      }
+      return next;
+    };
+    if (!ranked) {
+      const next = apply(items);
+      if (region === "near" && near && sort === "new") return { shown: next, related: [] as Listing[], loose: false };
+      return { shown: sortListings(next, sort === "featured" && !featured ? "new" : sort), related: [] as Listing[], loose: false };
+    }
+    const exact = apply(ranked.exact);
+    const related = apply(ranked.related).filter((item) => !exact.some((row) => row.id === item.id));
+    const loose = exact.length === 0 && related.length > 0;
+    const base = exact.length ? exact : related;
+    const shown = sort === "new" ? base : sortListings(base, sort === "featured" && !featured ? "new" : sort);
+    return { shown, related: exact.length ? related.slice(0, 6) : [], loose };
+  }, [items, ranked, region, near, sort, featured, verifiedOnly, fitFilters]);
+  const shown = narrowed.shown;
+  const relatedShown = narrowed.related;
+  const loose = narrowed.loose;
 
   const listIds = useMemo(() => shown.map((item) => item.id), [shown]);
-  const queryText = query.trim();
   const userFiltered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0 || Boolean(queryText);
   const summaryLabel = region === "near"
     ? t("near")
@@ -381,10 +431,14 @@ export default function ListingBrowse({
     if (urlReady.current) window.history.pushState(state, "", nextUrl);
     else window.history.replaceState(state, "", nextUrl);
     urlReady.current = true;
-  }, [booted, region]);
+  }, [booted, region, regionEpoch]);
 
   useEffect(() => {
     const onPop = () => {
+      if (document.documentElement.dataset.searchOverlay === "1") {
+        setRegionEpoch((n) => n + 1);
+        return;
+      }
       const param = new URLSearchParams(window.location.search).get("region") || "";
       const next = param ? regionFromParam(param, regionsRef.current) : "all";
       fromHistory.current = true;
@@ -418,6 +472,18 @@ export default function ListingBrowse({
   const resetFilters = () => {
     clearBrowse();
     onClear?.();
+  };
+
+  const saveNotify = () => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("jengo_saved_searches") || "[]") as { q?: string }[];
+      const row = { path: `${path}${window.location.search}`, q: queryText, notify: true, at: new Date().toISOString() };
+      const next = [row, ...saved.filter((item) => item.q !== queryText)].slice(0, 8);
+      localStorage.setItem("jengo_saved_searches", JSON.stringify(next));
+    } catch {
+      /* keep the confirmation even if storage is blocked */
+    }
+    setToast(t("search.saved"));
   };
 
   const pickRegion = (next: string) => {
@@ -455,6 +521,30 @@ export default function ListingBrowse({
       { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 },
     );
   };
+
+  useEffect(() => {
+    const onRegion = (event: Event) => {
+      const next = String((event as CustomEvent<string>).detail || "");
+      if (!next || next === "near") return;
+      if (next === "all") {
+        setRegion("all");
+        setNear(null);
+        setSort("new");
+        setVerifiedOnly(false);
+        setFitFilters([]);
+        return;
+      }
+      setRegion(next);
+      setNear(null);
+    };
+    const onNear = () => locate();
+    window.addEventListener("jengo-region", onRegion);
+    window.addEventListener("jengo-near", onNear);
+    return () => {
+      window.removeEventListener("jengo-region", onRegion);
+      window.removeEventListener("jengo-near", onNear);
+    };
+  }, [locate]);
 
   const regionLabel = region !== "all" && region !== "near" ? region : (queryText || scope || summaryLabel);
   const showSummary = userFiltered || Boolean(scope);
@@ -523,7 +613,11 @@ export default function ListingBrowse({
       ) : null}
       {showSummary ? (
         <div className="browse-summary">
-          <p>{summaryLabel} - {shown.length} {t("listings")}</p>
+          <p>
+            {queryText
+              ? `${t("search.results", { query: queryText })} - ${shown.length}`
+              : `${summaryLabel} - ${shown.length} ${t("listings")}`}
+          </p>
           <button type="button" onClick={resetFilters}>{t("filter.clear")}</button>
         </div>
       ) : null}
@@ -590,12 +684,28 @@ export default function ListingBrowse({
               <JengoLogo variant="mark" size={32} title="" />
             </span>
             <p className="lead">
-              {region === "near" ? t("empty.near") : region !== "all" ? t("empty.region", { region: regionLabel }) : t("empty.all")}
+              {queryText
+                ? t("search.none", { query: queryText })
+                : region === "near"
+                  ? t("empty.near")
+                  : region !== "all"
+                    ? t("empty.region", { region: regionLabel })
+                    : t("empty.all")}
             </p>
+            {queryText && ranked?.correction ? (
+              <button type="button" className="btn-secondary browse-empty-btn" onClick={() => onQuery?.(ranked.correction || "")}>
+                {t("search.didYouMean", { term: ranked.correction })}
+              </button>
+            ) : null}
             <div className="browse-empty-actions">
+              {queryText ? (
+                <button type="button" className="btn-secondary browse-empty-btn" onClick={saveNotify}>
+                  {t("search.saveNotify")}
+                </button>
+              ) : null}
               {showSummary ? (
                 <button type="button" className="btn-secondary browse-empty-btn" onClick={resetFilters}>
-                  {t("clear")}
+                  {t("filter.clear")}
                 </button>
               ) : null}
               <Link href="/weka-tangazo" className="btn-primary browse-empty-btn">
@@ -604,6 +714,16 @@ export default function ListingBrowse({
             </div>
           </div>
         )}
+        {loose ? (
+          <div className="search-note">
+            <p>{t("search.loose", { query: queryText })}</p>
+            {ranked?.correction ? (
+              <button type="button" onClick={() => onQuery?.(ranked.correction || "")}>
+                {t("search.didYouMean", { term: ranked.correction })}
+              </button>
+            ) : null}
+          </div>
+        ) : null}
         {shown.length > 0 && (
           <div className={view === "large" ? "listing-grid is-large" : "listing-grid"}>
             {shown.map((item, i) => (
@@ -619,6 +739,16 @@ export default function ListingBrowse({
             ))}
           </div>
         )}
+        {relatedShown.length > 0 ? (
+          <section className="search-related">
+            <h2>{t("search.related")}</h2>
+            <div className={view === "large" ? "listing-grid is-large" : "listing-grid"}>
+              {relatedShown.map((item) => (
+                <ListingCard key={item.id} item={item} layout={view} listIds={relatedShown.map((row) => row.id)} />
+              ))}
+            </div>
+          </section>
+        ) : null}
       </div>
 
       {sheet && (

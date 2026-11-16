@@ -6,6 +6,7 @@ import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
 import { SHOW_LANDING_PAGE } from "@/lib/productFlags";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";
+import { InstallProvider } from "./InstallUI";
 import MqttInbox from "./MqttInbox";
 import Splash from "./Splash";
 import VerificationNotice from "./VerificationNotice";
@@ -37,12 +38,22 @@ function fullBleed(path: string) {
 
 function AppShellInner({ children }: { children: React.ReactNode }) {
   const path = usePathname() || "";
-  const show = !hideNav(path);
+  const showNav = !hideNav(path);
   const [holdSpace, setHoldSpace] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const show = showNav && !searching;
 
   useLayoutEffect(() => {
     if (path === "/" && !SHOW_LANDING_PAGE) window.location.replace("/home");
   }, [path]);
+
+  useLayoutEffect(() => {
+    const sync = () => setSearching(document.documentElement.dataset.searchOverlay === "1");
+    sync();
+    const obs = new MutationObserver(sync);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-search-overlay"] });
+    return () => obs.disconnect();
+  }, []);
 
   useLayoutEffect(() => {
     const sync = () => setHoldSpace(document.documentElement.dataset.detailOverlay === "1");
@@ -79,13 +90,15 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   }, [path]);
 
   return (
-    <MqttInbox>
-      <Splash />
-      <VerificationNotice />
-      {children}
-      {(show || holdSpace || path.startsWith("/tangazo/")) && !fullBleed(path) ? <div aria-hidden className="nav-spacer" /> : null}
-      <BottomNav hidden={!show} />
-    </MqttInbox>
+    <InstallProvider>
+      <MqttInbox>
+        <Splash />
+        <VerificationNotice />
+        {children}
+        {(show || holdSpace || path.startsWith("/tangazo/")) && !fullBleed(path) ? <div aria-hidden className="nav-spacer" /> : null}
+        <BottomNav hidden={!show} />
+      </MqttInbox>
+    </InstallProvider>
   );
 }
 

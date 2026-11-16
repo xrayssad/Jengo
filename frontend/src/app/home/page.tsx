@@ -2,22 +2,23 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import FreshRail from "@/components/FreshRail";
 import HeroCarousel from "@/components/HeroCarousel";
 import PromoBanner from "@/components/PromoBanner";
 import {
-  Menu, Search, User, Send, Clapperboard, Bookmark, Settings, X,
+  Menu, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
-  Home, Warehouse, Building2, Store, Boxes, SlidersHorizontal,
+  Home, Warehouse, Building2, Store, Boxes,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import Brand from "@/components/Brand";
 import { LangCircle, LangDrawer, ThemeCircle } from "@/components/HeaderTools";
+import { InstallMenuItem } from "@/components/InstallUI";
 import ListingBrowse from "@/components/ListingBrowse";
+import ProductSearch from "@/components/ProductSearch";
 import ThemeToggle from "@/components/ThemeToggle";
 import { InboxLink } from "@/components/MqttInbox";
-import { clearAuth, fetchListings, suggestPlaces, writeHomeListingsCache, type PlaceHit } from "@/lib/api";
+import { clearAuth, fetchListings, writeHomeListingsCache, type Listing } from "@/lib/api";
 import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 import { usePersistentScroll } from "@/lib/listSession";
@@ -49,25 +50,60 @@ const sideLinks = [
 if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 });
 
 export default function HomePage() {
-  const router = useRouter();
   const t = useT();
   const [open, setOpen] = useState(false);
-  const [placeQ, setPlaceQ] = useState("");
-  const [hits, setHits] = useState<PlaceHit[]>([]);
-  const [openHits, setOpenHits] = useState(false);
-  const searchBox = useRef<HTMLFormElement>(null);
+  const [query, setQuery] = useState<string | null>(null);
+  const pendingQuery = useRef<string | null>(null);
+  const [pool, setPool] = useState<Listing[] | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const { items, setItems, loading: waiting, error, pending, stale, refresh, version } = useListings({ status: "active", limit: 40 });
   const [scrolled, setScrolled] = useState(false);
 
-  const goSearch = (q: string) => {
-    const next = q.split(",")[0].trim() || q.trim();
-    if (!next) return;
-    setOpenHits(false);
-    router.push(`/search?q=${encodeURIComponent(next)}`);
-  };
-
   usePersistentScroll("cats", railRef, true);
+
+  useEffect(() => {
+    setQuery(new URLSearchParams(window.location.search).get("q") || "");
+    const onPop = () => {
+      if (pendingQuery.current !== null) {
+        const next = pendingQuery.current;
+        pendingQuery.current = null;
+        const url = new URL(window.location.href);
+        if (next) url.searchParams.set("q", next);
+        else url.searchParams.delete("q");
+        window.history.replaceState(window.history.state, "", `${url.pathname}${url.search}`);
+        setQuery(next);
+        return;
+      }
+      setQuery(new URLSearchParams(window.location.search).get("q") || "");
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  useEffect(() => {
+    if (query === null) return;
+    const url = new URL(window.location.href);
+    if (query) url.searchParams.set("q", query);
+    else url.searchParams.delete("q");
+    const next = `${url.pathname}${url.search}`;
+    if (next !== `${window.location.pathname}${window.location.search}`) {
+      window.history.replaceState(window.history.state, "", next);
+    }
+  }, [query]);
+
+  useEffect(() => {
+    let gone = false;
+    fetchListings({ status: "active", limit: 100 })
+      .then((res) => {
+        if (!gone) setPool(res.items || []);
+      })
+      .catch(() => {
+        if (!gone) setPool([]);
+      });
+    return () => {
+      gone = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (document.documentElement.dataset.detailOverlay === "1") return;
@@ -77,31 +113,6 @@ export default function HomePage() {
       document.body.style.overflow = "";
     };
   }, [open]);
-
-  useEffect(() => {
-    const q = placeQ.trim();
-    if (q.length < 2) {
-      setHits([]);
-      return;
-    }
-    const t = window.setTimeout(() => {
-      suggestPlaces(q)
-        .then((res) => {
-          setHits(res.items || []);
-          setOpenHits(true);
-        })
-        .catch(() => setHits([]));
-    }, 260);
-    return () => window.clearTimeout(t);
-  }, [placeQ]);
-
-  useEffect(() => {
-    const hide = (e: MouseEvent) => {
-      if (!searchBox.current?.contains(e.target as Node)) setOpenHits(false);
-    };
-    document.addEventListener("mousedown", hide);
-    return () => document.removeEventListener("mousedown", hide);
-  }, []);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -176,6 +187,7 @@ export default function HomePage() {
               </Link>
             );
           })}
+          <InstallMenuItem />
           <div className="flex mx-3 mt-2 mb-2 px-3 py-3" style={{ color: "var(--gold)" }}>
             <ThemeToggle dense />
           </div>
@@ -202,50 +214,21 @@ export default function HomePage() {
             })}
           </h2>
 
-          <div className="home-search-row">
-            <form
-              ref={searchBox}
-              action="/search"
-              onSubmit={(e) => {
-                e.preventDefault();
-                goSearch(placeQ);
-              }}
-              className="home-search-form"
-            >
-              <div className="search-field home-search">
-                <Search size={18} color="var(--muted)" />
-                <input
-                  name="q"
-                  value={placeQ}
-                  onChange={(e) => setPlaceQ(e.target.value)}
-                  onFocus={() => hits.length && setOpenHits(true)}
-                  placeholder="City or street"
-                  className="flex-1 bg-transparent outline-none text-[15px] min-w-0"
-                  style={{ color: "var(--text)" }}
-                  autoComplete="off"
-                  aria-label="Search by city or street"
-                />
-              </div>
-              {openHits && hits.length > 0 && (
-                <div className="absolute z-20 left-0 right-0 mt-2 overflow-hidden sheet" style={{ borderRadius: 22 }}>
-                  {hits.map((h) => (
-                    <button
-                      key={`${h.label}-${h.place_id || h.lat}`}
-                      type="button"
-                      onClick={() => goSearch(h.label || h.city || "")}
-                      className="block w-full text-left px-4 py-2.5 text-sm"
-                      style={{ color: "var(--text)", borderBottom: "1px solid rgba(var(--mocha-rgb),0.14)" }}
-                    >
-                      {h.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </form>
-            <Link href="/search" className="home-filter" aria-label="Filters">
-              <SlidersHorizontal size={18} color="currentColor" />
-            </Link>
-          </div>
+          <ProductSearch
+            query={query || ""}
+            listings={pool?.length ? pool : items}
+            loading={waiting && items.length === 0 && !pool}
+            onSearch={(next) => {
+              if (document.documentElement.dataset.searchOverlay === "1") pendingQuery.current = next;
+              setQuery(next);
+            }}
+            onRegion={(name) => {
+              pendingQuery.current = "";
+              setQuery("");
+              if (name === "near") window.dispatchEvent(new Event("jengo-near"));
+              else window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
+            }}
+          />
         </div>
         </div>
 
@@ -265,11 +248,14 @@ export default function HomePage() {
 
         <div className="home-pad">
           <ListingBrowse
-            items={items}
+            items={query ? (pool?.length ? pool : items) : items}
             loading={waiting}
             error={error}
             pending={pending}
             stale={stale}
+            query={query || ""}
+            onQuery={setQuery}
+            onClear={() => setQuery("")}
             onRefresh={() => { void refresh(); }}
             beforeFeed={
               <>

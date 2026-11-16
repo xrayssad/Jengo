@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, Store, Warehouse } from "lucide-react";
 import JengoLoader from "@/components/JengoLoader";
+import { queueInstallNudge } from "@/lib/install";
 import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
 import { categoryConfig, photoMinimum } from "@/lib/categories.config";
 import { rememberListing } from "@/lib/mine";
@@ -599,6 +600,7 @@ export default function WekaTangazoPage() {
         /* ignore */
       }
       setDone(created);
+      queueInstallNudge("publish");
     } catch {
       setFailed(true);
       lock.current = false;

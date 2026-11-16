@@ -12,6 +12,7 @@ import AuthGate from "@/components/AuthGate";
 import AdminLink from "@/components/AdminLink";
 import ReportImpersonation from "@/components/ReportImpersonation";
 import VerifiedBadge from "@/components/VerifiedBadge";
+import { InstallMenuItem } from "@/components/InstallUI";
 import { ProfileSkeleton } from "@/components/Skeletons";
 import { useT } from "@/lib/i18n";
 import { fetchVerificationMe } from "@/lib/trust";
@@ -108,6 +109,7 @@ export default function ProfilePage() {
           <AdminLink />
         </div>
 
+        <InstallMenuItem variant="profile" />
         <div className="sheet overflow-hidden">
           {menuItems.map((item, i) => {
             const Icon = item.icon;

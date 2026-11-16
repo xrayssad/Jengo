@@ -31,8 +31,7 @@ function SearchInner() {
   const { items, loading, error, pending, stale, refresh } = useListings({
     status: "active",
     category: category || undefined,
-    q: debounced || undefined,
-    limit: 40,
+    limit: 100,
   });
 
   useEffect(() => {
@@ -41,7 +40,7 @@ function SearchInner() {
   }, [initialQ, initialCat]);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebounced(query.trim()), 300);
+    const t = setTimeout(() => setDebounced(query.trim()), 200);
     return () => clearTimeout(t);
   }, [query]);
 
@@ -61,9 +60,14 @@ function SearchInner() {
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="City or street"
-              autoFocus
-              aria-label="Search by city or street"
+              placeholder={t("search.placeholder")}
+              aria-label={t("search.placeholder")}
+              inputMode="search"
+              enterKeyHint="search"
+              autoCapitalize="off"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
               className="flex-1 bg-transparent text-[15px] outline-none"
               style={{ color: "var(--ink)" }}
             />
@@ -101,6 +105,7 @@ function SearchInner() {
           stale={stale}
           query={debounced}
           scope={category ? filters.find((item) => item.id === category)?.label || "" : ""}
+          onQuery={setQuery}
           onClear={() => {
             setQuery("");
             setDebounced("");

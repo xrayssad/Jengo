@@ -1,4 +1,5 @@
 import type { Listing, Reel } from "@/lib/api";
+import { queueInstallNudge } from "@/lib/install";
 
 const LIKED = "jengo_liked_ids";
 const SAVED = "jengo_saved_posts";
@@ -82,8 +83,10 @@ export function toggleSavedReel(item: Reel): boolean {
 function writeSaved(item: SavedPost): boolean {
   const cur = readJson<SavedPost[]>(SAVED, []);
   const exists = cur.some((p) => p.id === item.id);
+  const firstListing = !exists && cur.length === 0 && item.kind !== "reel";
   const next = exists ? cur.filter((p) => p.id !== item.id) : [item, ...cur];
   localStorage.setItem(SAVED, JSON.stringify(next.slice(0, 200)));
+  if (firstListing) queueInstallNudge("save");
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("jengo-saved"));
   }
