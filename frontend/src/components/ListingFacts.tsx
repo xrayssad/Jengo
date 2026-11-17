@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MapPin } from "lucide-react";
 import { decideStay, decideViewing, formatPrice, getAuthUser, listStays, listViewings, needsLogin, quoteStayApi, redirectToLogin, requestStay, requestStorage, requestViewing, reviewEligibility, setAvailability, writeReview, type Listing } from "@/lib/api";
 import { canonicalCategory } from "@/lib/categories.config";
 import { categoryConfig } from "@/lib/categories.config";
@@ -152,7 +153,7 @@ export default function ListingFacts({ item }: { item: Listing }) {
         fit.license_note && `${t("fit.license")}: ${fit.license_note}`,
       ].filter(Boolean).map((line) => <p key={String(line)} className="fit-note">{line}</p>)}
       <div className="fit-actions">
-        <a className="btn-secondary" href={map} target="_blank" rel="noreferrer">{t("fit.maps")}</a>
+        <a className="btn-secondary" href={map} target="_blank" rel="noreferrer"><MapPin size={16} aria-hidden />{t("fit.maps")}</a>
         {wa ? (
           <a className="btn-secondary" href={`https://wa.me/${waNumber(wa)}?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">
             {t("fit.shareLoc")}

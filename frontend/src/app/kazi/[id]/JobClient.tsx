@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Hammer, MapPin } from "lucide-react";
-import JengoLoader from "@/components/JengoLoader";
 import AppAlert, { type AlertKind } from "@/components/AppAlert";
 import PhotoGallery from "@/components/PhotoGallery";
 import { awardJob, createJobOffer, fetchJob, formatPrice, getAuthUser, rememberReturn, type Job, type JobOffer } from "@/lib/api";
@@ -134,8 +133,11 @@ export default function JobClient({ id }: { id: string }) {
 
       <div className="canvas-read px-5 pt-6 space-y-4">
         {loading && (
-          <div className="flex justify-center py-16">
-            <JengoLoader size={40} />
+          <div aria-busy="true" aria-label="Loading">
+            <span className="skel-bone block h-52 w-full rounded-[28px]" />
+            <span className="skel-bone mt-4 block h-6 w-2/3 rounded-full" />
+            <span className="skel-bone mt-3 block h-4 w-full rounded-full" />
+            <span className="skel-bone mt-3 block h-4 w-4/5 rounded-full" />
           </div>
         )}
         {!loading && error && (

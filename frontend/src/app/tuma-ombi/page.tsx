@@ -183,8 +183,11 @@ function TumaOmbiForm() {
 export default function TumaOmbiPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: "var(--paper)" }}>
-        <JengoLoader variant="full" size={56} />
+      <div className="canvas-read px-5 pt-8" aria-busy="true" aria-label="Loading" style={{ backgroundColor: "var(--paper)" }}>
+        <span className="skel-bone block h-8 w-40 rounded-full" />
+        <span className="skel-bone mt-4 block h-14 w-full rounded-[28px]" />
+        <span className="skel-bone mt-3 block h-14 w-full rounded-[28px]" />
+        <span className="skel-bone mt-3 block h-28 w-full rounded-[28px]" />
       </div>
     }>
       <AuthGate>
