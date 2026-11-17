@@ -124,7 +124,15 @@ export type QueueItem = {
   status: string;
   reason_code?: string | null;
   flagged?: boolean;
+  face_check?: FaceCheck | null;
   submitted_at?: string;
+};
+
+export type FaceCheck = {
+  verdict: "match" | "mismatch" | "unsure" | "unavailable";
+  confidence: number;
+  document_seen: string;
+  reasons: string[];
 };
 
 export async function fetchVerificationQueue(status = "pending") {
@@ -137,6 +145,7 @@ export type ReviewDetail = {
   expires_in: number;
   profile_name?: string | null;
   profile_username?: string | null;
+  face_check?: FaceCheck | null;
   name_match: boolean;
   is_verified: boolean;
   verified_type: VerifiedType;
@@ -148,7 +157,7 @@ export async function fetchVerificationDetail(id: string) {
   return apiSend<ReviewDetail>(`/admin/verification/${id}`);
 }
 
-export async function decideVerification(id: string, body: { action: "approve" | "reject"; reason_code?: string; note: string }) {
+export async function decideVerification(id: string, body: { action: "approve" | "reject"; reason_code?: string; note: string; confirm_face?: boolean }) {
   return apiSend(`/admin/verification/${id}/decision`, { method: "POST", body: JSON.stringify(body) });
 }
 

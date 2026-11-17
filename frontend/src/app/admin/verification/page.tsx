@@ -26,6 +26,7 @@ function Desk() {
   const [note, setNote] = useState("");
   const [reason, setReason] = useState<string>(REASONS[0]);
   const [checks, setChecks] = useState({ photo: false, doc: false, type: false });
+  const [confirmFace, setConfirmFace] = useState(false);
   const [grantNote, setGrantNote] = useState("");
   const [grantKind, setGrantKind] = useState<"individual" | "business">("individual");
   const [revokeNote, setRevokeNote] = useState("");
@@ -45,6 +46,7 @@ function Desk() {
     setError("");
     setNote("");
     setChecks({ photo: false, doc: false, type: false });
+    setConfirmFace(false);
     try {
       setDetail(await fetchVerificationDetail(id));
     } catch (err) {
@@ -61,6 +63,7 @@ function Desk() {
         action,
         reason_code: action === "reject" ? reason : "",
         note: note.trim(),
+        confirm_face: confirmFace,
       });
       setDetail(null);
       await loadQueue();
@@ -102,7 +105,9 @@ function Desk() {
     }
   };
 
-  const canApprove = Boolean(detail?.name_match && checks.photo && checks.doc && checks.type && note.trim().length >= 3);
+  const face = detail?.face_check;
+  const faceBlocks = face?.verdict === "mismatch" && !confirmFace;
+  const canApprove = Boolean(detail?.name_match && checks.photo && checks.doc && checks.type && note.trim().length >= 3 && !faceBlocks);
 
   return (
     <main className="min-h-screen pb-10" style={{ backgroundColor: "var(--paper)", color: "var(--ink)" }}>
@@ -132,7 +137,10 @@ function Desk() {
               {items.map((item) => (
                 <button key={item.id} type="button" className="sheet w-full text-left p-4" onClick={() => void open(item.id)}>
                   <p className="text-sm font-semibold">{item.legal_name}</p>
-                  <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>{item.type} · {item.doc_type} · {item.status}</p>
+                  <p className="text-xs mt-1" style={{ color: "var(--muted)" }}>
+                    {item.type} · {item.doc_type} · {item.status}
+                    {item.face_check?.verdict ? ` · ${t(`review.face.${item.face_check.verdict}`)}` : ""}
+                  </p>
                 </button>
               ))}
             </div>
@@ -154,6 +162,22 @@ function Desk() {
               ))}
             </div>
             <p className="text-xs" style={{ color: "var(--muted)" }}>{detail.expires_in}s</p>
+            {face ? (
+              <div className="sheet p-4 space-y-2">
+                <p className="text-sm font-semibold">{t(`review.face.${face.verdict}`)}</p>
+                {face.reasons.length ? (
+                  <p className="text-xs" style={{ color: "var(--muted)" }}>
+                    {face.reasons.map((code) => t(`review.face.reason.${code}`)).join(" · ")}
+                  </p>
+                ) : null}
+                {face.verdict === "mismatch" ? (
+                  <label className="flex items-center gap-2 text-sm min-h-[44px]">
+                    <input type="checkbox" checked={confirmFace} onChange={(event) => setConfirmFace(event.target.checked)} />
+                    {t("review.face.confirm")}
+                  </label>
+                ) : null}
+              </div>
+            ) : null}
             <label className="flex items-center gap-2 text-sm min-h-[44px]">
               <input type="checkbox" checked={detail.name_match} readOnly disabled />
               {t("review.name")}

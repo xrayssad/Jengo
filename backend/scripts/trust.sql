@@ -49,6 +49,7 @@ create table if not exists public.verification_requests (
   reviewer_note text,
   reviewer uuid,
   flagged boolean not null default false,
+  face_check jsonb,
   submitted_at timestamptz not null default now(),
   decided_at timestamptz,
   delete_after timestamptz
@@ -59,6 +60,9 @@ create index if not exists verification_requests_status_idx
 
 create index if not exists verification_requests_fingerprint_idx
   on public.verification_requests (fingerprint);
+
+alter table public.verification_requests
+  add column if not exists face_check jsonb;
 
 create table if not exists public.verification_audit (
   id uuid primary key default gen_random_uuid(),

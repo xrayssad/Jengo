@@ -19,6 +19,7 @@ from uuid import uuid4
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from pydantic import BaseModel
 
+from app.face_check import compare_faces
 from app.security import (
     account_status,
     badge_public,
@@ -84,6 +85,7 @@ class DecisionIn(BaseModel):
     action: str
     reason_code: str = ""
     note: str = ""
+    confirm_face: bool = False
     model_config = {"extra": "ignore"}
 
 
@@ -354,6 +356,51 @@ def _sign_read(key: str | None) -> str | None:
     if not isinstance(payload, dict):
         payload = {}
     return payload.get("signedURL") or payload.get("signed_url") or payload.get("signedUrl")
+
+
+def _download_private(key: str | None) -> bytes:
+    if not key:
+        return b""
+    try:
+        blob = db().storage.from_(VERIFICATION_BUCKET).download(key)
+    except Exception:
+        return b""
+    if isinstance(blob, bytes):
+        return blob
+    data = getattr(blob, "data", None)
+    return data if isinstance(data, bytes) else b""
+
+
+def _public_face(raw) -> dict | None:
+    if not isinstance(raw, dict):
+        return None
+    verdict = raw.get("verdict") if raw.get("verdict") in {"match", "mismatch", "unsure", "unavailable"} else "unsure"
+    reasons = [code for code in (raw.get("reasons") or []) if isinstance(code, str)][:6]
+    try:
+        confidence = max(0.0, min(1.0, float(raw.get("confidence") or 0)))
+    except (TypeError, ValueError):
+        confidence = 0
+    return {
+        "verdict": verdict,
+        "confidence": round(confidence, 2),
+        "document_seen": raw.get("document_seen") if isinstance(raw.get("document_seen"), str) else "unknown",
+        "reasons": reasons,
+    }
+
+
+def _store_face_check(request_id: str, selfie_key: str | None, front_key: str | None, doc_type: str) -> dict | None:
+    """Compare the selfie with the document portrait and keep the verdict on the request."""
+    if not request_id or not selfie_key or not front_key:
+        return None
+    result = compare_faces(_download_private(selfie_key), _download_private(front_key), doc_type)
+    patch = {"face_check": result}
+    if result.get("verdict") == "mismatch":
+        patch["flagged"] = True
+    try:
+        db().table("verification_requests").update(patch).eq("id", request_id).execute()
+    except Exception:
+        _view_log.warning("face check could not be saved")
+    return _public_face(result)
 
 
 def _ensure_bucket() -> None:
@@ -745,6 +792,8 @@ def create_verification(body: VerificationIn, user=Depends(current_user)):
         raise HTTPException(status_code=503, detail="Verification storage is not ready")
     saved = (res.data or [row])[0]
     _audit(user.id, "reject" if flagged else "submit", saved.get("id"), actor=user.id, reason_code="duplicate" if flagged else "")
+    if not flagged and kind == "individual":
+        _store_face_check(str(saved.get("id") or ""), selfie, front, doc)
     if flagged:
         raise HTTPException(status_code=400, detail="We could not verify this document. Contact support if this is yours.")
     fresh = profile_of(user.id) or profile
@@ -757,18 +806,30 @@ def verification_queue(user=Depends(_admin), status: str = "pending"):
     allowed = {"pending", "approved", "rejected", "flagged"}
     if status not in allowed:
         status = "pending"
+    columns = "id,user_id,type,legal_name,doc_type,status,reason_code,flagged,face_check,submitted_at,decided_at"
     try:
-        query = db().table("verification_requests").select(
-            "id,user_id,type,legal_name,doc_type,status,reason_code,flagged,submitted_at,decided_at"
-        )
+        query = db().table("verification_requests").select(columns)
         if status == "flagged":
             query = query.eq("flagged", True)
         else:
             query = query.eq("status", status)
         res = query.order("submitted_at", desc=False).limit(80).execute()
     except Exception:
-        return {"items": []}
-    return {"items": res.data or []}
+        try:
+            query = db().table("verification_requests").select(columns.replace(",face_check", ""))
+            if status == "flagged":
+                query = query.eq("flagged", True)
+            else:
+                query = query.eq("status", status)
+            res = query.order("submitted_at", desc=False).limit(80).execute()
+        except Exception:
+            return {"items": []}
+    items = []
+    for item in res.data or []:
+        row = dict(item)
+        row["face_check"] = _public_face(row.get("face_check"))
+        items.append(row)
+    return {"items": items}
 
 
 @router.get("/admin/verification/{request_id}")
@@ -781,6 +842,13 @@ def verification_detail(request_id: str, user=Depends(_admin)):
     if not rows:
         raise HTTPException(status_code=404, detail="Request not found")
     row = dict(rows[0])
+    if row.get("status") == "pending" and not row.get("face_check") and row.get("selfie_key") and row.get("front_key"):
+        checked = _store_face_check(request_id, row.get("selfie_key"), row.get("front_key"), str(row.get("doc_type") or ""))
+        if checked:
+            row["face_check"] = checked
+            if checked.get("verdict") == "mismatch":
+                row["flagged"] = True
+    face = _public_face(row.get("face_check"))
     row.pop("fingerprint", None)
     profile = profile_of(str(row.get("user_id") or "")) or {}
     photos = {
@@ -806,7 +874,7 @@ def verification_detail(request_id: str, user=Depends(_admin)):
         trail = audit.data or []
     except Exception:
         trail = []
-    for key in ("front_key", "back_key", "selfie_key", "business_doc_key", "shop_key", "fingerprint"):
+    for key in ("front_key", "back_key", "selfie_key", "business_doc_key", "shop_key", "fingerprint", "face_check"):
         row.pop(key, None)
     return {
         "request": row,
@@ -814,6 +882,7 @@ def verification_detail(request_id: str, user=Depends(_admin)):
         "expires_in": SIGNED_URL_SECONDS,
         "profile_name": profile.get("full_name"),
         "profile_username": profile.get("username"),
+        "face_check": face,
         "name_match": names_resemble(str(row.get("legal_name") or ""), str(profile.get("full_name") or "")),
         "is_verified": badge_public(profile)["is_verified"],
         "verified_type": badge_public(profile)["verified_type"],
@@ -846,6 +915,9 @@ def verification_decision(request_id: str, body: DecisionIn, user=Depends(_admin
     profile = profile_of(str(row.get("user_id") or "")) or {}
     if action == "approve" and not names_resemble(str(row.get("legal_name") or ""), str(profile.get("full_name") or "")):
         raise HTTPException(status_code=400, detail="The profile name does not match the document")
+    face = _public_face(row.get("face_check")) or {}
+    if action == "approve" and face.get("verdict") == "mismatch" and not body.confirm_face:
+        raise HTTPException(status_code=400, detail="The selfie does not match the document. Compare the photos yourself before approving.")
     decided = _iso()
     delete_after = _iso(_now() + timedelta(days=max(1, DOC_RETENTION_DAYS)))
     patch = {
