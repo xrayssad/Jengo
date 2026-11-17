@@ -3070,8 +3070,15 @@ html[data-splash="on"] body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: clamp(12px, 3vh, 22px);
   width: 100%;
+  box-sizing: border-box;
+  padding:
+    calc(68px + env(safe-area-inset-top, 0px))
+    max(16px, env(safe-area-inset-right, 0px))
+    calc(28px + env(safe-area-inset-bottom, 0px))
+    max(16px, env(safe-area-inset-left, 0px));
+  overflow: hidden;
   border: 0;
   background: #14231A;
   color: #F2EDE4;
@@ -3119,6 +3126,12 @@ html[data-splash="on"] body {
 .splash-brand {
   position: relative;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: min(84vw, 260px);
+  max-height: min(30vh, 120px);
+  aspect-ratio: 260 / 96;
   color: #F2EDE4;
   --logo-ink: #F2EDE4;
   --logo-accent: #D4A95A;
@@ -3126,6 +3139,11 @@ html[data-splash="on"] body {
 
 .splash .jengo-logo {
   overflow: visible;
+}
+
+.splash-brand .jengo-logo {
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .splash:not(.is-static):not(.is-forced) .jengo-letter {
@@ -3180,13 +3198,17 @@ html[data-splash="on"] body {
   animation: none !important;
   opacity: 1 !important;
   stroke-dashoffset: 0 !important;
+}
+
+.splash.is-forced .jengo-pin,
+.splash.is-forced .jengo-house {
   transform: none !important;
 }
 
 .splash-skip {
   position: absolute;
-  top: calc(16px + env(safe-area-inset-top, 0px));
-  right: 16px;
+  top: calc(12px + env(safe-area-inset-top, 0px));
+  right: calc(12px + env(safe-area-inset-right, 0px));
   z-index: 2;
   min-width: 44px;
   min-height: 44px;
@@ -3243,17 +3265,21 @@ html[data-splash="on"] body {
   position: relative;
   z-index: 1;
   width: min(88vw, 360px);
-  height: 1.6em;
+  height: calc(1.35 * clamp(15px, 4.2vw, 18px));
 }
 
 .splash-tag {
   position: absolute;
   inset: 0;
   margin: 0;
+  overflow: hidden;
   text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: rgba(242, 237, 228, 0.8);
   font-family: Georgia, "Iowan Old Style", "Palatino Linotype", Palatino, "Times New Roman", serif;
-  font-size: 16px;
+  font-size: clamp(15px, 4.2vw, 18px);
+  line-height: 1.35;
   letter-spacing: 0.03em;
   opacity: 0;
 }
@@ -3286,6 +3312,13 @@ html[data-lite="1"] .splash-dot {
   display: none;
 }
 
+@media (max-width: 360px), (max-height: 520px) {
+  .splash-brand {
+    width: min(78vw, 220px);
+    max-height: min(26vh, 96px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .splash .jengo-letter,
   .splash .jengo-pin,
@@ -3303,6 +3336,9 @@ html[data-lite="1"] .splash-dot {
   .splash-tag:first-child {
     opacity: 1 !important;
     stroke-dashoffset: 0 !important;
+  }
+  .splash .jengo-pin,
+  .splash .jengo-house {
     transform: none !important;
   }
 }

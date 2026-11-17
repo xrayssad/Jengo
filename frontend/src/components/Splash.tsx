@@ -109,11 +109,14 @@ export default function Splash() {
     const seen = () => {
       root.dataset.logo = "1";
     };
+    const letter = root.querySelector(".jengo-letter");
+    letter?.addEventListener("animationstart", seen);
     root.addEventListener("animationstart", seen);
     const forceTimer = window.setTimeout(() => {
       if (root.dataset.logo !== "1") root.classList.add("is-forced");
     }, 800);
     return () => {
+      letter?.removeEventListener("animationstart", seen);
       root.removeEventListener("animationstart", seen);
       window.clearTimeout(forceTimer);
     };

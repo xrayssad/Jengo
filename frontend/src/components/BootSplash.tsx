@@ -13,7 +13,8 @@ const BOOT_CSS = `
   --logo-ink: #F2EDE4;
   --logo-accent: #D4A95A;
 }
-.boot-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.boot-stage { display: flex; flex-direction: column; align-items: center; gap: 10px; width: min(84vw, 280px); }
+.boot-word { width: min(76px, 42vw); height: auto; }
 .boot-pin { animation: boot-bounce 900ms ease-in-out infinite; }
 .boot-shadow {
   width: 46px;
@@ -81,7 +82,7 @@ export default function BootSplash() {
             </svg>
           </div>
           <span className="boot-shadow" />
-          <svg viewBox="0 -4 260 96" height="28" width="76" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg className="boot-word" viewBox="0 -4 260 96" height="28" width="76" fill="none" stroke="currentColor" strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M28 2V42C28 54 20 62 8 62" />
             <path transform="translate(42 0)" d="M2 40H42A20 20 0 1 0 36 54" />
             <path transform="translate(98 0)" d="M2 20V60M2 36C2 26 10 20 22 20C34 20 42 27 42 38V60" />

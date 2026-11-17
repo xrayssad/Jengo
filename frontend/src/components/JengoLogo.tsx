@@ -90,8 +90,12 @@ export default function JengoLogo({
       {...labelProps(title)}
     >
       <path {...draw(drawn, "0ms")} d="M28 2V42C28 54 20 62 8 62" />
-      <path {...draw(drawn, "80ms")} transform="translate(42 0)" d="M2 40H42A20 20 0 1 0 36 54" />
-      <path {...draw(drawn, "160ms")} transform="translate(98 0)" d="M2 20V60M2 36C2 26 10 20 22 20C34 20 42 27 42 38V60" />
+      <g transform="translate(42 0)">
+        <path {...draw(drawn, "80ms")} d="M2 40H42A20 20 0 1 0 36 54" />
+      </g>
+      <g transform="translate(98 0)">
+        <path {...draw(drawn, "160ms")} d="M2 20V60M2 36C2 26 10 20 22 20C34 20 42 27 42 38V60" />
+      </g>
       <g transform="translate(154 0)">
         <circle {...draw(drawn, "240ms")} cx="22" cy="40" r="20" />
         <path {...draw(drawn, "240ms")} d="M42 20V66C42 80 32 86 20 86C12 86 6 83 2 78" />
