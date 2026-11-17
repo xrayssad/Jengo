@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, Store, Warehouse } from "lucide-react";
+import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, LandPlot, Store, Warehouse } from "lucide-react";
 import JengoLoader from "@/components/JengoLoader";
 import { queueInstallNudge } from "@/lib/install";
 import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
-import { categoryConfig, photoMinimum } from "@/lib/categories.config";
+import { canonicalCategory, categoryConfig, photoMinimum, CATEGORIES, type CategoryId } from "@/lib/categories.config";
 import { rememberListing } from "@/lib/mine";
-import { useT } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
+import { emptyPlot, plotPayload, plotReady, type PlotDraft } from "@/lib/plots";
+import PlotFields from "@/components/PlotFields";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import AuthGate from "@/components/AuthGate";
 import ListingCard from "@/components/ListingCard";
@@ -16,13 +18,14 @@ import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
 
 const DRAFT_KEY = "jengo_listing_draft";
 
-const categories = [
-  { id: "chumba_nyumba", label: "Rooms & Houses", hint: "A room, house or compound", icon: Home },
-  { id: "apartment_airbnb", label: "Apartment & Airbnb", hint: "A stay charged by the night", icon: Building2 },
-  { id: "store_godown", label: "Shops & Godown", hint: "A shop, store or warehouse", icon: Warehouse },
-  { id: "frame", label: "Shop Frames", hint: "A frame inside a market", icon: Store },
-  { id: "vifaa", label: "Materials", hint: "Cement, timber, steel and more", icon: Boxes },
-];
+const CATEGORY_ICONS = {
+  "rooms-houses": Home,
+  apartment_airbnb: Building2,
+  store_godown: Warehouse,
+  frame: Store,
+  plots: LandPlot,
+  vifaa: Boxes,
+} as const;
 
 const units = [
   { id: "mfuko", label: "bag" },
@@ -32,7 +35,7 @@ const units = [
 ];
 
 const periods: Record<string, { id: string; label: string }[]> = {
-  chumba_nyumba: [
+  "rooms-houses": [
     { id: "mwezi", label: "Month" },
     { id: "miezi_3", label: "3 months" },
     { id: "miezi_6", label: "6 months" },
@@ -66,7 +69,7 @@ const roomTypes = [
 ];
 
 const amenitySets: Record<string, string[]> = {
-  chumba_nyumba: ["Water", "Electricity", "Fence", "Security", "Parking", "Wi-Fi", "Furnished", "Tiled"],
+  "rooms-houses": ["Water", "Electricity", "Fence", "Security", "Parking", "Wi-Fi", "Furnished", "Tiled"],
   apartment_airbnb: ["Water", "Electricity", "Security", "Parking", "Wi-Fi", "Furnished", "Tiled"],
   store_godown: ["Water", "Electricity", "Security", "Parking", "Road access"],
   frame: ["Electricity", "Security", "Water"],
@@ -126,6 +129,7 @@ type Draft = {
   deliveryNote: string;
   ceiling: string;
   licenseNote: string;
+  plot: PlotDraft;
 };
 
 function digits(value: string) {
@@ -165,11 +169,12 @@ const emptyPlace: PlaceValue = { location: "", city: "", lat: null, lng: null };
 
 export default function WekaTangazoPage() {
   const router = useRouter();
-  const t = useT();
+  const { t, lang } = useI18n();
   const reduce = usePrefersReducedMotion();
   const [step, setStep] = useState(1);
   const [dir, setDir] = useState<"fwd" | "back">("fwd");
-  const [category, setCategory] = useState("chumba_nyumba");
+  const [category, setCategory] = useState<CategoryId>("rooms-houses");
+  const [plot, setPlot] = useState<PlotDraft>(emptyPlot);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -301,13 +306,14 @@ export default function WekaTangazoPage() {
       deliveryNote,
       ceiling,
       licenseNote,
+      plot,
     }),
     [
       step, category, title, description, price, negotiable, period, unit, stock, bedrooms, bathrooms,
       roomType, deposit, available, guests, minNights, size, frontage, market, frameSize, minOrder,
       amenities, photos, place, phones, whatsapp, sameWa, posterRole, freeViewing, directOwner, costsOk,
       advance, agentFee, cleaning, extraGuest, goodwill, landmark, directions, water, power, cancelPolicy,
-      subtype, floor, suitable, condition, truck, allowedGoods, deliveryNote, ceiling, licenseNote,
+      subtype, floor, suitable, condition, truck, allowedGoods, deliveryNote, ceiling, licenseNote, plot,
     ],
   );
 
@@ -326,7 +332,11 @@ export default function WekaTangazoPage() {
   const applyDraft = () => {
     try {
       const saved = JSON.parse(draftRaw.current || "") as Partial<Draft>;
-      if (saved.category) setCategory(saved.category);
+      if (saved.category) {
+        const next = canonicalCategory(saved.category);
+        if (next) setCategory(next as CategoryId);
+      }
+      if (saved.plot && typeof saved.plot === "object") setPlot({ ...emptyPlot(), ...saved.plot });
       if (typeof saved.title === "string") setTitle(saved.title);
       if (typeof saved.description === "string") setDescription(saved.description);
       if (typeof saved.price === "string") setPrice(saved.price);
@@ -404,12 +414,14 @@ export default function WekaTangazoPage() {
     if (step === 2) {
       if (title.trim().length < 3 || !price) return false;
       if (category === "vifaa" && (stock === "" || Number(stock) < 0)) return false;
-      if (posterRole === "agent" && !agentFee) return false;
+      if (posterRole === "agent" && category !== "plots" && !agentFee) return false;
+      if (category === "plots" && !plotReady(plot)) return false;
       return true;
     }
     if (step === 3) return photos.length >= photoMinimum(category) && pending.every((item) => item.error);
     if (step === 4) {
       if (place.location.trim().length < 2) return false;
+      if (category === "plots" && (place.lat == null || place.lng == null)) return false;
       if (phoneErrors.some(Boolean) || waError) return false;
       return true;
     }
@@ -419,7 +431,7 @@ export default function WekaTangazoPage() {
   const band = useMemo(() => {
     const needle = (place.city || place.location).trim().toLowerCase();
     const match = pool.filter((item) => {
-      if ((item.category || "") !== category) return false;
+      if (canonicalCategory(item.category) !== category && item.category !== category) return false;
       if (!needle) return true;
       return `${item.city || ""} ${item.location || ""}`.toLowerCase().includes(needle.split(",")[0]);
     });
@@ -517,9 +529,9 @@ export default function WekaTangazoPage() {
   };
 
   const optional = () => {
-    const extra: Record<string, string | number | boolean | string[]> = {};
+    const extra: Record<string, unknown> = {};
     extra.poster_role = posterRole;
-    extra.free_viewing = category !== "vifaa" && category !== "apartment_airbnb" && freeViewing;
+    extra.free_viewing = category !== "vifaa" && category !== "apartment_airbnb" && category !== "plots" && freeViewing;
     extra.direct_owner = posterRole === "owner" || directOwner;
     extra.costs_confirmed = costsOk;
     if (advance) extra.months_advance = Number(advance) || 1;
@@ -543,10 +555,11 @@ export default function WekaTangazoPage() {
     if (licenseNote.trim()) extra.license_note = licenseNote.trim();
     if (negotiable) extra.negotiable = true;
     if (amenities.length) extra.amenities = amenities;
-    if (category === "chumba_nyumba") {
+    if (category === "rooms-houses") {
       extra.bedrooms = bedrooms;
       extra.bathrooms = bathrooms;
       extra.room_type = roomType;
+      extra.property_type = roomType;
       if (deposit) extra.deposit = Number(deposit);
       if (available) extra.available_from = available;
     }
@@ -564,6 +577,7 @@ export default function WekaTangazoPage() {
       if (market.trim()) extra.market_name = market.trim();
     }
     if (category === "vifaa" && minOrder) extra.min_order = Number(minOrder);
+    if (category === "plots") Object.assign(extra, plotPayload(plot, Number(price || 0)));
     const wa = sameWa ? phones[0] : whatsapp;
     if (wa.trim()) extra.whatsapp = wa.trim();
     return extra;
@@ -576,14 +590,16 @@ export default function WekaTangazoPage() {
     setFailed(false);
     try {
       const isVifaa = category === "vifaa";
+      const isPlot = category === "plots";
       const contact = phones.map((item) => item.trim()).filter(Boolean).slice(0, 3);
       const desc = description.trim();
+      const extra = optional();
       const created = await createListing({
         category,
         title: title.trim(),
         description: contact.length ? `${desc}${desc ? "\n\n" : ""}Phone: ${contact.join(", ")}` : desc,
         price: Number(price),
-        period: isVifaa ? "" : period,
+        period: isVifaa || isPlot ? "" : period,
         location: place.location.trim(),
         city: place.city.trim(),
         images: photos.slice(0, 10),
@@ -591,7 +607,7 @@ export default function WekaTangazoPage() {
         lng: place.lng,
         phones: contact,
         ...(isVifaa ? { unit, stock: Number(stock) } : {}),
-        ...optional(),
+        attributes: extra,
       });
       if (created?.id) rememberListing(String(created.id));
       try {
@@ -644,15 +660,15 @@ export default function WekaTangazoPage() {
     category,
     title: title || "Listing title",
     price: Number(price || 0),
-    period: category === "vifaa" ? "" : period,
+    period: category === "vifaa" || category === "plots" ? "" : period,
     location: place.location,
     city: place.city,
     images: photos,
     unit: category === "vifaa" ? unit : undefined,
     stock: category === "vifaa" && stock !== "" ? Number(stock) : undefined,
     fit: {
-      poster_role: posterRole === "agent" || posterRole === "caretaker" || posterRole === "business" ? posterRole : "owner",
-      free_viewing: category !== "vifaa" && category !== "apartment_airbnb" && freeViewing,
+      poster_role: posterRole === "agent" || posterRole === "caretaker" || posterRole === "business" || posterRole === "developer" ? posterRole : "owner",
+      free_viewing: category !== "vifaa" && category !== "apartment_airbnb" && category !== "plots" && freeViewing,
       direct_owner: posterRole === "owner" || directOwner,
       costs_confirmed: costsOk,
       months_advance: Number(advance) || 1,
@@ -663,6 +679,9 @@ export default function WekaTangazoPage() {
       goodwill: goodwill ? Number(goodwill) : 0,
       guests,
       subtype,
+      room_type: roomType,
+      property_type: roomType,
+      ...(category === "plots" ? plotPayload(plot, Number(price || 0)) : {}),
     },
   };
 
@@ -753,24 +772,25 @@ export default function WekaTangazoPage() {
 
             {step === 1 && (
               <div className="wizard-cats">
-                {categories.map((item) => {
-                  const Icon = item.icon;
-                  const on = category === item.id;
+                {(Object.keys(CATEGORIES) as CategoryId[]).map((id) => {
+                  const item = CATEGORIES[id];
+                  const Icon = CATEGORY_ICONS[id];
+                  const on = category === id;
                   return (
                     <button
-                      key={item.id}
+                      key={id}
                       type="button"
                       className={on ? "wizard-cat is-on" : "wizard-cat"}
                       aria-pressed={on}
                       onClick={() => {
-                        setCategory(item.id);
-                        if (item.id !== "vifaa") setPeriod(periods[item.id][0].id);
+                        setCategory(id);
+                        if (periods[id]) setPeriod(periods[id][0].id);
                         setAmenities([]);
                       }}
                     >
                       <Icon size={22} />
-                      <span className="wizard-cat-name">{item.label}</span>
-                      <span className="wizard-cat-hint">{item.hint}</span>
+                      <span className="wizard-cat-name">{lang === "sw" ? item.sw : item.en}</span>
+                      <span className="wizard-cat-hint">{lang === "sw" ? item.hint.sw : item.hint.en}</span>
                       {on ? <Check className="wizard-cat-mark" size={16} /> : null}
                     </button>
                   );
@@ -810,7 +830,7 @@ export default function WekaTangazoPage() {
                 <div className="wizard-field">
                   <span className="wizard-label">{t("fit.role.owner")}</span>
                   <div className="wizard-chips">
-                    {(["owner", "agent", "caretaker", "business"] as const).map((role) =>
+                    {(category === "plots" ? (["owner", "agent", "developer"] as const) : (["owner", "agent", "caretaker", "business"] as const)).map((role) =>
                       chip(role, t(`fit.role.${role}`), posterRole === role, () => {
                         setPosterRole(role);
                         if (role === "owner") setDirectOwner(true);
@@ -818,13 +838,13 @@ export default function WekaTangazoPage() {
                     )}
                   </div>
                 </div>
-                {category !== "vifaa" ? (
+                {category !== "vifaa" && category !== "plots" ? (
                   <label className="wizard-field">
                     <span className="wizard-label">{t("fit.advance")}</span>
                     <input className="wizard-input" inputMode="numeric" value={advance} onChange={(e) => setAdvance(digits(e.target.value).slice(0, 2))} />
                   </label>
                 ) : null}
-                {posterRole === "agent" ? (
+                {posterRole === "agent" && category !== "plots" ? (
                   <label className="wizard-field">
                     <span className="wizard-label">{t("fit.agentFee")} <i>*</i></span>
                     <input className="wizard-input" inputMode="numeric" value={grouped(agentFee)} onChange={(e) => setAgentFee(digits(e.target.value))} />
@@ -903,7 +923,10 @@ export default function WekaTangazoPage() {
                     </label>
                   </>
                 ) : null}
-                {category === "chumba_nyumba" ? (
+                {category === "plots" ? (
+                  <PlotFields part="deal" plot={plot} price={price} tried={tried} onChange={setPlot} />
+                ) : null}
+                {category === "rooms-houses" ? (
                   <>
                     <div className="wizard-field">
                       <span className="wizard-label">{t("fit.water")}</span>
@@ -928,7 +951,7 @@ export default function WekaTangazoPage() {
                     <p className="fit-note">{t(`fit.cancel.${cancelPolicy}`)}</p>
                   </div>
                 ) : null}
-                {category !== "vifaa" && category !== "apartment_airbnb" ? (
+                {category !== "vifaa" && category !== "apartment_airbnb" && category !== "plots" ? (
                 <div className="wizard-toggle">
                   <span>{t("fit.freeViewing")}</span>
                   <button type="button" className={freeViewing ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={freeViewing} onClick={() => setFreeViewing((v) => !v)}><i /></button>
@@ -944,14 +967,14 @@ export default function WekaTangazoPage() {
                   <span>{t("fit.costsConfirm")}</span>
                   <button type="button" className={costsOk ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={costsOk} onClick={() => setCostsOk((v) => !v)}><i /></button>
                 </div>
-                {category !== "vifaa" ? (
+                {category !== "vifaa" && category !== "plots" && periods[category] ? (
                   <div className="wizard-field">
                     <span className="wizard-label">Rent period</span>
                     <div className="wizard-chips">
                       {periods[category].map((item) => chip(item.id, item.label, period === item.id, () => setPeriod(item.id)))}
                     </div>
                   </div>
-                ) : (
+                ) : category === "vifaa" ? (
                   <>
                     <div className="wizard-field">
                       <span className="wizard-label">Unit</span>
@@ -969,8 +992,8 @@ export default function WekaTangazoPage() {
                       <input className="wizard-input" inputMode="numeric" value={minOrder} onChange={(e) => setMinOrder(digits(e.target.value))} />
                     </label>
                   </>
-                )}
-                {category === "chumba_nyumba" && (
+                ) : null}
+                {category === "rooms-houses" && (
                   <>
                     <div className="wizard-row">
                       {stepper("Bedrooms", bedrooms, setBedrooms, 0, 20)}
@@ -979,7 +1002,7 @@ export default function WekaTangazoPage() {
                     <div className="wizard-field">
                       <span className="wizard-label">Type</span>
                       <div className="wizard-chips">
-                        {roomTypes.map((item) => chip(item.id, item.label, roomType === item.id, () => setRoomType(item.id)))}
+                        {roomTypes.map((item) => chip(item.id, t(`fit.property.${item.id}`), roomType === item.id, () => setRoomType(item.id)))}
                       </div>
                     </div>
                     <label className="wizard-field">
@@ -1041,7 +1064,7 @@ export default function WekaTangazoPage() {
                 <p className="wizard-label">{t("wizard.photos", { n: photos.length })}</p>
                 {categoryConfig(category) ? (
                   <p className="wizard-tip">
-                    {t("fit.photos")}: {categoryConfig(category)?.photos.map((slot) => `${slot.en}${slot.required ? "" : ""}`).join(", ")}. {categoryConfig(category)?.photoTip.en}
+                    {t("fit.photos")}: {categoryConfig(category)?.photos.map((slot) => (lang === "sw" ? slot.sw : slot.en)).join(", ")}. {lang === "sw" ? categoryConfig(category)?.photoTip.sw : categoryConfig(category)?.photoTip.en}
                   </p>
                 ) : null}
                 {tried && photos.length < photoMinimum(category) ? (
@@ -1089,6 +1112,7 @@ export default function WekaTangazoPage() {
                   ) : null}
                 </div>
                 {tried && photos.length === 0 ? <p className="wizard-error" style={{ marginTop: 8 }}>Add at least one photo.</p> : null}
+                {category === "plots" ? <PlotFields part="media" plot={plot} price={price} onChange={setPlot} /> : null}
                 <p className="wizard-tip">{t("wizard.tip")}</p>
                 {photos[0] ? (
                   <div className="wizard-preview-card" style={{ marginTop: 16 }}>
@@ -1115,7 +1139,19 @@ export default function WekaTangazoPage() {
                     }}
                   />
                   {tried && place.location.trim().length < 2 ? <span className="wizard-error">Add a street or area.</span> : null}
+                  {category === "plots" && tried && (place.lat == null || place.lng == null) ? <span className="wizard-error">{t("plot.pinRequired")}</span> : null}
                 </div>
+                {category === "plots" ? (
+                  <PlotFields
+                    part="site"
+                    plot={plot}
+                    price={price}
+                    place={place}
+                    tried={tried}
+                    onChange={setPlot}
+                    onPlace={(lat, lng) => setPlace((cur) => ({ ...cur, lat, lng, location: cur.location || "Pinned location" }))}
+                  />
+                ) : null}
                 <label className="wizard-field">
                   <span className="wizard-label">{t("fit.landmark")} <span className="wizard-optional">({t("optional")})</span></span>
                   <input className="wizard-input" value={landmark} maxLength={160} onChange={(e) => setLandmark(e.target.value)} placeholder="Near the market, opposite the school" />
@@ -1184,14 +1220,14 @@ export default function WekaTangazoPage() {
                       <div className="wizard-detail-copy">
                         <p className="detail-price">TSh {formatPrice(price || 0)}</p>
                         <h2>{title}</h2>
-                        <p><em>{categories.find((item) => item.id === category)?.label}</em></p>
+                        <p><em>{lang === "sw" ? CATEGORIES[category].sw : CATEGORIES[category].en}</em></p>
                         <p className="detail-copy">{description || "No extra description."}</p>
                       </div>
                     </article>
                   )}
                 </div>
                 {[
-                  ["Category", categories.find((item) => item.id === category)?.label || "", 1],
+                  ["Category", lang === "sw" ? CATEGORIES[category].sw : CATEGORIES[category].en, 1],
                   ["Details", title, 2],
                   ["Photos", t("wizard.photos", { n: photos.length }), 3],
                   ["Location", place.location, 4],

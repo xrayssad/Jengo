@@ -882,6 +882,188 @@ a.sheet:active {
   display: block;
 }
 
+.cat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  column-gap: 8px;
+  row-gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 2px 16px 8px;
+}
+
+.cat-grid .cat-tile {
+  flex: none;
+  width: 100%;
+  min-width: 0;
+  gap: 6px;
+  scroll-snap-align: unset;
+}
+
+.cat-grid .cat-tile-icon {
+  width: min(64px, 100%);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 18px;
+}
+
+.cat-grid .cat-tile-label {
+  width: 100%;
+  max-width: 100%;
+  font-size: 12px;
+}
+
+.cat-tile.is-on .cat-tile-icon {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.cat-sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(var(--veil-rgb), 0.55);
+}
+
+.cat-sheet-panel {
+  width: min(520px, 100%);
+  max-height: min(78dvh, 640px);
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 20px 20px 0 0;
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+}
+
+.cat-sheet-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+}
+
+.cat-sheet-bar p {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.cat-sheet-grid {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.cat-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: var(--surface-2);
+  color: var(--text);
+  text-align: left;
+}
+
+.cat-sheet-row.is-on {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.plot-ranges {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.plot-ranges label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.plot-ranges input {
+  min-height: 40px;
+  padding: 0 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(var(--caramel-rgb), 0.32);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.plot-card-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.plot-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+}
+
+.plot-facts p {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.plot-facts span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.plot-facts strong {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.plot-docs {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+.plot-check {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.plot-check ul {
+  margin: 8px 0;
+  padding-left: 18px;
+}
+
+.plot-check li + li {
+  margin-top: 6px;
+}
+
+.plot-video {
+  width: 100%;
+  border-radius: 16px;
+  background: var(--surface-2);
+}
+
+.fit-badge.is-role {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
 .filter-chip {
   flex: none;
   min-height: 40px;

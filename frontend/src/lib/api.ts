@@ -899,6 +899,8 @@ export async function createListing(body: {
   subtype?: string;
   delivery_fee?: number;
   power_backup?: string;
+  property_type?: string;
+  attributes?: Record<string, unknown>;
 }): Promise<Listing> {
   return request<Listing>("/listings", {
     method: "POST",
@@ -970,19 +972,23 @@ export function periodLabel(period?: string) {
 }
 
 export const catLabel: Record<string, string> = {
+  "rooms-houses": "Rooms & Houses",
   chumba_nyumba: "Rooms & Houses",
   apartment_airbnb: "Apartment & Airbnb",
   store_godown: "Shops Store & Godown",
   frame: "Shop Frames",
+  plots: "Plots",
   vifaa: "Building Materials",
 };
 
 /** Short type labels for card / stat chips */
 export const catShort: Record<string, string> = {
-  chumba_nyumba: "Room",
+  "rooms-houses": "Homes",
+  chumba_nyumba: "Homes",
   apartment_airbnb: "Airbnb",
   store_godown: "Godown",
   frame: "Shop",
+  plots: "Plots",
   vifaa: "Materials",
 };
 
@@ -1399,7 +1405,7 @@ export async function sendBookingMessage(bookingId: string, body: string) {
 
 export async function fetchListingDm(listingId: string, peer?: string) {
   const q = peer ? `?peer=${encodeURIComponent(peer)}` : "";
-  return request<{ items: ChatMessage[]; title?: string; owner_id?: string; is_verified?: boolean; verified_type?: "individual" | "business" | null }>(`/listings/${listingId}/dm${q}`);
+  return request<{ items: ChatMessage[]; title?: string; category?: string; owner_id?: string; is_verified?: boolean; verified_type?: "individual" | "business" | null }>(`/listings/${listingId}/dm${q}`);
 }
 
 export async function sendListingDm(listingId: string, body: string, peer?: string) {

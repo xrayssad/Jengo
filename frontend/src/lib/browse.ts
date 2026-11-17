@@ -1,6 +1,7 @@
 import type { Listing } from "./api";
 import { VERIFIED_BOOST } from "./productFlags";
 import { moveInAmount } from "./pricing";
+import { pricePerM2Of } from "./plots";
 
 export const REGIONS = [
   "Dar es Salaam",
@@ -12,7 +13,7 @@ export const REGIONS = [
   "Zanzibar",
 ] as const;
 
-export type SortKey = "new" | "price_asc" | "price_desc" | "views" | "featured" | "verified";
+export type SortKey = "new" | "price_asc" | "price_desc" | "views" | "featured" | "verified" | "price_sqm";
 export type ViewMode = "grid" | "large";
 
 export const VIEW_KEY = "jengo_listing_view";
@@ -30,7 +31,7 @@ export type BrowsePersist = {
 
 export type NearPoint = { lat: number; lng: number };
 
-const SORTS = new Set<SortKey>(["new", "price_asc", "price_desc", "views", "featured", "verified"]);
+const SORTS = new Set<SortKey>(["new", "price_asc", "price_desc", "views", "featured", "verified", "price_sqm"]);
 
 export function asView(value: unknown): ViewMode {
   return value === "grid" ? "grid" : "large";
@@ -123,7 +124,8 @@ export function formatViews(n: number): string {
 }
 
 export function bedCount(item: Listing): number | null {
-  if (item.category !== "chumba_nyumba" && item.category !== "apartment_airbnb") return null;
+  const cat = item.category || "";
+  if (cat !== "chumba_nyumba" && cat !== "rooms-houses" && cat !== "apartment_airbnb") return null;
   return asCount(item.bedrooms ?? item.beds ?? item.rooms);
 }
 
@@ -256,6 +258,11 @@ export function sortListings(items: Listing[], sort: SortKey): Listing[] {
   const next = items.slice();
   next.sort((a, b) => {
     if (sort === "price_asc") return priceOf(a) - priceOf(b) || createdAt(b) - createdAt(a) || tie(a, b);
+    if (sort === "price_sqm") {
+      const left = pricePerM2Of(a) || Number.MAX_SAFE_INTEGER;
+      const right = pricePerM2Of(b) || Number.MAX_SAFE_INTEGER;
+      return left - right || createdAt(b) - createdAt(a) || tie(a, b);
+    }
     if (sort === "price_desc") return priceOf(b) - priceOf(a) || createdAt(b) - createdAt(a) || tie(a, b);
     if (sort === "views") return (viewCount(b) || 0) - (viewCount(a) || 0) || createdAt(b) - createdAt(a) || tie(a, b);
     if (sort === "featured") return Number(b.featured === true) - Number(a.featured === true) || createdAt(b) - createdAt(a) || tie(a, b);

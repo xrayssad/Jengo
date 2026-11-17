@@ -25,7 +25,7 @@ export default function VifaaPage() {
       </header>
 
       <div className="canvas px-4 pt-6">
-        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} onRefresh={() => { void refresh(); }} />
+        <ListingBrowse items={items} loading={loading} error={error} pending={pending} stale={stale} category="vifaa" onRefresh={() => { void refresh(); }} />
       </div>
     </main>
   );

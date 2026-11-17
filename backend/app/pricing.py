@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-ROLES = {"owner", "agent", "caretaker", "business"}
+ROLES = {"owner", "agent", "caretaker", "business", "developer"}
 STALE_DAYS = 30
 CONFIRM_DAYS = 14
 VAT = 1.18
@@ -32,7 +32,126 @@ def _text(value, limit: int) -> str:
     return str(value or "").strip()[:limit]
 
 
-def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True) -> dict:
+PLOT_UNITS = {"m2": 1.0, "acre": 4046.8564224, "ha": 10000.0}
+LAND_USE = {"residential", "commercial", "agricultural", "industrial", "mixed"}
+TENURE = {"gro", "ccro", "residential_licence", "village", "other"}
+LAND_CAT = {"general", "village", "reserved"}
+PLOT_DOCS = {
+    "title",
+    "survey_plan",
+    "official_search",
+    "land_rent",
+    "sale_agreements",
+    "seller_id",
+    "family_consent",
+    "mtaa_letter",
+}
+PROPERTY_TYPES = {"single", "master", "self", "house"}
+
+
+def _float(value, low: float, high: float):
+    try:
+        n = float(value)
+    except (TypeError, ValueError):
+        return None
+    if n != n or n < low or n > high:
+        return None
+    return round(n, 4)
+
+
+def _choice(value, allowed: set[str]) -> str:
+    text = str(value or "").strip()
+    return text if text in allowed else ""
+
+
+def _clean_plot(src: dict, price) -> dict:
+    out: dict = {}
+    kind = _choice(src.get("listing_type"), {"sale", "lease"}) or "sale"
+    out["listing_type"] = kind
+    unit = _choice(src.get("plot_unit"), set(PLOT_UNITS)) or "m2"
+    size = _float(src.get("plot_size"), 0.0001, 1_000_000)
+    if size:
+        out["plot_unit"] = unit
+        out["plot_size"] = size
+        area = size * PLOT_UNITS[unit]
+        out["size_m2"] = int(round(area)) if area >= 1 else round(area, 2)
+        amount = money(price) or money(src.get("price"))
+        if amount and area > 0:
+            out["price_per_m2"] = int(round(amount / area))
+            if unit in {"acre", "ha"}:
+                acres = area / PLOT_UNITS["acre"]
+                if acres > 0:
+                    out["price_per_acre"] = int(round(amount / acres))
+    if "price_per_m2" not in out:
+        rate = money(src.get("price_per_m2"))
+        if rate:
+            out["price_per_m2"] = rate
+    if "price_per_acre" not in out:
+        rate = money(src.get("price_per_acre"))
+        if rate:
+            out["price_per_acre"] = rate
+    for key, low, high in (("plot_width", 0.01, 100000), ("plot_length", 0.01, 100000)):
+        span = _float(src.get(key), low, high)
+        if span:
+            out[key] = span
+    payment = _choice(src.get("payment"), {"full", "installments", "deposit"})
+    if payment:
+        out["payment"] = payment
+    note = _text(src.get("payment_note"), 160)
+    if note:
+        out["payment_note"] = note
+    deposit = money(src.get("booking_deposit"))
+    if deposit:
+        out["booking_deposit"] = deposit
+    for key, allowed in (
+        ("land_use", LAND_USE),
+        ("tenure", TENURE),
+        ("land_category", LAND_CAT),
+        ("road", {"tarmac", "murram", "footpath"}),
+        ("water_nearby", {"mains", "borehole", "none"}),
+        ("terrain", {"flat", "slope"}),
+        ("flood", {"none", "some", "unknown"}),
+        ("structures", {"none", "foundation", "building", "trees"}),
+    ):
+        picked = _choice(src.get(key), allowed)
+        if picked:
+            out[key] = picked
+    for key, limit in (("road_distance", 40), ("town_distance", 40), ("plot_number", 40), ("block_number", 40)):
+        text = _text(src.get(key), limit)
+        if text:
+            out[key] = text
+    video = _text(src.get("video_url"), 400)
+    if video.startswith("http://") or video.startswith("https://"):
+        out["video_url"] = video
+    docs = src.get("documents")
+    if isinstance(docs, list):
+        clean = []
+        for name in docs:
+            text = _text(name, 40)
+            if text in PLOT_DOCS and text not in clean:
+                clean.append(text)
+        if clean:
+            out["documents"] = clean
+    points = src.get("boundary")
+    if isinstance(points, list):
+        ring = []
+        for pair in points[:40]:
+            if not isinstance(pair, (list, tuple)) or len(pair) < 2:
+                continue
+            lat = _float(pair[0], -90, 90)
+            lng = _float(pair[1], -180, 180)
+            if lat is None or lng is None:
+                continue
+            ring.append([lat, lng])
+        if len(ring) >= 3:
+            out["boundary"] = ring
+    for key in ("surveyed", "electricity_nearby", "fenced"):
+        if key in src:
+            out[key] = bool(src.get(key))
+    return out
+
+
+def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True, price=None) -> dict:
     src = raw if isinstance(raw, dict) else {}
     role = src.get("poster_role") if src.get("poster_role") in ROLES else "owner"
     out: dict = {
@@ -50,7 +169,7 @@ def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True
         "negotiable": bool(src.get("negotiable")),
         "instant_book": bool(src.get("instant_book")),
     }
-    if role == "agent" and require_agent_fee and out["agent_fee"] <= 0:
+    if role == "agent" and category != "plots" and require_agent_fee and out["agent_fee"] <= 0:
         raise ValueError("agent_fee")
     if role == "owner":
         out["direct_owner"] = True
@@ -113,6 +232,14 @@ def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True
                 break
         if clean:
             out["amenities"] = clean
+    ptype = _text(src.get("property_type") or src.get("room_type"), 40)
+    alias = {"self-contained": "self", "whole": "house", "whole_house": "house", "single_room": "single"}
+    ptype = alias.get(ptype, ptype)
+    if ptype in PROPERTY_TYPES:
+        out["property_type"] = ptype
+        out["room_type"] = ptype
+    if category == "plots" or src.get("plot_size") or src.get("listing_type") in {"sale", "lease"}:
+        out.update(_clean_plot(src, price))
     return out
 
 
@@ -121,13 +248,16 @@ def public_fit(category: str, raw: dict | None) -> dict:
     src = raw if isinstance(raw, dict) else {}
     if not src:
         return {}
-    fit = clean_fit(category, src, require_agent_fee=False)
+    fit = clean_fit(category, src, require_agent_fee=False, price=src.get("price"))
     kept = {}
+    computed = {"price_per_m2", "price_per_acre", "size_m2", "property_type", "room_type", "listing_type"}
     for key, value in fit.items():
-        if key in src:
+        if key in src or key in computed:
             kept[key] = value
     if src.get("poster_role") == "owner":
         kept["direct_owner"] = True
+    if src.get("documents_checked") is True:
+        kept["documents_checked"] = True
     return kept
 
 
@@ -152,6 +282,11 @@ def quote_stay(category: str, price, fit: dict | None, stay: dict | None = None)
         push("extra_guests", money(src.get("extra_guest_fee")) * extra * nights)
         due = sum(line["amount"] for line in lines)
         return {"lines": lines, "due": due, "deposit": deposit, "total": due}
+
+    if category == "plots":
+        push("price", amount)
+        due = sum(line["amount"] for line in lines)
+        return {"lines": lines, "due": due, "deposit": money(src.get("booking_deposit")), "total": due}
 
     if category == "vifaa":
         qty = _count(stay.get("quantity", src.get("min_order")), 1, 1, 100000)

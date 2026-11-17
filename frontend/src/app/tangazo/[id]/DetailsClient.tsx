@@ -28,6 +28,8 @@ import { VIEW_DWELL_MS } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
 import ListingFacts, { shareText } from "@/components/ListingFacts";
+import PlotDetail from "@/components/PlotDetail";
+import { canonicalCategory } from "@/lib/categories.config";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -496,6 +498,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
             </div>
             </ViewTransition>
             <ListingFacts item={item} />
+            {canonicalCategory(item.category) === "plots" ? <PlotDetail item={item} /> : null}
             <div className="seller-card">
               <PosterName item={item} />
             </div>

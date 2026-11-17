@@ -8,29 +8,21 @@ import PromoBanner from "@/components/PromoBanner";
 import {
   Menu, User, Send, Clapperboard, Bookmark, Settings, X,
   LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
-  Home, Warehouse, Building2, Store, Boxes,
 } from "lucide-react";
 import AdminLink from "@/components/AdminLink";
 import Brand from "@/components/Brand";
 import { LangCircle, LangDrawer, ThemeCircle } from "@/components/HeaderTools";
 import { InstallMenuItem } from "@/components/InstallUI";
 import ListingBrowse from "@/components/ListingBrowse";
+import CategoryGrid from "@/components/CategoryGrid";
 import ProductSearch from "@/components/ProductSearch";
 import ThemeToggle from "@/components/ThemeToggle";
 import { InboxLink } from "@/components/MqttInbox";
 import { clearAuth, fetchListings, writeHomeListingsCache, type Listing } from "@/lib/api";
+import { canonicalCategory, isFilterTile } from "@/lib/categories.config";
 import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 import { usePersistentScroll } from "@/lib/listSession";
-
-const chips = [
-  { href: "/nyumba", label: "Rooms & Houses", short: "Rooms", icon: Home },
-  { href: "/kazi", label: "Construction Jobs", short: "Jobs", icon: Hammer },
-  { href: "/godown", label: "Shops & Godown", short: "Shops", icon: Warehouse },
-  { href: "/airbnb", label: "Apartment & Airbnb", short: "Apartments", icon: Building2 },
-  { href: "/maduka", label: "Shop Frames", short: "Frames", icon: Store },
-  { href: "/vifaa", label: "Materials", short: "Materials", icon: Boxes },
-];
 
 const sideLinks = [
   { label: "Receipts", href: "/risiti", icon: Receipt },
@@ -53,6 +45,8 @@ export default function HomePage() {
   const t = useT();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState<string | null>(null);
+  const [category, setCategory] = useState("");
+  const [sheet, setSheet] = useState(false);
   const pendingQuery = useRef<string | null>(null);
   const [pool, setPool] = useState<Listing[] | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
@@ -62,7 +56,9 @@ export default function HomePage() {
   usePersistentScroll("cats", railRef, true);
 
   useEffect(() => {
-    setQuery(new URLSearchParams(window.location.search).get("q") || "");
+    const params = new URLSearchParams(window.location.search);
+    setQuery(params.get("q") || "");
+    setCategory(canonicalCategory(params.get("category")));
     const onPop = () => {
       if (pendingQuery.current !== null) {
         const next = pendingQuery.current;
@@ -74,7 +70,9 @@ export default function HomePage() {
         setQuery(next);
         return;
       }
-      setQuery(new URLSearchParams(window.location.search).get("q") || "");
+      const nextParams = new URLSearchParams(window.location.search);
+      setQuery(nextParams.get("q") || "");
+      setCategory(canonicalCategory(nextParams.get("category")));
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -85,11 +83,13 @@ export default function HomePage() {
     const url = new URL(window.location.href);
     if (query) url.searchParams.set("q", query);
     else url.searchParams.delete("q");
+    if (category) url.searchParams.set("category", category);
+    else url.searchParams.delete("category");
     const next = `${url.pathname}${url.search}`;
     if (next !== `${window.location.pathname}${window.location.search}`) {
       window.history.replaceState(window.history.state, "", next);
     }
-  }, [query]);
+  }, [query, category]);
 
   useEffect(() => {
     let gone = false;
@@ -232,18 +232,16 @@ export default function HomePage() {
         </div>
         </div>
 
-        <div ref={railRef} className="cat-rail no-scrollbar">
-          {chips.map((c, i) => {
-            const Icon = c.icon;
-            return (
-              <Link key={c.href} href={c.href} className="cat-tile cat-pop" style={{ animationDelay: `${i * 40}ms` }} aria-label={c.label}>
-                <span className="cat-tile-icon">
-                  <Icon size={28} strokeWidth={1.6} />
-                </span>
-                <span className="cat-tile-label">{c.short}</span>
-              </Link>
-            );
-          })}
+        <div ref={railRef}>
+          <CategoryGrid
+            active={category}
+            sheet={sheet}
+            onSheet={setSheet}
+            onFilter={(id) => {
+              if (!isFilterTile(id)) return;
+              setCategory((cur) => (cur === id ? "" : id));
+            }}
+          />
         </div>
 
         <div className="home-pad">
@@ -254,8 +252,13 @@ export default function HomePage() {
             pending={pending}
             stale={stale}
             query={query || ""}
+            category={category}
+            categoryIsFilter
             onQuery={setQuery}
-            onClear={() => setQuery("")}
+            onClear={() => {
+              setQuery("");
+              setCategory("");
+            }}
             onRefresh={() => { void refresh(); }}
             beforeFeed={
               <>

@@ -17,7 +17,7 @@ export default function ReportImpersonation({
   const [reason, setReason] = useState(targetType === "listing" ? "scam" : "impersonation");
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
-  const reasons = ["scam", "wrong_info", "fake_photos", "photo_mismatch", "fee_before_viewing", "already_taken", "impersonation", "harassment", "other"];
+  const reasons = ["scam", "wrong_info", "fake_photos", "photo_mismatch", "fee_before_viewing", "already_taken", "fake_title", "double_selling", "paid_no_transfer", "impersonation", "harassment", "other"];
 
   const submit = async () => {
     const ident = (targetType === "listing" ? targetId : name).trim();

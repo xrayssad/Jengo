@@ -967,6 +967,9 @@ def create_report(body: ReportIn, user=Depends(current_user)):
         "fee_before_viewing",
         "already_taken",
         "harassment",
+        "fake_title",
+        "double_selling",
+        "paid_no_transfer",
         "other",
     }
     if reason not in allowed:

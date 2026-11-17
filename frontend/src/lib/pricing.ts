@@ -1,6 +1,6 @@
 /** Total-cost formulas. The server recomputes the same numbers before a booking is accepted. */
 
-export type PosterRole = "owner" | "agent" | "caretaker" | "business";
+export type PosterRole = "owner" | "agent" | "caretaker" | "business" | "developer";
 export type VatMode = "included" | "excluded";
 
 export type Fit = {
@@ -22,6 +22,36 @@ export type Fit = {
   bathrooms?: number;
   beds?: number;
   room_type?: string;
+  property_type?: string;
+  listing_type?: "sale" | "lease" | string;
+  plot_size?: number;
+  plot_unit?: "m2" | "acre" | "ha" | string;
+  plot_width?: number;
+  plot_length?: number;
+  price_per_m2?: number;
+  price_per_acre?: number;
+  payment?: string;
+  payment_note?: string;
+  booking_deposit?: number;
+  land_use?: string;
+  tenure?: string;
+  land_category?: string;
+  documents?: string[];
+  surveyed?: boolean;
+  plot_number?: string;
+  block_number?: string;
+  road?: string;
+  road_distance?: string;
+  electricity_nearby?: boolean;
+  water_nearby?: string;
+  town_distance?: string;
+  terrain?: string;
+  flood?: string;
+  fenced?: boolean;
+  structures?: string;
+  boundary?: [number, number][];
+  video_url?: string;
+  documents_checked?: boolean;
   water?: string;
   electricity?: string;
   amenities?: string[];
@@ -64,7 +94,7 @@ export type Priced = {
   attributes?: Fit | null;
 };
 
-const ROLES = new Set<PosterRole>(["owner", "agent", "caretaker", "business"]);
+const ROLES = new Set<PosterRole>(["owner", "agent", "caretaker", "business", "developer"]);
 
 export function money(value: unknown): number {
   const n = typeof value === "number" ? value : typeof value === "string" ? Number(value) : Number.NaN;
@@ -106,6 +136,12 @@ export function quoteStay(item: Priced, stay?: { nights?: number; guests?: numbe
     push("extra_guests", money(fit.extra_guest_fee) * extra * nights);
     const due = lines.reduce((sum, line) => sum + line.amount, 0);
     return { lines, due, deposit, total: due };
+  }
+
+  if (category === "plots" || category === "viwanja") {
+    push("price", price);
+    const due = lines.reduce((sum, line) => sum + line.amount, 0);
+    return { lines, due, deposit: money(fit.booking_deposit), total: due };
   }
 
   if (category === "vifaa") {

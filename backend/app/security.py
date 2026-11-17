@@ -234,7 +234,7 @@ def _owner_fields(profile: dict | None) -> dict:
     }
 
 
-def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owner: bool = True) -> dict | None:
+def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owner: bool = True, reveal_plot: bool = False) -> dict | None:
     if not row:
         return row
     item = dict(row)
@@ -262,8 +262,10 @@ def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owne
         count = 0
     item["views_count"] = count
     item["views"] = count
+    from app.categories import canonical_category
     from app.pricing import public_fit, quote_stay
 
+    item["category"] = canonical_category(str(item.get("category") or ""))
     raw_fit = {}
     if isinstance(meta.get("fit"), dict):
         raw_fit.update(meta["fit"])
@@ -272,7 +274,12 @@ def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owne
     confirmed = item.get("last_confirmed_at")
     if confirmed and "last_confirmed_at" not in raw_fit:
         raw_fit["last_confirmed_at"] = confirmed
+    if item.get("category") == "rooms-houses" and not raw_fit.get("property_type") and raw_fit.get("room_type"):
+        raw_fit["property_type"] = raw_fit.get("room_type")
     fit = public_fit(str(item.get("category") or ""), raw_fit)
+    if not reveal_plot:
+        fit.pop("plot_number", None)
+        fit.pop("block_number", None)
     if confirmed:
         fit["last_confirmed_at"] = str(confirmed)
     item["fit"] = fit
@@ -280,7 +287,7 @@ def decorate_listing(row: dict | None, owner: dict | None = None, *, lookup_owne
     return item
 
 
-def decorate_listings(rows: list | None) -> list:
+def decorate_listings(rows: list | None, *, reveal_plot: bool = False) -> list:
     items = [row for row in (rows or []) if row]
     ids: list[str] = []
     seen: set[str] = set()
@@ -293,7 +300,7 @@ def decorate_listings(rows: list | None) -> list:
     if ids:
         owners = profiles_by_ids(ids)
     return [
-        decorate_listing(row, owners.get(str(row.get("owner_id") or "")), lookup_owner=False)
+        decorate_listing(row, owners.get(str(row.get("owner_id") or "")), lookup_owner=False, reveal_plot=reveal_plot)
         for row in items
     ]
 

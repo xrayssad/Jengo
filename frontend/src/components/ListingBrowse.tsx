@@ -28,17 +28,53 @@ import {
   type SortKey,
   type ViewMode,
 } from "@/lib/browse";
-import { CATEGORIES, categoryConfig } from "@/lib/categories.config";
+import { CATEGORIES, canonicalCategory, categoryConfig } from "@/lib/categories.config";
 import { rankListings, stickOrder } from "@/lib/productSearch";
 import { readFit } from "@/lib/pricing";
+import { pricePerM2Of, sizeM2Of } from "@/lib/plots";
 import { VERIFIED_FIRST_SORT } from "@/lib/productFlags";
-import { useT } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { disarmReturn, listRoute, peekReturn, pulseReturn, returnFrame } from "@/lib/listSession";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import ListingCard from "./ListingCard";
 import { ListingFeedSkeleton } from "./Skeletons";
 
 const SORT_KEYS: SortKey[] = ["new", "price_asc", "price_desc", "views", "featured", ...(VERIFIED_FIRST_SORT ? ["verified" as const] : [])];
+
+function amountOf(value: string) {
+  const n = Number(String(value).replace(/[^\d.]/g, ""));
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function fitOn(item: Listing, key: string) {
+  const fit = readFit(item);
+  const type = fit.property_type || fit.room_type || "";
+  if (key === "direct") return Boolean(fit.direct_owner);
+  if (key === "free_viewing") return Boolean(fit.free_viewing);
+  if (key === "costs") return Boolean(fit.costs_confirmed);
+  if (key === "self") return type === "self";
+  if (key === "room") return type === "single" || type === "master" || type === "self";
+  if (key === "whole") return type === "house";
+  if (key === "power") return Boolean(fit.power_backup);
+  if (key === "wifi") return (fit.amenities || []).some((name) => /wi-?fi/i.test(name));
+  if (key === "sale") return fit.listing_type === "sale";
+  if (key === "lease") return fit.listing_type === "lease";
+  if (key === "surveyed") return Boolean(fit.surveyed);
+  if (key === "tarmac" || key === "murram" || key === "footpath") return fit.road === key;
+  if (key === "electricity") return Boolean(fit.electricity_nearby);
+  if (key === "water") return Boolean(fit.water_nearby) && fit.water_nearby !== "none";
+  if (key === "owner" || key === "agent" || key === "developer") return fit.poster_role === key;
+  if (key.startsWith("use_")) return fit.land_use === key.slice(4);
+  const tenure: Record<string, string> = {
+    tenure_gro: "gro",
+    tenure_ccro: "ccro",
+    tenure_licence: "residential_licence",
+    tenure_village: "village",
+    tenure_other: "other",
+  };
+  if (key in tenure) return fit.tenure === tenure[key];
+  return true;
+}
 
 export default function ListingBrowse({
   items,
@@ -50,6 +86,7 @@ export default function ListingBrowse({
   stale = false,
   onRefresh,
   category = "",
+  categoryIsFilter = false,
   query = "",
   scope = "",
   onClear,
@@ -64,12 +101,13 @@ export default function ListingBrowse({
   stale?: boolean;
   onRefresh?: () => void;
   category?: string;
+  categoryIsFilter?: boolean;
   query?: string;
   scope?: string;
   onClear?: () => void;
   onQuery?: (next: string) => void;
 }) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const path = usePathname() || "/";
   const route = listRoute(path);
   const routeRef = useRef(route || "/home");
@@ -81,7 +119,10 @@ export default function ListingBrowse({
   const [near, setNear] = useState<NearPoint | null>(null);
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [fitFilters, setFitFilters] = useState<string[]>([]);
+  const [plotRange, setPlotRange] = useState({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
   const fitConfig = categoryConfig(category);
+  const plots = canonicalCategory(category) === "plots";
+  const seenCategory = useRef(category);
   const [locating, setLocating] = useState(false);
   const [sheet, setSheet] = useState(false);
   const [toast, setToast] = useState("");
@@ -113,7 +154,10 @@ export default function ListingBrowse({
   }, [items, region]);
 
   const featured = useMemo(() => anyFeatured(items), [items]);
-  const sorts = featured ? SORT_KEYS : SORT_KEYS.filter((key) => key !== "featured");
+  const sorts = [
+    ...(featured ? SORT_KEYS : SORT_KEYS.filter((key) => key !== "featured")),
+    ...(plots ? ["price_sqm" as const] : []),
+  ];
 
   const focusReturn = () => {
     const highlight = peekReturn();
@@ -262,6 +306,14 @@ export default function ListingBrowse({
   }, [toast]);
 
   useEffect(() => {
+    if (seenCategory.current === category) return;
+    seenCategory.current = category;
+    setFitFilters([]);
+    setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
+    setSort((cur) => (cur === "price_sqm" && canonicalCategory(category) !== "plots" ? "new" : cur));
+  }, [category]);
+
+  useEffect(() => {
     if (!sheet) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSheet(false);
@@ -307,18 +359,29 @@ export default function ListingBrowse({
   }, [ranked, queryText]);
 
   const narrowed = useMemo(() => {
+    const want = canonicalCategory(category);
+    const budget = amountOf(plotRange.budget);
+    const sqmMin = amountOf(plotRange.sqmMin);
+    const sqmMax = amountOf(plotRange.sqmMax);
+    const sizeMin = amountOf(plotRange.sizeMin);
+    const sizeMax = amountOf(plotRange.sizeMax);
     const apply = (list: Listing[]) => {
-      let next = list;
+      let next = want ? list.filter((item) => canonicalCategory(item.category) === want) : list;
       if (region === "near" && near) next = nearListings(next, near);
       else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
       if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
-      if (fitFilters.includes("direct")) next = next.filter((item) => readFit(item).direct_owner);
-      if (fitFilters.includes("free_viewing")) next = next.filter((item) => readFit(item).free_viewing);
-      if (fitFilters.includes("costs")) next = next.filter((item) => readFit(item).costs_confirmed);
-      if (fitFilters.includes("self")) next = next.filter((item) => readFit(item).room_type === "self");
-      if (fitFilters.includes("power")) next = next.filter((item) => Boolean(readFit(item).power_backup));
-      if (fitFilters.includes("wifi")) {
-        next = next.filter((item) => (readFit(item).amenities || []).some((name) => /wi-?fi/i.test(name)));
+      for (const key of fitFilters) next = next.filter((item) => fitOn(item, key));
+      if (budget) next = next.filter((item) => Number(item.price) <= budget);
+      if (sqmMin || sqmMax || sizeMin || sizeMax) {
+        next = next.filter((item) => {
+          const rate = pricePerM2Of(item);
+          const area = sizeM2Of(item);
+          if (sqmMin && rate < sqmMin) return false;
+          if (sqmMax && (!rate || rate > sqmMax)) return false;
+          if (sizeMin && area < sizeMin) return false;
+          if (sizeMax && (!area || area > sizeMax)) return false;
+          return true;
+        });
       }
       return next;
     };
@@ -333,13 +396,14 @@ export default function ListingBrowse({
     const base = exact.length ? exact : related;
     const shown = sort === "new" ? base : sortListings(base, sort === "featured" && !featured ? "new" : sort);
     return { shown, related: exact.length ? related.slice(0, 6) : [], loose };
-  }, [items, ranked, region, near, sort, featured, verifiedOnly, fitFilters]);
+  }, [items, ranked, region, near, sort, featured, verifiedOnly, fitFilters, category, plotRange]);
   const shown = narrowed.shown;
   const relatedShown = narrowed.related;
   const loose = narrowed.loose;
 
   const listIds = useMemo(() => shown.map((item) => item.id), [shown]);
-  const userFiltered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0 || Boolean(queryText);
+  const ranged = Object.values(plotRange).some((value) => amountOf(value) > 0);
+  const userFiltered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0 || Boolean(queryText) || ranged || (categoryIsFilter && Boolean(canonicalCategory(category)));
   const summaryLabel = region === "near"
     ? t("near")
     : region !== "all"
@@ -352,7 +416,9 @@ export default function ListingBrowse({
             ? fitFilters.map((key) => t(`fit.filter.${key}`)).join(", ")
             : sort !== "new"
               ? t(`sort.${sort === "featured" && !featured ? "new" : sort}`)
-              : scope || t("region.all");
+              : categoryIsFilter && fitConfig
+                ? (lang === "sw" ? fitConfig.sw : fitConfig.en)
+                : scope || t("region.all");
 
   regionsRef.current = regions;
 
@@ -387,7 +453,7 @@ export default function ListingBrowse({
 
   useEffect(() => {
     if (!booted) return;
-    const signature = [region, sort, verifiedOnly ? "1" : "0", fitFilters.join(","), queryText].join("|");
+    const signature = [region, sort, verifiedOnly ? "1" : "0", fitFilters.join(","), queryText, category, Object.values(plotRange).join(",")].join("|");
     if (!filterKey.current) {
       filterKey.current = signature;
       if (userFiltered && !peekReturn()) {
@@ -408,7 +474,7 @@ export default function ListingBrowse({
     requestAnimationFrame(() => {
       window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
     });
-  }, [booted, region, sort, verifiedOnly, fitFilters, queryText, userFiltered, reduce]);
+  }, [booted, region, sort, verifiedOnly, fitFilters, queryText, userFiltered, reduce, category, plotRange]);
 
   useEffect(() => {
     if (!booted) return;
@@ -467,6 +533,7 @@ export default function ListingBrowse({
     setSort("new");
     setVerifiedOnly(false);
     setFitFilters([]);
+    setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
   };
 
   const resetFilters = () => {
@@ -608,6 +675,26 @@ export default function ListingBrowse({
             >
               {t(`fit.filter.${key}`)}
             </button>
+          ))}
+        </div>
+      ) : null}
+      {plots ? (
+        <div className="plot-ranges">
+          {([
+            ["budget", "plot.budget"],
+            ["sqmMin", "plot.sqmMin"],
+            ["sqmMax", "plot.sqmMax"],
+            ["sizeMin", "plot.sizeMin"],
+            ["sizeMax", "plot.sizeMax"],
+          ] as const).map(([key, label]) => (
+            <label key={key}>
+              {t(label)}
+              <input
+                inputMode="numeric"
+                value={plotRange[key]}
+                onChange={(event) => setPlotRange((cur) => ({ ...cur, [key]: event.target.value.replace(/[^\d]/g, "").slice(0, 12) }))}
+              />
+            </label>
           ))}
         </div>
       ) : null}

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Eye, MapPin } from "lucide-react";
 import { catShort, formatPrice, listingUnit, type Listing } from "@/lib/api";
+import { canonicalCategory } from "@/lib/categories.config";
+import { PlotCardFacts } from "./PlotDetail";
 import { quoteStay, readFit } from "@/lib/pricing";
 import PriceBreakdown from "./PriceBreakdown";
 import { bedCount, formatViews, sellerVerified, shortPlace, verifiedType, viewCount, warnMissingViews, type ViewMode } from "@/lib/browse";
@@ -15,9 +17,10 @@ import ListingPhoto from "./ListingPhoto";
 import SaveButton from "./SaveButton";
 import VerifiedBadge from "./VerifiedBadge";
 
-const RENTALS = new Set(["chumba_nyumba", "store_godown", "frame"]);
+const RENTALS = new Set(["chumba_nyumba", "rooms-houses", "store_godown", "frame"]);
 
 function rateKey(item: Listing) {
+  if (canonicalCategory(item.category) === "plots") return "";
   if (item.category === "vifaa") {
     const unit = listingUnit(item);
     return unit ? `unit.${unit}` : "unit.kipande";
@@ -73,6 +76,7 @@ export default function ListingCard({
   const enter = delay >= 0 && frame === "feed";
   const grid = layout === "grid" && frame === "feed";
   const stay = item.category === "apartment_airbnb";
+  const plot = canonicalCategory(item.category) === "plots";
   const ratio: [number, number] = frame === "hero" ? [3, 4] : stay && !grid ? [4, 3] : [4, 5];
   const kind = catShort[item.category || ""] || "";
   const href = frame === "feed" ? `/tangazo/${item.id}` : `/tangazo/${item.id}?from=${frame}`;
@@ -117,8 +121,9 @@ export default function ListingCard({
           <span>TSh {formatPrice(item.price)}</span>
           {!grid && shownRate ? <span className="immerse-rate">{shownRate}</span> : null}
         </p>
-        {!grid && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
-        {!grid && (readFit(item).costs_confirmed || readFit(item).direct_owner || readFit(item).free_viewing) ? (
+        {!grid && !plot && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
+        {!grid && plot ? <PlotCardFacts item={item} /> : null}
+        {!grid && !plot && (readFit(item).costs_confirmed || readFit(item).direct_owner || readFit(item).free_viewing) ? (
           <p className="fit-badges">
             {readFit(item).direct_owner ? <span className="fit-badge">{t("fit.direct")}</span> : null}
             {readFit(item).free_viewing ? <span className="fit-badge">{t("fit.free")}</span> : null}

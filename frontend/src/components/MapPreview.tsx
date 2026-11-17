@@ -17,16 +17,27 @@ export default function MapPreview({
   lng,
   draggable = false,
   onMove,
+  polygon = [],
+  draw = false,
+  onPolygon,
 }: {
   lat: number;
   lng: number;
   draggable?: boolean;
   onMove?: (lat: number, lng: number) => void;
+  polygon?: [number, number][];
+  draw?: boolean;
+  onPolygon?: (points: [number, number][]) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const shapeRef = useRef<L.Layer | null>(null);
   const onMoveRef = useRef(onMove);
+  const onPolygonRef = useRef(onPolygon);
+  const polygonRef = useRef(polygon);
   onMoveRef.current = onMove;
+  onPolygonRef.current = onPolygon;
+  polygonRef.current = polygon;
 
   useEffect(() => {
     if (!ref.current) return;
@@ -54,9 +65,30 @@ export default function MapPreview({
       placeMarker(mapRef.current);
     }
     const map = mapRef.current;
+    if (shapeRef.current) {
+      map.removeLayer(shapeRef.current);
+      shapeRef.current = null;
+    }
+    if (polygon.length >= 2) {
+      const style = { color: "#4F5A3A", weight: 2, fillOpacity: 0.18 };
+      shapeRef.current = (polygon.length >= 3 ? L.polygon(polygon, style) : L.polyline(polygon, style)).addTo(map);
+    }
     const t = window.setTimeout(() => map.invalidateSize(), 80);
     return () => window.clearTimeout(t);
-  }, [lat, lng]);
+  }, [lat, lng, polygon]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !draw) return;
+    const onClick = (event: L.LeafletMouseEvent) => {
+      const next = [...(polygonRef.current || []), [event.latlng.lat, event.latlng.lng] as [number, number]];
+      onPolygonRef.current?.(next.slice(0, 40));
+    };
+    map.on("click", onClick);
+    return () => {
+      map.off("click", onClick);
+    };
+  }, [draw, lat, lng]);
 
   useEffect(() => {
     return () => {

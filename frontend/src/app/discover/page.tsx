@@ -3,19 +3,18 @@
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import ListingBrowse from "@/components/ListingBrowse";
-import { shopCategories } from "@/lib/api";
+import { canonicalCategory } from "@/lib/categories.config";
 import { useListings } from "@/lib/useListings";
 
 const chips = [
   { id: "", label: "All" },
-  { id: "chumba_nyumba", label: "Rooms & Houses" },
-  { id: "store_godown", label: "Shops Store & Godown" },
+  { id: "rooms-houses", label: "Rooms & Houses" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "maduka", label: "Shop Frames" },
+  { id: "store_godown", label: "Shops Store & Godown" },
+  { id: "frame", label: "Shop Frames" },
+  { id: "plots", label: "Plots" },
   { id: "vifaa", label: "Building Materials" },
 ];
-
-const shop = new Set(shopCategories);
 
 export default function DiscoverPage() {
   const { items, loading, error, pending, stale, refresh } = useListings({ status: "active", limit: 40 });
@@ -25,8 +24,7 @@ export default function DiscoverPage() {
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return items.filter((item) => {
-      if (cat === "maduka" && !shop.has(item.category || "")) return false;
-      if (cat && cat !== "maduka" && item.category !== cat) return false;
+      if (cat && canonicalCategory(item.category) !== cat && item.category !== cat) return false;
       if (!needle) return true;
       return [item.title, item.location, item.city, item.category, item.owner_name, item.owner_username].filter(Boolean).join(" ").toLowerCase().includes(needle);
     });

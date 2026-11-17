@@ -6,25 +6,21 @@ import { ArrowLeft, Search, X } from "lucide-react";
 import Link from "next/link";
 import ListingBrowse from "@/components/ListingBrowse";
 import { SearchSkeleton } from "@/components/Skeletons";
+import { CATEGORIES, canonicalCategory } from "@/lib/categories.config";
 import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 
 const filters = [
   { id: "", label: "All" },
-  { id: "chumba_nyumba", label: "Rooms & Houses" },
-  { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "store_godown", label: "Shops Store & Godown" },
-  { id: "frame", label: "Shop Frames" },
-  { id: "vifaa", label: "Building Materials" },
+  ...Object.values(CATEGORIES).map((item) => ({ id: item.id, label: item.en })),
 ];
 
 function SearchInner() {
   const t = useT();
   const search = useSearchParams();
   const initialQ = search.get("q") || "";
-  const initialCat = filters.some((f) => f.id === (search.get("category") || ""))
-    ? search.get("category") || ""
-    : "";
+  const wanted = canonicalCategory(search.get("category"));
+  const initialCat = filters.some((f) => f.id === wanted) ? wanted : "";
   const [query, setQuery] = useState(initialQ);
   const [debounced, setDebounced] = useState(initialQ.trim());
   const [category, setCategory] = useState(initialCat);
@@ -104,6 +100,7 @@ function SearchInner() {
           pending={pending}
           stale={stale}
           query={debounced}
+          category={category}
           scope={category ? filters.find((item) => item.id === category)?.label || "" : ""}
           onQuery={setQuery}
           onClear={() => {

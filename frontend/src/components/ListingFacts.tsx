@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { decideStay, decideViewing, formatPrice, getAuthUser, listStays, listViewings, needsLogin, quoteStayApi, redirectToLogin, requestStay, requestStorage, requestViewing, reviewEligibility, setAvailability, writeReview, type Listing } from "@/lib/api";
+import { canonicalCategory } from "@/lib/categories.config";
 import { categoryConfig } from "@/lib/categories.config";
 import { useT } from "@/lib/i18n";
 import { quoteStay, readFit, type Quote } from "@/lib/pricing";
@@ -188,7 +189,7 @@ export default function ListingFacts({ item }: { item: Listing }) {
 
       {!mine && item.category !== "apartment_airbnb" && item.category !== "vifaa" ? (
         <div className="fit-form" id="viewing">
-          <p className="detail-heading">{t("fit.viewing")}</p>
+          <p className="detail-heading">{canonicalCategory(item.category) === "plots" ? t("fit.siteVisit") : t("fit.viewing")}</p>
           <label className="wizard-field">
             <span className="wizard-label">{t("fit.date")}</span>
             <input className="wizard-input" type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} />
@@ -201,7 +202,7 @@ export default function ListingFacts({ item }: { item: Listing }) {
             ))}
           </div>
           <button type="button" className="btn-primary" disabled={busy || !visitDate} onClick={() => { void sendViewing(); }}>
-            {t("fit.viewing")}
+            {canonicalCategory(item.category) === "plots" ? t("fit.siteVisit") : t("fit.viewing")}
           </button>
         </div>
       ) : null}

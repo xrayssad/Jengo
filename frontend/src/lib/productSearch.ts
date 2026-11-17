@@ -18,6 +18,8 @@
  * Weights must stay aligned with scoreListing() so both sides rank the same way.
  */
 
+import { canonicalCategory } from "./categories.config";
+
 export const SYNONYM_GROUPS: string[][] = [
   ["chumba", "room", "rooms"],
   ["nyumba", "house", "houses"],
@@ -35,6 +37,7 @@ export const SYNONYM_GROUPS: string[][] = [
   ["apartment", "apato"],
   ["airbnb", "short stay", "stay"],
   ["self-contained", "self contained", "selfcontained"],
+  ["kiwanja", "viwanja", "plot", "plots", "land", "shamba", "ardhi", "hati", "survey", "upimaji", "kujenga"],
 ];
 
 export const POPULAR_SEARCHES = [
@@ -168,7 +171,8 @@ function distanceKm(aLat: number, aLng: number, bLat: number, bLng: number): num
 }
 
 function categoryText(item: SearchListing, categories: CategoryChoice[]): string {
-  return categories.filter((entry) => entry.id === item.category).map((entry) => entry.label).join(" ");
+  const id = canonicalCategory(item.category) || item.category;
+  return categories.filter((entry) => entry.id === id || entry.id === item.category).map((entry) => entry.label).join(" ");
 }
 
 type Scored<T> = { item: T; base: number; score: number; exact: boolean };

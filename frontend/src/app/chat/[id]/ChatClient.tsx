@@ -16,6 +16,7 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
   const [heading, setHeading] = useState(title);
   const [verified, setVerified] = useState(false);
   const [kind, setKind] = useState<"individual" | "business" | null>(null);
+  const [category, setCategory] = useState("");
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -28,6 +29,7 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
         if (res.title) setHeading(res.title);
         setVerified(Boolean(res.is_verified));
         setKind(res.verified_type === "business" || res.verified_type === "individual" ? res.verified_type : null);
+        setCategory(res.category || "");
         setError("");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Could not open messages"))
@@ -85,6 +87,9 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
             {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
             {items.some((m) => !m.mine && /mpesa|m-pesa|tigo\s*pesa|airtel\s*money|lipa|tuma pesa|akaunti|send money/i.test(m.body || "")) ? (
               <p className="fit-note">{t("fit.payWarning")}</p>
+            ) : null}
+            {category === "plots" && items.some((m) => /mpesa|m-pesa|tigo\s*pesa|airtel|lipa|pesa|payment|deposit|advance|akaunti|send money|tuma/i.test(m.body || "")) ? (
+              <p className="fit-note">{t("plot.chatWarning")}</p>
             ) : null}
             {items.length === 0 && !error && (
               <p className="text-sm text-center py-10" style={{ color: "var(--muted)" }}>Write a direct message to the listing owner.</p>

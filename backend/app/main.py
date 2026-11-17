@@ -1094,7 +1094,7 @@ def admin_users(user=Depends(current_user)):
 def admin_listings(user=Depends(current_user)):
     require_admin(user)
     res = db().table("listings").select("*").order("created_at", desc=True).limit(200).execute()
-    return {"items": decorate_listings(res.data or [])}
+    return {"items": decorate_listings(res.data or [], reveal_plot=True)}
 
 
 @app.get("/admin/bookings")
@@ -1113,6 +1113,27 @@ def admin_bookings(user=Depends(current_user)):
         item["listing_title"] = titles.get(row.get("listing_id") or "", "")
         items.append(item)
     return {"items": items}
+
+
+class DocumentsCheckedIn(BaseModel):
+    checked: bool = False
+
+
+@app.post("/admin/listings/{listing_id}/documents-checked")
+def admin_documents_checked(listing_id: str, body: DocumentsCheckedIn, user=Depends(current_user)):
+    """Staff record that a plot title was checked at the land office. Off until an admin sets it."""
+    require_admin(user)
+    from app.categories import PLOTS, canonical_category
+
+    row = _listing(listing_id)
+    if canonical_category(str(row.get("category") or "")) != PLOTS:
+        raise HTTPException(status_code=400, detail="Only a plot can be marked checked")
+    fit = dict(row.get("attributes") or {})
+    fit["documents_checked"] = bool(body.checked)
+    res = db().table("listings").update({"attributes": fit}).eq("id", listing_id).execute()
+    saved = (res.data or [row])[0]
+    saved["attributes"] = fit
+    return decorate_listing(saved, reveal_plot=True)
 
 
 @app.patch("/admin/listings/{listing_id}")
@@ -1177,7 +1198,9 @@ def list_listings(
         if status:
             query = query.eq("status", status)
     if category:
-        cats = [c.strip() for c in category.split(",") if c.strip()]
+        from app.categories import expand_category_query
+
+        cats = expand_category_query([c.strip() for c in category.split(",") if c.strip()])
         if len(cats) == 1:
             query = query.eq("category", cats[0])
         elif cats:
@@ -1222,7 +1245,7 @@ def get_listing(request: Request, listing_id: str):
             user = None
     if not _can_see_listing(item, user):
         raise HTTPException(status_code=404, detail="Listing not found")
-    out = decorate_listing(item)
+    out = decorate_listing(item, reveal_plot=user is not None)
     social.attach_comment_counts([out])
     if user is not None and str(item.get("owner_id") or "") == str(user.id):
         try:
@@ -1234,8 +1257,10 @@ def get_listing(request: Request, listing_id: str):
 
 @app.post("/listings")
 def create_listing(body: ListingIn, user=Depends(current_user)):
-    allowed = {"chumba_nyumba", "apartment_airbnb", "store_godown", "frame", "vifaa"}
-    if body.category not in allowed:
+    from app.categories import ALLOWED, PLOTS, canonical_category
+
+    body.category = canonical_category(body.category)
+    if body.category not in ALLOWED:
         raise HTTPException(status_code=400, detail="Invalid category")
     if len(body.title.strip()) < 3:
         raise HTTPException(status_code=400, detail="Title is too short")
@@ -1244,7 +1269,12 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         raise HTTPException(status_code=400, detail="Invalid unit")
     if body.stock is not None and body.stock < 0:
         raise HTTPException(status_code=400, detail="Invalid stock")
-    period = "" if body.category == "vifaa" else body.period
+    if body.category == PLOTS:
+        if len([img for img in body.images if img]) < 4:
+            raise HTTPException(status_code=400, detail="Add the road, overall, boundary and landmark photos")
+        if body.lat is None or body.lng is None:
+            raise HTTPException(status_code=400, detail="Add a map pin for the plot")
+    period = "" if body.category in {"vifaa", PLOTS} else body.period
     if body.category == "vifaa":
         period = unit or ""
     phones = _clean_phones(body.phones, body.phone)
@@ -1256,7 +1286,8 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
     if phones:
         meta["phones"] = phones
     try:
-        fit = clean_fit(body.category, merge_body_fit(body))
+        fit = clean_fit(body.category, merge_body_fit(body), price=body.price)
+        fit.pop("documents_checked", None)
     except ValueError as exc:
         if str(exc) == "agent_fee":
             raise HTTPException(status_code=400, detail="An agent must enter the agent fee") from exc
@@ -1579,6 +1610,8 @@ def send_booking_message(booking_id: str, body: MessageIn, user=Depends(current_
 
 @app.get("/listings/{listing_id}/dm")
 def listing_dm(listing_id: str, request: Request, user=Depends(current_user)):
+    from app.categories import canonical_category
+
     listing = social.listing_row(listing_id)
     owner = str(listing.get("owner_id") or "")
     peer = (request.query_params.get("peer") or "").strip()
@@ -1590,6 +1623,7 @@ def listing_dm(listing_id: str, request: Request, user=Depends(current_user)):
     return {
         "items": social.list_thread(key, user.id),
         "title": listing.get("title"),
+        "category": canonical_category(str(listing.get("category") or "")),
         "owner_id": owner,
         "is_verified": badge["is_verified"],
         "verified_type": badge["verified_type"],
