@@ -215,19 +215,6 @@ export default function HomePage() {
       <div className="canvas home-body">
         <div className="home-pad">
         <div className="home-intro">
-          <h2 className="home-headline">
-            {(["headline.a", "headline.b", "headline.accent", "headline.c"] as const).map((key, i) => {
-              const text = t(key);
-              if (!text) return null;
-              const accent = key === "headline.accent";
-              return (
-                <span key={key} className={accent ? "headline-word headline-accent" : "headline-word"} style={{ animationDelay: `${i * 60}ms` }}>
-                  {accent ? <em>{text}</em> : text}
-                </span>
-              );
-            })}
-          </h2>
-
           <ProductSearch
             query={query || ""}
             listings={pool?.length ? pool : items}

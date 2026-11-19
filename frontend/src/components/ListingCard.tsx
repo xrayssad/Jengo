@@ -5,13 +5,13 @@ import { ViewTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUpRight, Eye, MapPin } from "lucide-react";
-import { catShort, formatPrice, listingUnit, type Listing } from "@/lib/api";
-import { canonicalCategory } from "@/lib/categories.config";
+import { formatPrice, listingUnit, type Listing } from "@/lib/api";
+import { canonicalCategory, categoryConfig } from "@/lib/categories.config";
 import { PlotCardFacts } from "./PlotDetail";
 import { quoteStay, readFit } from "@/lib/pricing";
 import PriceBreakdown from "./PriceBreakdown";
 import { bedCount, formatViews, sellerVerified, shortPlace, verifiedType, viewCount, warnMissingViews, type ViewMode } from "@/lib/browse";
-import { useT } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import { freezeBrowse, useOpenListing, useReturnPulse } from "@/lib/listSession";
 import ListingPhoto from "./ListingPhoto";
 import SaveButton from "./SaveButton";
@@ -52,7 +52,9 @@ export default function ListingCard({
   listIds?: string[];
   highlight?: boolean;
 }) {
-  const t = useT();
+  const { t, lang } = useI18n();
+  const config = categoryConfig(item.category);
+  const kind = config ? (lang === "sw" ? config.short.sw : config.short.en) : "";
   const pulsed = useReturnPulse(item.id, frame);
   const path = usePathname() || "";
   const active = useOpenListing(item.id);
@@ -78,8 +80,65 @@ export default function ListingCard({
   const stay = item.category === "apartment_airbnb";
   const plot = canonicalCategory(item.category) === "plots";
   const ratio: [number, number] = frame === "hero" ? [3, 4] : stay && !grid ? [4, 3] : [4, 5];
-  const kind = catShort[item.category || ""] || "";
   const href = frame === "feed" ? `/tangazo/${item.id}` : `/tangazo/${item.id}?from=${frame}`;
+  const openListing = () => {
+    if (preview) return;
+    const ids = listIds?.length ? listIds : [item.id];
+    freezeBrowse(frame, ids, item.id);
+  };
+
+  if (frame === "feed") {
+    const photo = (
+      <div className="market-tile-media">
+        <Link href={href} scroll={false} transitionTypes={["nav-forward"]} className="immerse-hit" aria-label={item.title} onClick={openListing}>
+          <ListingPhoto src={src} eager={eager} priority={priority} ratio={grid ? [1, 1] : [4, 3]} />
+        </Link>
+        {kind ? <span className="listing-kind">{kind}</span> : null}
+        <div className="immerse-heart">
+          <SaveButton item={item} variant="heart" size={16} className="heart-fab heart-fab-sm" />
+        </div>
+      </div>
+    );
+    return (
+      <article
+        className={["market-tile is-listing", grid ? "is-grid" : "is-large", stay && !grid ? "is-stay" : "", enter ? "card-enter" : "", highlight || pulsed ? "is-return" : ""].filter(Boolean).join(" ")}
+        data-listing-id={item.id}
+        data-frame={frame}
+        style={enter ? { animationDelay: `${delay}ms` } : undefined}
+      >
+        <div className="listing-media">
+          {opened ? photo : (
+            <ViewTransition name={`listing-${item.id}`} share="listing-morph" default="none">
+              {photo}
+            </ViewTransition>
+          )}
+        </div>
+        <Link href={href} scroll={false} transitionTypes={["nav-forward"]} className="listing-meta" onClick={openListing}>
+          <p className="listing-price">
+            <span>TSh {formatPrice(item.price)}</span>
+            {!grid && shownRate ? <span className="listing-rate">{shownRate}</span> : null}
+          </p>
+          <p className="listing-name">{item.title}</p>
+          {place ? (
+            <p className="listing-where">
+              <MapPin size={13} aria-hidden />
+              <span>{place}</span>
+            </p>
+          ) : null}
+          {!grid && (chip || verified || views != null) ? (
+            <p className="listing-facts">
+              {chip ? <span>{chip}</span> : null}
+              {verified ? <VerifiedBadge size="sm" type={kindVerified} /> : null}
+              {seller && verified ? <span className="listing-seller">{seller}</span> : null}
+              {views != null ? <span>{t("views", { n: formatViews(views) })}</span> : null}
+            </p>
+          ) : null}
+          {!grid && !plot && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
+          {!grid && plot ? <PlotCardFacts item={item} /> : null}
+        </Link>
+      </article>
+    );
+  }
 
   const media = (
     <div className="market-tile-media">
@@ -89,17 +148,13 @@ export default function ListingCard({
           transitionTypes={["nav-forward"]}
           className="immerse-hit"
           aria-label={item.title}
-          onClick={() => {
-            if (preview) return;
-            const ids = listIds?.length ? listIds : [item.id];
-            freezeBrowse(frame, ids, item.id);
-          }}
+          onClick={openListing}
         >
         <ListingPhoto src={src} eager={eager} priority={priority} ratio={ratio} />
       </Link>
       <div className="immerse-shade" aria-hidden />
       <div className="immerse-top">
-        {kind && !grid ? <span className="immerse-pill">{kind}</span> : null}
+        {kind ? <span className="immerse-pill">{kind}</span> : null}
       </div>
       <div className="immerse-copy">
         <p className="immerse-title">

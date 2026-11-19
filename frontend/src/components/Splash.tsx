@@ -158,8 +158,8 @@ export default function Splash() {
         <JengoLogo variant="wordmark" size={78} animated={!reduce} title="Jengo" />
       </div>
       <div className="splash-tags">
-        {(reduce ? LINES.slice(0, 1) : LINES).map((key) => (
-          <p key={key} className="splash-tag">{t(key)}</p>
+        {(reduce ? LINES.slice(0, 1) : LINES).map((key) => t(key)).filter(Boolean).map((text) => (
+          <p key={text} className="splash-tag">{text}</p>
         ))}
       </div>
       {INTRO_SKIPPABLE ? (
