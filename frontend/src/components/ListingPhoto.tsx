@@ -51,14 +51,12 @@ export default function ListingPhoto({
   const ref = useRef<HTMLImageElement>(null);
   const [attempt, setAttempt] = useState(src);
   const [failed, setFailed] = useState(false);
-  const [fade, setFade] = useState(false);
-  const sized = sizedImage(attempt, [480, 800, 1200]);
+  const sized = sizedImage(attempt, [480, 640]);
 
   useEffect(() => {
     watchPage();
     setAttempt(src);
     setFailed(false);
-    setFade(false);
   }, [src]);
 
   useEffect(() => {
@@ -68,13 +66,7 @@ export default function ListingPhoto({
       setAttempt((cur) => (originOf(cur) === originOf(src) && cur === src ? bust(src) : cur));
     };
     mounted.set(img, retry);
-    const known = loadedUrls.has(src) || (img.complete && img.naturalWidth > 0);
-    if (known) loadedUrls.add(src);
-    else {
-      void img.decode?.().then(() => {
-        if (img.naturalWidth > 0) loadedUrls.add(src);
-      }).catch(() => {});
-    }
+    if (loadedUrls.has(src) || (img.complete && img.naturalWidth > 0)) loadedUrls.add(src);
     return () => {
       mounted.delete(img);
     };
@@ -99,15 +91,11 @@ export default function ListingPhoto({
       height={ratio[1]}
       loading={eager ? "eager" : "lazy"}
       decoding="async"
-      fetchPriority={priority ? "high" : "auto"}
-      className={fade ? "is-incoming" : undefined}
+      fetchPriority={priority ? "high" : "low"}
       data-origin={src}
       onLoad={(event) => {
-        const first = !loadedUrls.has(src);
         loadedUrls.add(src);
         loadedUrls.add(originOf(event.currentTarget.currentSrc || src));
-        const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (first && !reduce) setFade(true);
       }}
       onError={() => {
         if (attempt === src) {

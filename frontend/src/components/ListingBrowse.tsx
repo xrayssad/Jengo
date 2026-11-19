@@ -226,7 +226,6 @@ export default function ListingBrowse({
     const routeName = routeRef.current;
     if (!routeName) return;
     writeView(view);
-    let timer = 0;
     let topVisible = scrollTop && window.scrollY > window.innerHeight * 2;
     if (scrollTop) setShowTop(topVisible);
     const snapshot = () => {
@@ -242,15 +241,11 @@ export default function ListingBrowse({
       });
     };
     const onScroll = () => {
-      if (scrollTop) {
-        const next = window.scrollY > window.innerHeight * 2;
-        if (next !== topVisible) {
-          topVisible = next;
-          setShowTop(next);
-        }
-      }
-      window.clearTimeout(timer);
-      timer = window.setTimeout(snapshot, 180);
+      if (!scrollTop) return;
+      const next = window.scrollY > window.innerHeight * 2;
+      if (next === topVisible) return;
+      topVisible = next;
+      setShowTop(next);
     };
     snapshot();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -260,7 +255,6 @@ export default function ListingBrowse({
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("scrollend", snapshot);
       window.removeEventListener("pagehide", snapshot);
-      window.clearTimeout(timer);
       snapshot();
     };
   }, [booted, route, region, sort, view, near, scrollTop, verifiedOnly]);

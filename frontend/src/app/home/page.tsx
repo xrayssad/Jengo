@@ -167,7 +167,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="home-settle min-h-screen overflow-x-clip">
+    <main className="home-settle min-h-screen">
       <HomeBar onMenu={() => setOpen(true)} />
 
       <div className="fixed inset-0 z-40 transition-opacity duration-300" style={{ backgroundColor: "rgba(var(--veil-rgb),0.55)", opacity: open ? 1 : 0, visibility: open ? "visible" : "hidden", pointerEvents: open ? "auto" : "none" }} onClick={() => setOpen(false)} />
