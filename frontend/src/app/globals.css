@@ -183,9 +183,7 @@ body {
   top: 0;
   z-index: 30;
   padding: 14px 0 12px;
-  background: rgba(var(--paper-rgb), 0.78);
-  backdrop-filter: saturate(1.15) blur(18px);
-  -webkit-backdrop-filter: saturate(1.15) blur(18px);
+  background: var(--bg);
 }
 
 .page-title {
@@ -419,10 +417,6 @@ h1, h2, h3 {
   -webkit-backdrop-filter: blur(12px);
 }
 
-.market-tile {
-  container-type: inline-size;
-}
-
 .market-price {
   display: flex;
   align-items: baseline;
@@ -445,7 +439,7 @@ h1, h2, h3 {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: clamp(15px, 12cqi, 18px);
+  font-size: clamp(15px, 4.2vw, 18px);
   font-weight: 700;
 }
 
@@ -683,8 +677,6 @@ a.sheet:active {
   border: 0;
   box-shadow: none;
   color: var(--text);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
   overflow: visible;
   position: relative;
 }
@@ -2159,8 +2151,6 @@ html[data-theme="dark"] .search-overlay {
   background: var(--heart-bg);
   border: 0;
   box-shadow: none;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .home-settle .market-tile-media .skel-bone {
@@ -3048,14 +3038,8 @@ a,
   to { opacity: 1; transform: none; }
 }
 
-.home-settle .topbar {
-  transition: background-color 250ms linear, backdrop-filter 250ms linear;
-}
-
 .home-settle .topbar.is-scrolled {
-  background: color-mix(in srgb, var(--bg) 86%, transparent);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink-rgb) 8%, transparent);
 }
 
 html[data-splash="on"] body {
@@ -3720,12 +3704,10 @@ html[data-theme="dark"] .immerse-shade {
   min-height: 24px;
   padding: 0 8px;
   border-radius: 999px;
-  background: rgba(79, 90, 58, 0.12);
+  background: var(--surface);
   color: var(--primary);
   font-size: 12px;
   font-weight: 600;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .market-tile.is-grid .immerse-title {
@@ -5213,11 +5195,28 @@ html[data-lite="1"] .wizard-pane {
 
 .install-steps li {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  min-height: 44px;
+  min-height: 32px;
   font-size: 15px;
-  font-weight: 650;
+  font-weight: 600;
+  cursor: default;
+}
+
+.install-steps li svg {
+  flex: none;
+  margin-top: 2px;
+}
+
+.install-steps li span {
+  min-width: 0;
+}
+
+.install-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 .install-update {

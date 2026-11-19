@@ -41,6 +41,45 @@ const sideLinks = [
 
 if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 });
 
+function HomeBar({ onMenu }: { onMenu: () => void }) {
+  const t = useT();
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    let on = window.scrollY > 8;
+    setScrolled(on);
+    const onScroll = () => {
+      const next = window.scrollY > 8;
+      if (next === on) return;
+      on = next;
+      setScrolled(next);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <header className={scrolled ? "topbar is-scrolled" : "topbar"}>
+      <div className="canvas home-top px-4">
+        <button type="button" onClick={onMenu} className="soft-icon-btn home-icon-btn" aria-label={t("menu")}>
+          <Menu size={18} color="currentColor" />
+        </button>
+        <div className="home-brand">
+          <Link href="/home" className="home-brand-link" aria-label="Jengo">
+            <Brand variant={scrolled ? "mark" : "wordmark"} size={scrolled ? 28 : 26} />
+          </Link>
+          <AdminLink />
+        </div>
+        <div className="home-tools">
+          <ThemeCircle />
+          <LangCircle />
+          <InboxLink className="soft-icon-btn home-icon-btn" />
+        </div>
+      </div>
+    </header>
+  );
+}
+
 export default function HomePage() {
   const t = useT();
   const [open, setOpen] = useState(false);
@@ -51,7 +90,6 @@ export default function HomePage() {
   const [pool, setPool] = useState<Listing[] | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
   const { items, setItems, loading: waiting, error, pending, stale, refresh, version } = useListings({ status: "active", limit: 40 });
-  const [scrolled, setScrolled] = useState(false);
 
   usePersistentScroll("cats", railRef, true);
 
@@ -115,13 +153,6 @@ export default function HomePage() {
   }, [open]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 8);
-    onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
     const onLike = (e: Event) => {
       const d = ((e as CustomEvent).detail || {}) as { listing_id?: string; likes_count?: number };
       if (!d.listing_id || typeof d.likes_count !== "number") return;
@@ -137,24 +168,7 @@ export default function HomePage() {
 
   return (
     <main className="home-settle min-h-screen overflow-x-clip">
-      <header className={scrolled ? "topbar is-scrolled" : "topbar"}>
-        <div className="canvas home-top px-4">
-          <button type="button" onClick={() => setOpen(true)} className="soft-icon-btn home-icon-btn" aria-label={t("menu")}>
-            <Menu size={18} color="currentColor" />
-          </button>
-          <div className="home-brand">
-            <Link href="/home" className="home-brand-link" aria-label="Jengo">
-              <Brand variant={scrolled ? "mark" : "wordmark"} size={scrolled ? 28 : 26} />
-            </Link>
-            <AdminLink />
-          </div>
-          <div className="home-tools">
-            <ThemeCircle />
-            <LangCircle />
-            <InboxLink className="soft-icon-btn home-icon-btn" />
-          </div>
-        </div>
-      </header>
+      <HomeBar onMenu={() => setOpen(true)} />
 
       <div className="fixed inset-0 z-40 transition-opacity duration-300" style={{ backgroundColor: "rgba(var(--veil-rgb),0.55)", opacity: open ? 1 : 0, visibility: open ? "visible" : "hidden", pointerEvents: open ? "auto" : "none" }} onClick={() => setOpen(false)} />
       <aside

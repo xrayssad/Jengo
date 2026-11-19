@@ -140,7 +140,7 @@ export default function ListingBrowse({
   const urlReady = useRef(false);
   const fromHistory = useRef(false);
   const regionsRef = useRef<string[]>([]);
-  const [pull, setPull] = useState(0);
+  const pullRef = useRef<HTMLDivElement>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pullDone, setPullDone] = useState(false);
   const [mountExtras, setMountExtras] = useState(true);
@@ -226,7 +226,10 @@ export default function ListingBrowse({
     const routeName = routeRef.current;
     if (!routeName) return;
     writeView(view);
-    const onScroll = () => {
+    let timer = 0;
+    let topVisible = scrollTop && window.scrollY > window.innerHeight * 2;
+    if (scrollTop) setShowTop(topVisible);
+    const snapshot = () => {
       if (document.documentElement.dataset.detailOverlay === "1" && document.body.style.overflow === "hidden") return;
       writeBrowse(routeName, {
         region,
@@ -237,11 +240,29 @@ export default function ListingBrowse({
         nearLng: near?.lng ?? null,
         verifiedOnly,
       });
-      if (scrollTop) setShowTop(window.scrollY > window.innerHeight * 2);
     };
-    onScroll();
+    const onScroll = () => {
+      if (scrollTop) {
+        const next = window.scrollY > window.innerHeight * 2;
+        if (next !== topVisible) {
+          topVisible = next;
+          setShowTop(next);
+        }
+      }
+      window.clearTimeout(timer);
+      timer = window.setTimeout(snapshot, 180);
+    };
+    snapshot();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    window.addEventListener("scrollend", snapshot);
+    window.addEventListener("pagehide", snapshot);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scrollend", snapshot);
+      window.removeEventListener("pagehide", snapshot);
+      window.clearTimeout(timer);
+      snapshot();
+    };
   }, [booted, route, region, sort, view, near, scrollTop, verifiedOnly]);
 
   useEffect(() => {
@@ -257,6 +278,18 @@ export default function ListingBrowse({
     let startY = 0;
     let tracking = false;
     let dragged = 0;
+    const paintPull = (dy: number) => {
+      const slot = pullRef.current;
+      if (!slot) return;
+      const next = Math.max(0, Math.min(dy, 120));
+      if (next > 6) {
+        slot.hidden = false;
+        slot.style.setProperty("--pull", String(Math.min(next / 72, 1)));
+      } else {
+        slot.hidden = true;
+        slot.style.removeProperty("--pull");
+      }
+    };
     const onStart = (event: TouchEvent) => {
       if (window.scrollY > 2) return;
       startY = event.touches[0]?.clientY || 0;
@@ -267,7 +300,7 @@ export default function ListingBrowse({
       if (!tracking) return;
       const dy = (event.touches[0]?.clientY || 0) - startY;
       dragged = dy;
-      if (dy > 0 && window.scrollY <= 2) setPull(Math.min(dy, 120));
+      if (dy > 0 && window.scrollY <= 2) paintPull(dy);
     };
     const onEnd = () => {
       if (!tracking) return;
@@ -275,19 +308,19 @@ export default function ListingBrowse({
       const dy = dragged;
       dragged = 0;
       if (dy > 72) {
+        paintPull(72);
         setRefreshing(true);
-        setPull(72);
         Promise.resolve(onRefresh()).finally(() => {
           setRefreshing(false);
           setPullDone(true);
           window.setTimeout(() => {
             setPullDone(false);
-            setPull(0);
+            paintPull(0);
           }, 280);
         });
         return;
       }
-      setPull(0);
+      paintPull(0);
     };
     window.addEventListener("touchstart", onStart, { passive: true });
     window.addEventListener("touchmove", onMove, { passive: true });
@@ -618,11 +651,9 @@ export default function ListingBrowse({
 
   return (
     <section className="browse">
-      {(pull > 6 || refreshing || pullDone) ? (
-        <div className="pull-slot" aria-hidden={refreshing ? undefined : true}>
-          <JengoLoader variant="pull" size={22} pull={Math.min(pull / 72, 1)} refreshing={refreshing} done={pullDone} />
-        </div>
-      ) : null}
+      <div ref={pullRef} className="pull-slot" hidden={!(refreshing || pullDone)} aria-hidden={refreshing ? undefined : true}>
+        <JengoLoader variant="pull" size={22} refreshing={refreshing} done={pullDone} />
+      </div>
       <div ref={chipsRef} className={showSummary ? "browse-pin" : "browse-stack"}>
       <div className="loc-rail no-scrollbar" role="tablist" aria-label={t("near")}>
         <button

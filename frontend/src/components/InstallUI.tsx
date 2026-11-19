@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { usePathname } from "next/navigation";
-import { Check, Plus, Share } from "lucide-react";
+import { Check, Ellipsis, Plus, Share } from "lucide-react";
 import JengoLogo from "@/components/JengoLogo";
 import { useT } from "@/lib/i18n";
 import {
@@ -14,7 +14,9 @@ import {
   getDeferredPrompt,
   installBlocked,
   installDismissed,
+  iosMajor,
   isDesktop,
+  isSafariPrivate,
   isStandalone,
   noteVisit,
   peekNudge,
@@ -67,6 +69,8 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
   const [copied, setCopied] = useState(false);
   const [update, setUpdate] = useState(false);
   const [debug, setDebug] = useState<DebugReport | null>(null);
+  const [privateMode, setPrivateMode] = useState<boolean | null>(null);
+  const [ios, setIos] = useState(0);
   const autoOpened = useRef(false);
   const kind = kindNow();
   const quiet = isDesktop();
@@ -75,7 +79,12 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
     setReady(true);
     bindInstallPrompt();
     noteVisit();
+    setIos(iosMajor(navigator.userAgent || ""));
     setStandalone(isStandalone());
+    let cancelPrivate = false;
+    void isSafariPrivate().then((value) => {
+      if (!cancelPrivate) setPrivateMode(value);
+    });
     const unsub = subscribeInstall(() => setRev((n) => n + 1));
     registerServiceWorker(() => setUpdate(true));
     const media = window.matchMedia("(display-mode: standalone)");
@@ -100,6 +109,7 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
     const obs = new MutationObserver(() => setGate((n) => n + 1));
     obs.observe(document.documentElement, { attributes: true, attributeFilter: ["data-splash", "data-intro", "data-detail-overlay"] });
     return () => {
+      cancelPrivate = true;
       unsub();
       media.removeEventListener("change", onMode);
       window.removeEventListener("pointerdown", onTouch);
@@ -131,12 +141,13 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
       setBanner(true);
       return;
     }
+    if (current === "ios" && privateMode === null) return;
     if (!autoOpened.current) {
       autoOpened.current = true;
       setFromMenu(false);
       setSheet(current);
     }
-  }, [path, engaged, rev, standalone, gate]);
+  }, [path, engaged, rev, standalone, gate, privateMode]);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -175,6 +186,7 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
       if (!reason) {
         if (!secure) reason = "Not a secure context";
         else if (alone) reason = "Already installed";
+        else if (current === "ios" && privateMode) reason = "Private browsing hides Add to Home Screen";
         else if (current === "ios") reason = "iOS Safari uses the share sheet";
         else if (current === "safari") reason = "Open this page in Safari to install";
         else if (current === "webview") reason = "In-app browser cannot install";
@@ -191,7 +203,7 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancel = true;
     };
-  }, [rev, path]);
+  }, [rev, path, privateMode]);
 
   const install = async () => {
     consumeNudge();
@@ -273,21 +285,33 @@ export function InstallProvider({ children }: { children: React.ReactNode }) {
             className="install-panel"
             role="dialog"
             aria-modal="true"
-            aria-label={t(sheet === "ios" ? "install.iosTitle" : "install.openTitle")}
+            aria-label={t(sheet === "ios" ? (privateMode ? "install.privateTitle" : "install.iosTitle") : "install.openTitle")}
             onClick={(event) => event.stopPropagation()}
           >
             <span className="install-mark" aria-hidden>
               <JengoLogo variant="mark" size={42} title="" />
             </span>
             {sheet === "ios" ? (
-              <>
-                <p className="install-title">{t("install.iosTitle")}</p>
-                <ol className="install-steps">
-                  <li><Share size={18} aria-hidden /> {t("install.ios1")}</li>
-                  <li><Plus size={18} aria-hidden /> {t("install.ios2")}</li>
-                  <li><Check size={18} aria-hidden /> {t("install.ios3")}</li>
-                </ol>
-              </>
+              privateMode ? (
+                <>
+                  <p className="install-title">{t("install.privateTitle")}</p>
+                  <p className="install-note">{t("install.privateBody")}</p>
+                  <button type="button" className="install-go" onClick={() => { void copyLink(); }}>
+                    {copied ? t("install.copied") : t("install.copy")}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <p className="install-title">{t("install.iosTitle")}</p>
+                  <ol className="install-steps">
+                    {ios >= 26 ? <li><Ellipsis size={18} aria-hidden /> <span>{t("install.iosMore")}</span></li> : <li><Share size={18} aria-hidden /> <span>{t("install.ios1")}</span></li>}
+                    <li><Plus size={18} aria-hidden /> <span>{t("install.ios2")}</span></li>
+                    <li><Check size={18} aria-hidden /> <span>{t(ios >= 26 ? "install.iosWeb" : "install.ios3")}</span></li>
+                  </ol>
+                  <p className="install-note">{t("install.iosWhere")}</p>
+                  <p className="install-note">{t("install.iosMissing")}</p>
+                </>
+              )
             ) : (
               <>
                 <p className="install-title">{sheet === "safari" ? t("install.safari") : t("install.webview")}</p>

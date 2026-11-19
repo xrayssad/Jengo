@@ -65,16 +65,47 @@ export function isDesktop() {
   return !/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent || "");
 }
 
+export function isIosDevice(ua = "", platform = "", touchPoints = 0) {
+  return /iPad|iPhone|iPod/.test(ua) || (platform === "MacIntel" && touchPoints > 1);
+}
+
+export function iosMajor(ua = ""): number {
+  const os = ua.match(/(?:iPhone|CPU) OS (\d+)[_.]/);
+  if (os) return Number(os[1]);
+  const version = ua.match(/Version\/(\d+)/);
+  return version ? Number(version[1]) : 0;
+}
+
 export function detectKind(hasPrompt: boolean): InstallKind | null {
   if (typeof navigator === "undefined") return null;
   const ua = navigator.userAgent || "";
   if (/WhatsApp|Instagram|FBAN|FBAV|FB_IAB|TikTok|musical_ly|Bytedance/i.test(ua)) return "webview";
-  const iOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  const iOS = isIosDevice(ua, navigator.platform, navigator.maxTouchPoints);
   const otherIosBrowser = /CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
   if (iOS && otherIosBrowser) return "safari";
   if (iOS && /Safari/.test(ua)) return "ios";
   if (hasPrompt) return "native";
   return null;
+}
+
+/** Safari Private hides Add to Home Screen. Only the known private-mode error counts. */
+export async function isSafariPrivate(): Promise<boolean> {
+  if (typeof navigator === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  const iOS = isIosDevice(ua, navigator.platform, navigator.maxTouchPoints);
+  const safari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS|OPiOS/.test(ua);
+  const getDirectory = navigator.storage?.getDirectory;
+  if (!iOS || !safari || typeof getDirectory !== "function") return false;
+  try {
+    await Promise.race([
+      getDirectory.call(navigator.storage),
+      new Promise((_, reject) => window.setTimeout(() => reject(new Error("timeout")), 1500)),
+    ]);
+    return false;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return message.toLowerCase().includes("unknown transient reason");
+  }
 }
 
 export function installBlocked(path: string) {
