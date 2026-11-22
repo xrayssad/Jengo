@@ -606,7 +606,12 @@ export default function ListingBrowse({
 
   const resetFilters = () => {
     clearBrowse();
+    setBedsMin(0);
     onClear?.();
+    if (chrome === "home") {
+      window.scrollTo({ top: 0, behavior: "auto" });
+      window.dispatchEvent(new Event("jengo-nav-show"));
+    }
   };
 
   const saveNotify = () => {
@@ -683,17 +688,22 @@ export default function ListingBrowse({
     const onRegion = (event: Event) => {
       const next = String((event as CustomEvent<string>).detail || "");
       if (!next || next === "near") return;
+      const releaseHome = () => {
+        setSort("new");
+        setVerifiedOnly(false);
+        setFitFilters([]);
+        setBedsMin(0);
+        setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
+      };
       if (next === "all") {
         setRegion("all");
         setNear(null);
         setNearNames([]);
-        setSort("new");
-        setVerifiedOnly(false);
-        setFitFilters([]);
-      }
-      if (next !== "all") {
+        releaseHome();
+      } else {
         setRegion(next);
         setNear(null);
+        releaseHome();
       }
       if (chrome === "home") {
         window.scrollTo({ top: 0, behavior: "auto" });
@@ -701,11 +711,23 @@ export default function ListingBrowse({
       }
     };
     const onNear = () => locate();
+    const onRestore = () => {
+      setRegion("all");
+      setNear(null);
+      setNearNames([]);
+      setSort("new");
+      setVerifiedOnly(false);
+      setFitFilters([]);
+      setBedsMin(0);
+      setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
+    };
     window.addEventListener("jengo-region", onRegion);
     window.addEventListener("jengo-near", onNear);
+    window.addEventListener("jengo-home-restore", onRestore);
     return () => {
       window.removeEventListener("jengo-region", onRegion);
       window.removeEventListener("jengo-near", onNear);
+      window.removeEventListener("jengo-home-restore", onRestore);
     };
   }, [chrome, locate]);
 

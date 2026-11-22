@@ -5,7 +5,7 @@ import Link from "next/link";
 import FreshRail from "@/components/FreshRail";
 import HeroCarousel from "@/components/HeroCarousel";
 import PromoBanner from "@/components/PromoBanner";
-import { Bell, ChevronDown, MapPin } from "lucide-react";
+import { Bell, ChevronDown, MapPin, X } from "lucide-react";
 import BottomSheet from "@/components/BottomSheet";
 import ListingBrowse from "@/components/ListingBrowse";
 import CategoryGrid from "@/components/CategoryGrid";
@@ -13,9 +13,9 @@ import ProductSearch from "@/components/ProductSearch";
 import { InboxLink, useInboxLive } from "@/components/MqttInbox";
 import { fetchListings, writeHomeListingsCache, type Listing } from "@/lib/api";
 import { pickFeatured, pickFresh } from "@/lib/browse";
-import { canonicalCategory, isFilterTile } from "@/lib/categories.config";
+import { canonicalCategory, isFilterTile, tileCopy } from "@/lib/categories.config";
 import { regionsFor } from "@/lib/browse";
-import { useT } from "@/lib/i18n";
+import { useI18n, useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 import { usePersistentScroll } from "@/lib/listSession";
 
@@ -55,6 +55,7 @@ function HomeBar({ placeLabel, onLocate }: { placeLabel: string; onLocate: () =>
 
 export default function HomePage() {
   const t = useT();
+  const { lang } = useI18n();
   const [query, setQuery] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -220,6 +221,26 @@ export default function HomePage() {
     window.dispatchEvent(new Event("jengo-nav-show"));
   }, [locOpen]);
 
+  const hadCategory = useRef(false);
+  useEffect(() => {
+    if (category) {
+      hadCategory.current = true;
+      return;
+    }
+    if (!hadCategory.current) return;
+    hadCategory.current = false;
+    window.scrollTo({ top: 0, behavior: "auto" });
+    window.dispatchEvent(new Event("jengo-nav-show"));
+  }, [category]);
+
+  const restoreHome = () => {
+    setQuery("");
+    setCategory("");
+    window.dispatchEvent(new Event("jengo-home-restore"));
+    window.scrollTo({ top: 0, behavior: "auto" });
+    window.dispatchEvent(new Event("jengo-nav-show"));
+  };
+
   const [locQuery, setLocQuery] = useState("");
   const placeLabel = place === "near" ? t("near") : place !== "all" ? place : t("region.all");
   const placeChoices = ["all", ...regionsFor(pool?.length ? pool : items)];
@@ -256,6 +277,7 @@ export default function HomePage() {
             onRegion={(name) => {
               pendingQuery.current = "";
               setQuery("");
+              setCategory("");
               if (name === "near") window.dispatchEvent(new Event("jengo-near"));
               else window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
             }}
@@ -272,6 +294,15 @@ export default function HomePage() {
               setCategory((cur) => (cur === id ? "" : id));
             }}
           />
+          {category ? (
+            <div className="home-cat-clear">
+              <span>{tileCopy(category, lang).label}</span>
+              <button type="button" onClick={restoreHome}>
+                <X size={14} aria-hidden />
+                {t("clear")}
+              </button>
+            </div>
+          ) : null}
         </div>
 
         <div className="home-pad">
@@ -313,6 +344,8 @@ export default function HomePage() {
           type="button"
           className={place === "near" ? "sheet-option is-on" : "sheet-option"}
           onClick={() => {
+            setQuery("");
+            setCategory("");
             window.dispatchEvent(new Event("jengo-near"));
             setLocQuery("");
             setLocOpen(false);
@@ -326,6 +359,8 @@ export default function HomePage() {
             type="button"
             className={place === name ? "sheet-option is-on" : "sheet-option"}
             onClick={() => {
+              setQuery("");
+              setCategory("");
               window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
               setLocQuery("");
               setLocOpen(false);
