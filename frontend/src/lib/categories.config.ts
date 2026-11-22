@@ -230,9 +230,9 @@ export type HomeTile = {
 export const HOME_TILES: HomeTile[] = [
   { id: "rooms-houses", action: "filter", icon: "home" },
   { id: "apartment_airbnb", action: "filter", icon: "building" },
+  { id: "plots", action: "filter", icon: "land" },
   { id: "store_godown", action: "filter", icon: "warehouse" },
   { id: "frame", action: "filter", icon: "store" },
-  { id: "plots", action: "filter", icon: "land" },
   { id: "vifaa", action: "filter", icon: "boxes" },
   { id: "jobs", action: "route", href: "/kazi", icon: "hammer" },
   { id: "all", action: "sheet", icon: "all" },

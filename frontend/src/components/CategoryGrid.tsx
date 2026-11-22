@@ -126,7 +126,7 @@ export default function CategoryGrid({
 
   return (
     <>
-      <div className="cat-grid" role="list">
+      <div className="cat-grid no-scrollbar rail-fade" role="list">
         {HOME_TILES.map((tile) => (
           <TileButton key={tile.id} tile={tile} active={active === tile.id} onPick={pick} />
         ))}

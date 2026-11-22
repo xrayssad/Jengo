@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUp, LayoutGrid, LocateFixed, RectangleVertical } from "lucide-react";
+import { ArrowUp, ArrowUpDown, LayoutGrid, LocateFixed, RectangleVertical } from "lucide-react";
 import BottomSheet from "./BottomSheet";
 import { locationPermitSeen, markLocationPermit } from "@/lib/permit";
 import type { ReactNode } from "react";
@@ -16,6 +16,7 @@ import {
   hasCoords,
   inRegion,
   isSortKey,
+  bedCount,
   nearListings,
   readBrowse,
   readView,
@@ -93,6 +94,9 @@ export default function ListingBrowse({
   scope = "",
   onClear,
   onQuery,
+  omitIds = [],
+  midFeed = null,
+  chrome = "page",
 }: {
   items: Listing[];
   loading?: boolean;
@@ -108,6 +112,9 @@ export default function ListingBrowse({
   scope?: string;
   onClear?: () => void;
   onQuery?: (next: string) => void;
+  omitIds?: string[];
+  midFeed?: ReactNode;
+  chrome?: "home" | "page";
 }) {
   const { t, lang } = useI18n();
   const path = usePathname() || "/";
@@ -126,6 +133,8 @@ export default function ListingBrowse({
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [fitFilters, setFitFilters] = useState<string[]>([]);
   const [plotRange, setPlotRange] = useState({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
+  const [bedsMin, setBedsMin] = useState(0);
+  const [quick, setQuick] = useState<"" | "near" | "verified" | "free" | "beds">("");
   const fitConfig = categoryConfig(category);
   const plots = canonicalCategory(category) === "plots";
   const seenCategory = useRef(category);
@@ -416,6 +425,7 @@ export default function ListingBrowse({
       if (region === "near" && near) next = nearListings(next, near, nearNames);
       else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
       if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
+      if (bedsMin > 0) next = next.filter((item) => (bedCount(item) || 0) >= bedsMin);
       for (const key of fitFilters) next = next.filter((item) => fitOn(item, key));
       if (budget) next = next.filter((item) => Number(item.price) <= budget);
       if (sqmMin || sqmMax || sizeMin || sizeMax) {
@@ -442,14 +452,17 @@ export default function ListingBrowse({
     const base = exact.length ? exact : related;
     const shown = sort === "new" ? base : sortListings(base, sort === "featured" && !featured ? "new" : sort);
     return { shown, related: exact.length ? related.slice(0, 6) : [], loose };
-  }, [items, ranked, region, near, nearNames, sort, featured, verifiedOnly, fitFilters, category, plotRange]);
+  }, [items, ranked, region, near, nearNames, sort, featured, verifiedOnly, fitFilters, category, plotRange, bedsMin]);
   const shown = narrowed.shown;
   const relatedShown = narrowed.related;
   const loose = narrowed.loose;
 
-  const listIds = useMemo(() => shown.map((item) => item.id), [shown]);
   const ranged = Object.values(plotRange).some((value) => amountOf(value) > 0);
-  const userFiltered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0 || Boolean(queryText) || ranged || (categoryIsFilter && Boolean(canonicalCategory(category)));
+  const userFiltered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0 || bedsMin > 0 || Boolean(queryText) || ranged || (categoryIsFilter && Boolean(canonicalCategory(category)));
+  const omit = useMemo(() => new Set(omitIds), [omitIds]);
+  const pooled = userFiltered ? shown : shown.filter((item) => !omit.has(item.id));
+  const feed = chrome === "home" && !userFiltered && pooled.length === 0 && shown[0] ? [shown[0]] : pooled;
+  const feedIds = useMemo(() => feed.map((item) => item.id), [feed]);
   const summaryLabel = region === "near"
     ? t("near")
     : region !== "all"
@@ -688,13 +701,38 @@ export default function ListingBrowse({
 
   const regionLabel = region !== "all" && region !== "near" ? region : (queryText || scope || summaryLabel);
   const showSummary = userFiltered || Boolean(scope);
+  const homeTabs = chrome === "home" && !queryText;
+  const browseTools = (
+    <div className="browse-tools">
+      <button type="button" className={chrome === "home" ? "browse-sort is-icon" : "browse-sort"} aria-label={t(`sort.${sort === "featured" && !featured ? "new" : sort}`)} aria-haspopup="dialog" aria-expanded={sheet} onClick={() => setSheet(true)}>
+        {chrome === "home" ? <ArrowUpDown size={16} /> : t(`sort.${sort === "featured" && !featured ? "new" : sort}`)}
+      </button>
+      <div className="view-toggle" role="group" aria-label={t("view.grid")}>
+        <button type="button" aria-label={t("view.grid")} aria-pressed={view === "grid"} className={view === "grid" ? "is-on" : ""} onClick={() => commit(() => setView("grid"))}>
+          <LayoutGrid size={16} />
+        </button>
+        <button type="button" aria-label={t("view.large")} aria-pressed={view === "large"} className={view === "large" ? "is-on" : ""} onClick={() => commit(() => setView("large"))}>
+          <RectangleVertical size={16} />
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <section className="browse">
       <div ref={pullRef} className="pull-slot" hidden={!(refreshing || pullDone)} aria-hidden={refreshing ? undefined : true}>
         <JengoLoader variant="pull" size={22} refreshing={refreshing} done={pullDone} />
       </div>
-      <div ref={chipsRef} className={showSummary ? "browse-pin" : "browse-stack"}>
+      <div ref={chipsRef} className={chrome === "home" ? "browse-stack" : showSummary ? "browse-pin" : "browse-stack"}>
+      {chrome === "home" ? (
+        <div className="loc-rail quick-chips no-scrollbar rail-fade" aria-label={t("near")}>
+          <button type="button" className={region === "near" ? "loc-chip is-on" : "loc-chip"} aria-pressed={region === "near"} onClick={() => setQuick("near")}>{t("near")}</button>
+          <button type="button" className={verifiedOnly ? "loc-chip is-on" : "loc-chip"} aria-pressed={verifiedOnly} onClick={() => setQuick("verified")}>{t("filter.verified")}</button>
+          <button type="button" className={fitFilters.includes("free_viewing") ? "loc-chip is-on" : "loc-chip"} aria-pressed={fitFilters.includes("free_viewing")} onClick={() => setQuick("free")}>{t("fit.free")}</button>
+          <button type="button" className={sort === "price_asc" || sort === "price_desc" ? "loc-chip is-on" : "loc-chip"} onClick={() => setSheet(true)}>{t("chip.price")}</button>
+          <button type="button" className={bedsMin > 0 ? "loc-chip is-on" : "loc-chip"} aria-pressed={bedsMin > 0} onClick={() => setQuick("beds")}>{t("chip.beds")}</button>
+        </div>
+      ) : (
       <div className="loc-rail no-scrollbar rail-fade" role="tablist" aria-label={t("near")}>
         <button
           type="button"
@@ -734,6 +772,7 @@ export default function ListingBrowse({
           </button>
         ))}
       </div>
+      )}
       {fitConfig && fitConfig.filters.length ? (
         <div className="loc-rail no-scrollbar rail-fade" aria-label={t("sort")}>
           {fitConfig.filters.map((key) => (
@@ -749,7 +788,7 @@ export default function ListingBrowse({
           ))}
         </div>
       ) : null}
-      {plots ? (
+      {plots && chrome !== "home" ? (
         <div className="plot-ranges">
           {([
             ["budget", "plot.budget"],
@@ -780,7 +819,8 @@ export default function ListingBrowse({
         </div>
       ) : null}
       {!queryText ? (
-        <div className="text-tabs" role="tablist" aria-label={t("feed.recommended")}>
+        <div className={homeTabs ? "home-tab-row" : undefined}>
+        <div className={chrome === "home" ? "text-tabs home-tabs" : "text-tabs"} role="tablist" aria-label={t("feed.recommended")}>
           <button
             type="button"
             role="tab"
@@ -826,6 +866,8 @@ export default function ListingBrowse({
             {t("feed.nearby")}
           </button>
         </div>
+        {homeTabs ? browseTools : null}
+        </div>
       ) : null}
       </div>
 
@@ -845,7 +887,7 @@ export default function ListingBrowse({
         </button>
       ) : null}
 
-      {mountExtras && beforeFeed ? (
+      {mountExtras && beforeFeed && chrome !== "home" ? (
         <div className={userFiltered ? "home-extras is-out" : "home-extras"}>
           <div className="home-extras-inner">{beforeFeed}</div>
         </div>
@@ -858,6 +900,7 @@ export default function ListingBrowse({
       ) : null}
       {stale ? <p className="stale-banner">{t("staleList")}</p> : null}
 
+      {homeTabs ? null : (
       <div className="browse-head">
         {showSummary ? <span /> : (
           <p className="browse-count-line">
@@ -865,26 +908,15 @@ export default function ListingBrowse({
             <span>{t("listings")}</span>
           </p>
         )}
-        <div className="browse-tools">
-          <button type="button" className="browse-sort" aria-haspopup="dialog" aria-expanded={sheet} onClick={() => setSheet(true)}>
-            {t(`sort.${sort === "featured" && !featured ? "new" : sort}`)}
-          </button>
-          <div className="view-toggle" role="group" aria-label={t("view.grid")}>
-            <button type="button" aria-label={t("view.grid")} aria-pressed={view === "grid"} className={view === "grid" ? "is-on" : ""} onClick={() => commit(() => setView("grid"))}>
-              <LayoutGrid size={16} />
-            </button>
-            <button type="button" aria-label={t("view.large")} aria-pressed={view === "large"} className={view === "large" ? "is-on" : ""} onClick={() => commit(() => setView("large"))}>
-              <RectangleVertical size={16} />
-            </button>
-          </div>
-        </div>
+        {browseTools}
       </div>
+      )}
 
       {error ? <p className="browse-error">{error}</p> : null}
 
       <div className={fading ? "listing-stage is-fading" : "listing-stage"}>
-        {(loading || locating) && shown.length === 0 && <ListingFeedSkeleton layout={view} />}
-        {!loading && !locating && !error && shown.length === 0 && (
+        {(loading || locating) && feed.length === 0 && <ListingFeedSkeleton layout={view} />}
+        {!loading && !locating && !error && feed.length === 0 && (
           <div className="empty-panel browse-empty">
             <span className="browse-empty-mark" aria-hidden>
               <JengoLogo variant="mark" size={32} title="" />
@@ -930,20 +962,33 @@ export default function ListingBrowse({
             ) : null}
           </div>
         ) : null}
-        {shown.length > 0 && (
+        {feed.length > 0 && (
           <div className={view === "large" ? "listing-grid is-large" : "listing-grid"}>
-            {shown.map((item, i) => (
+            {feed.map((item, i) => (
+              <div key={item.id} className={i >= 6 ? "card-slot is-cv" : "card-slot"}>
               <ListingCard
-                key={item.id}
                 item={item}
-                eager={i < 4}
+                eager={i < 2}
                 priority={i === 0}
                 delay={i < 6 ? i * 60 : -1}
                 layout={view}
-                listIds={listIds}
+                listIds={feedIds}
                 defer={i >= 6}
               />
+              {chrome === "home" && i === 0 && mountExtras && beforeFeed ? (
+                <div className={userFiltered ? "home-extras is-out" : "home-extras"}>
+                  <div className="home-extras-inner">{beforeFeed}</div>
+                </div>
+              ) : null}
+              {midFeed && i === 3 ? midFeed : null}
+              </div>
             ))}
+            {chrome === "home" && feed.length === 0 && mountExtras && beforeFeed ? (
+              <div className={userFiltered ? "home-extras is-out" : "home-extras"}>
+                <div className="home-extras-inner">{beforeFeed}</div>
+              </div>
+            ) : null}
+            {midFeed && feed.length < 4 ? midFeed : null}
           </div>
         )}
         {relatedShown.length > 0 ? (
@@ -979,7 +1024,46 @@ export default function ListingBrowse({
           {t("permit.allow")}
         </button>
       </BottomSheet>
-      <BottomSheet open={sheet} title={t("sort")} onClose={() => setSheet(false)}>
+      <BottomSheet open={quick === "near"} title={t("near")} onClose={() => setQuick("")}>
+        <p className="sheet-copy">{t("permit.location.body")}</p>
+        <button type="button" className="btn-primary sheet-submit" onClick={() => { setQuick(""); locate(); }}>{t("near")}</button>
+      </BottomSheet>
+      <BottomSheet open={quick === "verified"} title={t("filter.verified")} onClose={() => setQuick("")}>
+        <button type="button" className={verifiedOnly ? "sheet-option is-on" : "sheet-option"} onClick={() => { setVerifiedOnly(true); setQuick(""); }}>{t("filter.verified")}</button>
+        <button type="button" className={!verifiedOnly ? "sheet-option is-on" : "sheet-option"} onClick={() => { setVerifiedOnly(false); setQuick(""); }}>{t("region.all")}</button>
+      </BottomSheet>
+      <BottomSheet open={quick === "free"} title={t("fit.free")} onClose={() => setQuick("")}>
+        <p className="sheet-copy">{t("badge.free")}</p>
+        <button type="button" className="btn-primary sheet-submit" onClick={() => { setFitFilters((cur) => cur.includes("free_viewing") ? cur.filter((key) => key !== "free_viewing") : [...cur, "free_viewing"]); setQuick(""); }}>{fitFilters.includes("free_viewing") ? t("filter.clear") : t("fit.free")}</button>
+      </BottomSheet>
+      <BottomSheet open={quick === "beds"} title={t("chip.beds")} onClose={() => setQuick("")}>
+        {[0, 1, 2, 3, 4].map((count) => (
+          <button key={count} type="button" className={bedsMin === count ? "sheet-option is-on" : "sheet-option"} onClick={() => { setBedsMin(count); setQuick(""); }}>
+            {count === 0 ? t("region.all") : t("bed", { n: count })}
+          </button>
+        ))}
+      </BottomSheet>
+      <BottomSheet open={sheet} title={t("chip.price")} onClose={() => setSheet(false)}>
+        {plots && chrome === "home" ? (
+          <div className="plot-ranges">
+            {([
+              ["budget", "plot.budget"],
+              ["sqmMin", "plot.sqmMin"],
+              ["sqmMax", "plot.sqmMax"],
+              ["sizeMin", "plot.sizeMin"],
+              ["sizeMax", "plot.sizeMax"],
+            ] as const).map(([key, label]) => (
+              <label key={key}>
+                {t(label)}
+                <input
+                  inputMode="numeric"
+                  value={plotRange[key]}
+                  onChange={(event) => setPlotRange((cur) => ({ ...cur, [key]: event.target.value.replace(/[^\d]/g, "").slice(0, 12) }))}
+                />
+              </label>
+            ))}
+          </div>
+        ) : null}
         {sorts.map((key) => (
           <button
             key={key}

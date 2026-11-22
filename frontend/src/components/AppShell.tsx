@@ -91,6 +91,35 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     hushAllReels();
   }, [path]);
 
+  useEffect(() => {
+    const rootTab = path === "/home" || path === "/reels" || path === "/messages" || path === "/profile";
+    let startX = 0;
+    let startY = 0;
+    let armed = false;
+    const onStart = (event: TouchEvent) => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      armed = touch.clientX < 28 && document.documentElement.dataset.sheet !== "1";
+      startX = touch.clientX;
+      startY = touch.clientY;
+    };
+    const onEnd = (event: TouchEvent) => {
+      if (!armed) return;
+      armed = false;
+      if (rootTab) return;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      if (dx > 72 && Math.abs(dy) < 48) window.history.back();
+    };
+    window.addEventListener("touchstart", onStart, { passive: true });
+    window.addEventListener("touchend", onEnd, { passive: true });
+    return () => {
+      window.removeEventListener("touchstart", onStart);
+      window.removeEventListener("touchend", onEnd);
+    };
+  }, [path]);
+
   return (
     <InstallProvider>
       <MqttInbox>

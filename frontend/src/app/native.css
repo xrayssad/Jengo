@@ -108,6 +108,7 @@ html[data-home-compact="1"] .home-search-row {
 }
 
 .sheet-grab {
+  touch-action: none;
   width: 36px;
   height: 4px;
   margin: 10px auto 0;

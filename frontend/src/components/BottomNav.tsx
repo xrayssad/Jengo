@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
@@ -52,6 +52,44 @@ export default function BottomNav({ hidden = false }: { hidden?: boolean }) {
   const inbox = useInboxLive();
   const chatUnread = inbox.unread && path !== "/messages";
   const currentTab = tabFor(path);
+  const [tucked, setTucked] = useState(false);
+
+  useEffect(() => {
+    if (hidden) return;
+    let last = window.scrollY;
+    let raf = 0;
+    let away = last > 64;
+    if (away) setTucked(true);
+    const apply = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const down = y > last + 8;
+      const up = y < last - 8;
+      last = y;
+      const next = y < 24 ? false : down ? true : up ? false : away;
+      if (next !== away) {
+        away = next;
+        setTucked(next);
+      }
+    };
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(apply);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, [hidden, path]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!hidden && tucked) root.dataset.nav = "away";
+    else delete root.dataset.nav;
+    return () => {
+      delete root.dataset.nav;
+    };
+  }, [hidden, tucked]);
 
   useEffect(() => {
     if (hidden) return;
@@ -126,7 +164,7 @@ export default function BottomNav({ hidden = false }: { hidden?: boolean }) {
   };
 
   return (
-    <nav className={hidden ? "bottom-nav is-hidden" : "bottom-nav"} aria-hidden={hidden || undefined}>
+    <nav className={hidden ? "bottom-nav is-hidden" : tucked ? "bottom-nav is-tucked" : "bottom-nav"} aria-hidden={hidden || undefined}>
       <div
         className="nav-island nav-row mx-auto"
       >

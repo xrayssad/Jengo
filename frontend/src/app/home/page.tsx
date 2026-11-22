@@ -1,107 +1,44 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import FreshRail from "@/components/FreshRail";
 import HeroCarousel from "@/components/HeroCarousel";
 import PromoBanner from "@/components/PromoBanner";
-import {
-  Menu, User, Send, Clapperboard, Bookmark, Settings, X, Bell, Search, ChevronDown,
-  LayoutList, Inbox, Download, Receipt, CreditCard, Hammer,
-} from "lucide-react";
-import AdminLink from "@/components/AdminLink";
-import Brand from "@/components/Brand";
+import { Bell, ChevronDown, MapPin } from "lucide-react";
 import BottomSheet from "@/components/BottomSheet";
-import { LangDrawer } from "@/components/HeaderTools";
-import { InstallMenuItem } from "@/components/InstallUI";
 import ListingBrowse from "@/components/ListingBrowse";
 import CategoryGrid from "@/components/CategoryGrid";
 import ProductSearch from "@/components/ProductSearch";
-import ThemeToggle from "@/components/ThemeToggle";
 import { InboxLink, useInboxLive } from "@/components/MqttInbox";
-import { clearAuth, fetchListings, writeHomeListingsCache, type Listing } from "@/lib/api";
+import { fetchListings, writeHomeListingsCache, type Listing } from "@/lib/api";
+import { pickFeatured, pickFresh } from "@/lib/browse";
 import { canonicalCategory, isFilterTile } from "@/lib/categories.config";
 import { regionsFor } from "@/lib/browse";
 import { useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 import { usePersistentScroll } from "@/lib/listSession";
 
-const sideLinks = [
-  { label: "Receipts", href: "/risiti", icon: Receipt },
-  { label: "Requests I received", href: "/maombi-niliyopokea", icon: Inbox },
-  { label: "Profile", href: "/profile", icon: User },
-  { label: "Messages", href: "/messages", icon: Send },
-  { label: "Reels", href: "/reels", icon: Clapperboard },
-  { label: "Favorites", href: "/favorites", icon: Bookmark },
-  { label: "Saved photos", href: "/picha", icon: Download },
-  { label: "Payments", href: "/malipo", icon: CreditCard },
-  { label: "My Posts", href: "/mypost", icon: LayoutList },
-  { label: "Construction Jobs", href: "/kazi", icon: Hammer },
-  { label: "My requests", href: "/maombi-yangu", icon: Inbox },
-  { label: "Settings", href: "/settings", icon: Settings },
-];
-
 if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 });
 
-function HomeBar({ onMenu }: { onMenu: () => void }) {
+function HomeBar({ placeLabel, onLocate }: { placeLabel: string; onLocate: () => void }) {
   const t = useT();
   const inbox = useInboxLive();
-  const [scrolled, setScrolled] = useState(false);
-  const [compact, setCompact] = useState(false);
   const [notes, setNotes] = useState(false);
 
-  useEffect(() => {
-    let on = window.scrollY > 8;
-    let tight = window.scrollY > 120;
-    setScrolled(on);
-    setCompact(tight);
-    const onScroll = () => {
-      const next = window.scrollY > 8;
-      const nextTight = window.scrollY > 120;
-      if (next !== on) {
-        on = next;
-        setScrolled(next);
-      }
-      if (nextTight !== tight) {
-        tight = nextTight;
-        setCompact(nextTight);
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.dataset.homeCompact = compact ? "1" : "0";
-    return () => {
-      delete document.documentElement.dataset.homeCompact;
-    };
-  }, [compact]);
-
   return (
-    <header className={scrolled ? "topbar is-scrolled" : "topbar"}>
-      <div className="canvas home-top px-4">
-        <button type="button" onClick={onMenu} className="soft-icon-btn home-icon-btn" aria-label={t("menu")}>
-          <Menu size={18} color="currentColor" />
+    <header className="home-appbar">
+      <button type="button" className="home-loc" onClick={onLocate}>
+        <MapPin size={18} aria-hidden />
+        <span>{placeLabel}</span>
+        <ChevronDown size={16} aria-hidden />
+      </button>
+      <div className="home-tools">
+        <button type="button" className="soft-icon-btn home-icon-btn" aria-label={t("notes")} onClick={() => setNotes(true)}>
+          <Bell size={18} />
+          {inbox.unread ? <span className="note-dot" /> : null}
         </button>
-        <div className="home-brand">
-          <Link href="/home" className="home-brand-link" aria-label="Jengo">
-            <Brand variant={scrolled ? "mark" : "wordmark"} size={scrolled ? 28 : 26} />
-          </Link>
-          <AdminLink />
-        </div>
-        <div className="home-tools">
-          {compact ? (
-            <button type="button" className="soft-icon-btn home-icon-btn" aria-label={t("search.placeholder")} onClick={() => window.dispatchEvent(new Event("jengo-open-search"))}>
-              <Search size={18} />
-            </button>
-          ) : null}
-          <button type="button" className="soft-icon-btn home-icon-btn" aria-label={t("notes")} onClick={() => setNotes(true)}>
-            <Bell size={18} />
-            {inbox.unread ? <span className="note-dot" /> : null}
-          </button>
-          <InboxLink className="soft-icon-btn home-icon-btn" />
-        </div>
+        <InboxLink className="soft-icon-btn home-icon-btn" />
       </div>
       <BottomSheet open={notes} title={t("notes")} onClose={() => setNotes(false)}>
         {inbox.unread ? (
@@ -118,7 +55,6 @@ function HomeBar({ onMenu }: { onMenu: () => void }) {
 
 export default function HomePage() {
   const t = useT();
-  const [open, setOpen] = useState(false);
   const [query, setQuery] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [sheet, setSheet] = useState(false);
@@ -182,13 +118,58 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    if (document.documentElement.dataset.detailOverlay === "1") return;
-    document.body.style.overflow = open ? "hidden" : "";
-    return () => {
-      if (document.documentElement.dataset.detailOverlay === "1") return;
-      document.body.style.overflow = "";
+    const root = document.documentElement;
+    let last = window.scrollY;
+    let hidden = false;
+    let fade = "";
+    let greet = "";
+    let stick = "";
+    let bar = "";
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
+      const y = window.scrollY;
+      const down = y > last + 6;
+      const up = y < last - 6;
+      last = y;
+      const nextFade = y >= 40 ? "0" : String(Math.max(0, 1 - y / 40));
+      const nextGreet = y > 40 ? "off" : "on";
+      const nextStick = y > 8 ? "1" : "0";
+      if (y < 8) hidden = false;
+      else if (down) hidden = true;
+      else if (up) hidden = false;
+      const nextBar = hidden ? "hide" : "show";
+      if (nextFade !== fade) {
+        fade = nextFade;
+        root.style.setProperty("--home-fade", nextFade);
+      }
+      if (nextGreet !== greet) {
+        greet = nextGreet;
+        root.dataset.homeGreet = nextGreet;
+      }
+      if (nextStick !== stick) {
+        stick = nextStick;
+        root.dataset.homeStick = nextStick;
+      }
+      if (nextBar !== bar) {
+        bar = nextBar;
+        root.dataset.homeBar = nextBar;
+      }
     };
-  }, [open]);
+    const onScroll = () => {
+      if (!raf) raf = requestAnimationFrame(apply);
+    };
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      cancelAnimationFrame(raf);
+      delete root.dataset.homeBar;
+      delete root.dataset.homeGreet;
+      delete root.dataset.homeStick;
+      root.style.removeProperty("--home-fade");
+    };
+  }, []);
 
   useEffect(() => {
     const onLike = (e: Event) => {
@@ -213,66 +194,31 @@ export default function HomePage() {
     return () => window.removeEventListener("jengo-browse-state", onPlace);
   }, []);
 
+  const [locQuery, setLocQuery] = useState("");
   const placeLabel = place === "near" ? t("near") : place !== "all" ? place : "Dar es Salaam";
   const placeChoices = ["all", ...regionsFor(pool?.length ? pool : items)];
+  const locNeedle = locQuery.trim().toLowerCase();
+  const shownPlaces = locNeedle
+    ? placeChoices.filter((name) => name === "all" || name.toLowerCase().includes(locNeedle))
+    : placeChoices;
+  const started = useRef(Date.now());
+  const source = query ? (pool?.length ? pool : items) : items;
+  const omitIds = useMemo(() => {
+    const featured = pickFeatured(source).map((item) => item.id);
+    const fresh = pickFresh(source, 8, started.current);
+    const freshIds = fresh.length >= 2 ? fresh.map((item) => item.id) : [];
+    return [...new Set([...featured, ...freshIds])];
+  }, [source]);
 
   return (
     <main className="home-settle min-h-screen">
-      <HomeBar onMenu={() => setOpen(true)} />
-
-      <div className="fixed inset-0 z-40 transition-opacity duration-300" style={{ backgroundColor: "rgba(var(--veil-rgb),0.55)", opacity: open ? 1 : 0, visibility: open ? "visible" : "hidden", pointerEvents: open ? "auto" : "none" }} onClick={() => setOpen(false)} />
-      <aside
-        className="drawer-gold fixed top-0 left-0 z-50 flex flex-col"
-        style={{
-          height: "100dvh",
-          width: "min(300px, 86vw)",
-          transform: open ? "translateX(0)" : "translateX(-105%)",
-          visibility: open ? "visible" : "hidden",
-          boxShadow: "none",
-          transition: "transform 0.3s ease",
-          paddingTop: "env(safe-area-inset-top)",
-        }}
-      >
-        <div className="flex items-center justify-between px-5 py-5" style={{ borderBottom: "1px solid var(--gold)" }}>
-          <Link href="/home" onClick={() => setOpen(false)} className="home-brand-link" aria-label="Jengo" style={{ color: "var(--gold)" }}>
-            <Brand variant="wordmark" size={26} />
-          </Link>
-          <button type="button" onClick={() => setOpen(false)} className="drawer-close w-9 h-9 flex items-center justify-center" aria-label={t("close")}>
-            <X size={16} color="var(--gold)" />
-          </button>
-        </div>
-        <nav className="flex-1 overflow-y-auto py-3">
-          {sideLinks.map((item) => {
-            const Icon = item.icon;
-            return (
-              <Link key={item.label} href={item.href} onClick={() => setOpen(false)} className="flex items-center gap-3 mx-3 my-1 px-3 py-3">
-                <Icon size={17} color="var(--gold)" />
-                <span className="text-sm" style={{ color: "inherit" }}>{item.label}</span>
-              </Link>
-            );
-          })}
-          <InstallMenuItem />
-          <div className="flex mx-3 mt-2 mb-2 px-3 py-3" style={{ color: "var(--gold)" }}>
-            <ThemeToggle dense />
-          </div>
-          <LangDrawer />
-          <Link href="/login" onClick={() => { clearAuth(); setOpen(false); }} className="flex mx-3 mt-4 mb-6 px-3 py-3" style={{ border: "1px solid var(--gold)", color: "var(--gold)" }}>
-            <span className="text-sm">Log out</span>
-          </Link>
-        </nav>
-      </aside>
+      <HomeBar placeLabel={placeLabel} onLocate={() => setLocOpen(true)} />
 
       <div className="canvas home-body">
-        <div className="home-pad">
-        <div className="home-intro">
-          <div className="home-title">
-            <span className="home-title-bar" aria-hidden />
-            <h1>{t("home.find")} <em>{t("home.place")}</em></h1>
-          </div>
-          <button type="button" className="loc-pill" onClick={() => setLocOpen(true)}>
-            {placeLabel}
-            <ChevronDown size={16} aria-hidden />
-          </button>
+        <h1 className="home-line">
+          {t("home.line.before")}<em>{t("home.line.accent")}</em>{t("home.line.after")}
+        </h1>
+        <div className="home-search-stick">
           <ProductSearch
             query={query || ""}
             listings={pool?.length ? pool : items}
@@ -289,7 +235,6 @@ export default function HomePage() {
             }}
           />
         </div>
-        </div>
 
         <div ref={railRef}>
           <CategoryGrid
@@ -305,7 +250,9 @@ export default function HomePage() {
 
         <div className="home-pad">
           <ListingBrowse
-            items={query ? (pool?.length ? pool : items) : items}
+            chrome="home"
+            items={source}
+            omitIds={omitIds}
             loading={waiting}
             error={error}
             pending={pending}
@@ -323,30 +270,38 @@ export default function HomePage() {
               <>
                 <HeroCarousel items={items} loading={waiting} version={version} />
                 <FreshRail items={items} version={version} />
-                <PromoBanner />
               </>
             }
+            midFeed={<PromoBanner />}
           />
         </div>
       </div>
-      <BottomSheet open={locOpen} title={t("loc.choose")} onClose={() => setLocOpen(false)}>
+      <BottomSheet open={locOpen} title={t("loc.choose")} onClose={() => { setLocOpen(false); setLocQuery(""); }}>
+        <input
+          className="sheet-search"
+          value={locQuery}
+          placeholder={t("loc.search")}
+          onChange={(event) => setLocQuery(event.target.value)}
+        />
         <button
           type="button"
           className={place === "near" ? "sheet-option is-on" : "sheet-option"}
           onClick={() => {
             window.dispatchEvent(new Event("jengo-near"));
+            setLocQuery("");
             setLocOpen(false);
           }}
         >
           {t("near")}
         </button>
-        {placeChoices.map((name) => (
+        {shownPlaces.map((name) => (
           <button
             key={name}
             type="button"
             className={place === name ? "sheet-option is-on" : "sheet-option"}
             onClick={() => {
               window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
+              setLocQuery("");
               setLocOpen(false);
             }}
           >

@@ -211,10 +211,10 @@ export default function ProductSearch({
               <X size={16} />
             </button>
           ) : null}
+          <Link href="/search" className="home-filter" aria-label={t("search.filters")}>
+            <SlidersHorizontal size={18} color="currentColor" />
+          </Link>
         </div>
-        <Link href="/search" className="home-filter" aria-label={t("search.filters")}>
-          <SlidersHorizontal size={18} color="currentColor" />
-        </Link>
       </div>
       {open ? (
         <div className="search-overlay" role="presentation">

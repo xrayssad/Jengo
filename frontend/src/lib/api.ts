@@ -988,6 +988,17 @@ export function formatPrice(price: number | string) {
   return n.toLocaleString("en-TZ");
 }
 
+export function formatPriceCompact(price: number | string) {
+  const n = typeof price === "string" ? parseFloat(price) : price;
+  if (Number.isNaN(n)) return String(price);
+  const abs = Math.abs(n);
+  const trim = (value: number) => String(abs >= 10_000_000 ? Math.round(value) : Math.round(value * 10) / 10);
+  if (abs >= 1_000_000_000) return `${trim(n / 1_000_000_000)}B`;
+  if (abs >= 1_000_000) return `${trim(n / 1_000_000)}M`;
+  if (abs >= 10_000) return `${trim(n / 1_000)}k`;
+  return n.toLocaleString("en-TZ");
+}
+
 export function periodLabel(period?: string) {
   const map: Record<string, string> = {
     mwezi: "/month",

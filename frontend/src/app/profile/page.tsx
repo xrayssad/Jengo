@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
   ArrowLeft, Mail, FileText, Heart, Settings, LogOut,
-  ChevronRight, Home, Plus, BadgeCheck,
+  ChevronRight, Home, Plus, BadgeCheck, Receipt, Inbox, Download, CreditCard, Hammer,
 } from "lucide-react";
 import Link from "next/link";
 import { clearAuth, fetchMyPosts, fetchTopSellers, getAuthUser, type Listing } from "@/lib/api";
@@ -24,9 +24,14 @@ const ViewsChart = dynamic(() => import("@/components/ViewsChart"), { ssr: false
 
 const menuItems = [
   { icon: FileText, label: "My requests", desc: "Requests you sent", href: "/maombi-yangu" },
+  { icon: Inbox, label: "Requests I received", desc: "Requests on your listings", href: "/maombi-niliyopokea" },
   { icon: Home, label: "My Posts", desc: "Rooms, Airbnb, shops, frames, materials and reels", href: "/mypost" },
   { icon: Heart, label: "Favorites", desc: "Listings you saved", href: "/favorites" },
-  { icon: Settings, label: "Settings", desc: "Account and privacy", href: "/settings" },
+  { icon: Receipt, label: "Receipts", desc: "Payments you made", href: "/risiti" },
+  { icon: CreditCard, label: "Payments", desc: "How you pay", href: "/malipo" },
+  { icon: Download, label: "Saved photos", desc: "Pictures kept on this phone", href: "/picha" },
+  { icon: Hammer, label: "Construction jobs", desc: "Fundi and site work", href: "/kazi" },
+  { icon: Settings, label: "Settings", desc: "Language, night mode, and help", href: "/settings" },
 ];
 
 type Span = "day" | "week" | "month";

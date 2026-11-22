@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { ViewTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Eye, MapPin } from "lucide-react";
-import { formatPrice, listingUnit, type Listing } from "@/lib/api";
+import { Receipt, Ticket, User } from "lucide-react";
+import { formatPrice, formatPriceCompact, listingUnit, type Listing } from "@/lib/api";
 import { canonicalCategory, categoryConfig } from "@/lib/categories.config";
 import { PlotCardFacts } from "./PlotDetail";
 import { quoteStay, readFit } from "@/lib/pricing";
@@ -13,6 +13,7 @@ import PriceBreakdown from "./PriceBreakdown";
 import { bedCount, formatViews, sellerVerified, shortPlace, verifiedType, viewCount, warnMissingViews, type ViewMode } from "@/lib/browse";
 import { useI18n } from "@/lib/i18n";
 import { freezeBrowse, useOpenListing, useReturnPulse } from "@/lib/listSession";
+import BottomSheet from "./BottomSheet";
 import ListingPhoto from "./ListingPhoto";
 import SaveButton from "./SaveButton";
 import VerifiedBadge from "./VerifiedBadge";
@@ -55,6 +56,7 @@ export default function ListingCard({
   defer?: boolean;
 }) {
   const { t, lang } = useI18n();
+  const [badge, setBadge] = useState<"" | "direct" | "free" | "costs">("");
   const config = categoryConfig(item.category);
   const kind = config ? (lang === "sw" ? config.short.sw : config.short.en) : "";
   const pulsed = useReturnPulse(item.id, frame);
@@ -89,126 +91,50 @@ export default function ListingCard({
     freezeBrowse(frame, ids, item.id);
   };
 
-  if (frame === "feed" && grid) {
-    const photo = (
-      <div className="market-tile-media">
-        <Link href={href} scroll={false} transitionTypes={["nav-forward"]} className="immerse-hit" aria-label={item.title} onClick={openListing}>
-          <ListingPhoto src={src} eager={eager} priority={priority} ratio={grid ? [1, 1] : [4, 3]} />
-        </Link>
-        {kind ? <span className="listing-kind">{kind}</span> : null}
-        <div className="immerse-heart">
-          <SaveButton item={item} variant="heart" size={16} className="heart-fab heart-fab-sm" />
-        </div>
-      </div>
-    );
-    return (
-      <article
-        className={["market-tile is-listing", grid ? "is-grid" : "is-large", stay && !grid ? "is-stay" : "", enter ? "card-enter" : "", highlight || pulsed ? "is-return" : "", defer ? "is-cv" : ""].filter(Boolean).join(" ")}
-        data-listing-id={item.id}
-        data-frame={frame}
-        style={enter ? { animationDelay: `${delay}ms` } : undefined}
-      >
-        <div className="listing-media">
-          {opened ? photo : (
-            <ViewTransition name={`listing-${item.id}`} share="listing-morph" default="none">
-              {photo}
-            </ViewTransition>
-          )}
-        </div>
-        <Link href={href} scroll={false} transitionTypes={["nav-forward"]} className="listing-meta" onClick={openListing}>
-          <p className="listing-price">
-            <span>TSh {formatPrice(item.price)}</span>
-            {!grid && shownRate ? <span className="listing-rate">{shownRate}</span> : null}
-          </p>
-          <p className="listing-name">{item.title}</p>
-          {place ? (
-            <p className="listing-where">
-              <MapPin size={13} aria-hidden />
-              <span>{place}</span>
-            </p>
-          ) : null}
-          {!grid && (chip || verified || views != null) ? (
-            <p className="listing-facts">
-              {chip ? <span>{chip}</span> : null}
-              {verified ? <VerifiedBadge size="sm" type={kindVerified} /> : null}
-              {seller && verified ? <span className="listing-seller">{seller}</span> : null}
-              {views != null ? <span>{t("views", { n: formatViews(views) })}</span> : null}
-            </p>
-          ) : null}
-          {!grid && !plot && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
-          {!grid && plot ? <PlotCardFacts item={item} /> : null}
-        </Link>
-      </article>
-    );
-  }
-
-  const media = (
+  const fit = readFit(item);
+  const marks = [
+    fit.direct_owner ? "direct" : "",
+    fit.free_viewing ? "free" : "",
+    fit.costs_confirmed ? "costs" : "",
+  ].filter((key): key is "direct" | "free" | "costs" => Boolean(key)).slice(0, 2);
+  const meta = [place, chip, views != null ? t("views", { n: formatViews(views) }) : ""].filter(Boolean).join(" · ");
+  const money = frame === "rail" || frame === "hero" ? formatPriceCompact(item.price) : formatPrice(item.price);
+  const photo = (
     <div className="market-tile-media">
-        <Link
-          href={href}
-          scroll={false}
-          transitionTypes={["nav-forward"]}
-          className="immerse-hit"
-          aria-label={item.title}
-          onClick={openListing}
-        >
+      <Link href={href} scroll={false} transitionTypes={["nav-forward"]} className="immerse-hit" aria-label={item.title} onClick={openListing}>
         <ListingPhoto src={src} eager={eager} priority={priority} ratio={ratio} />
       </Link>
-      <div className="immerse-shade" aria-hidden />
-      <div className="immerse-top">
-        {kind ? <span className="immerse-pill">{kind}</span> : null}
-      </div>
-      <div className="immerse-copy">
-        <p className="immerse-title">
-          <span className="immerse-title-text">{item.title}</span>
-        </p>
-        {verified ? (
-          <p className="immerse-seller">
-            {seller ? <span>{seller}</span> : null}
-            <VerifiedBadge size="sm" type={kindVerified} />
-          </p>
-        ) : null}
-        {!grid && place ? (
-          <p className="immerse-place">
-            <MapPin size={13} aria-hidden />
-            <span>{place}</span>
-          </p>
-        ) : null}
-        <p className="immerse-price">
-          <span>TSh {formatPrice(item.price)}</span>
-          {!grid && shownRate ? <span className="immerse-rate">{shownRate}</span> : null}
-        </p>
-        {!grid && !plot && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
-        {!grid && plot ? <PlotCardFacts item={item} /> : null}
-        <span className="immerse-look">{t("look")}</span>
-        {!grid && !plot && (readFit(item).costs_confirmed || readFit(item).direct_owner || readFit(item).free_viewing) ? (
-          <p className="fit-badges">
-            {readFit(item).direct_owner ? <span className="fit-badge">{t("fit.direct")}</span> : null}
-            {readFit(item).free_viewing ? <span className="fit-badge">{t("fit.free")}</span> : null}
-            {readFit(item).costs_confirmed ? <span className="fit-badge">{t("fit.costs")}</span> : null}
-          </p>
-        ) : null}
-        {views != null ? (
-          <p className="immerse-views">
-            <Eye size={12} strokeWidth={2} aria-hidden />
-            {t("views", { n: formatViews(views) })}
-          </p>
-        ) : null}
-      </div>
+      {frame === "hero" ? <div className="immerse-shade" aria-hidden /> : null}
+      {frame === "hero" && kind ? (
+        <div className="immerse-top"><span className="immerse-pill">{kind}</span></div>
+      ) : null}
+      {photos.length > 1 && frame !== "hero" ? <span className="card-count">{photos.length}</span> : null}
       <div className="immerse-heart">
         <SaveButton item={item} variant="heart" size={16} className="heart-fab heart-fab-sm" />
       </div>
+      {frame === "hero" ? (
+        <div className="immerse-copy">
+          <p className="immerse-title"><span className="immerse-title-text">{item.title}</span></p>
+          {place ? <p className="immerse-place"><span>{place}</span></p> : null}
+          <p className="immerse-price"><span>TSh {money}</span></p>
+        </div>
+      ) : null}
     </div>
+  );
+  const sheet = (
+    <BottomSheet open={Boolean(badge)} title={badge ? t(badge === "direct" ? "fit.direct" : badge === "free" ? "fit.free" : "fit.costs") : ""} onClose={() => setBadge("")}>
+      <p className="sheet-copy">{badge ? t(`badge.${badge}`) : ""}</p>
+    </BottomSheet>
   );
 
   return (
     <article
       className={[
-        "market-tile is-immerse",
+        "market-tile",
+        frame === "hero" ? "is-immerse is-hero" : "is-standard",
         defer ? "is-cv" : "",
         grid ? "is-grid" : "is-large",
-        stay && !grid ? "is-stay" : "",
-        frame === "hero" ? "is-hero" : "",
+        stay && frame === "feed" && !grid ? "is-stay" : "",
         frame === "rail" ? "is-rail" : "",
         enter ? "card-enter" : "",
         highlight || pulsed ? "is-return" : "",
@@ -218,18 +144,38 @@ export default function ListingCard({
       style={enter ? { animationDelay: `${delay}ms` } : undefined}
     >
       <div className="listing-media">
-        {opened ? media : (
+        {opened && frame === "feed" ? photo : (
           <ViewTransition name={frame === "feed" ? `listing-${item.id}` : `listing-${frame}-${item.id}`} share="listing-morph" default="none">
-            {media}
+            {photo}
           </ViewTransition>
         )}
       </div>
-      {frame === "feed" && (chip || item.views_7d != null) ? (
-        <p className="immerse-foot">
-          {chip ? <span>{chip}</span> : null}
-          {item.views_7d != null ? <span>{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
-        </p>
-      ) : null}
+      {frame === "hero" ? null : (
+        <div className="card-copy">
+          <p className="card-price">
+            <span>TSh {money}</span>
+            {frame !== "rail" && shownRate ? <span className="card-rate">{shownRate}</span> : null}
+          </p>
+          <p className="card-title">
+            <span>{item.title}</span>
+            {verified ? <VerifiedBadge size="sm" type={kindVerified} /> : null}
+          </p>
+          {frame !== "rail" && meta ? <p className="card-meta">{meta}</p> : null}
+          {frame !== "rail" && marks.length ? (
+            <div className="card-badges">
+              {marks.map((key) => (
+                <button key={key} type="button" className="micro-badge" aria-label={t(key === "direct" ? "fit.direct" : key === "free" ? "fit.free" : "fit.costs")} onClick={() => setBadge(key)}>
+                  {key === "direct" ? <User size={14} /> : key === "free" ? <Ticket size={14} /> : <Receipt size={14} />}
+                </button>
+              ))}
+            </div>
+          ) : null}
+          {frame === "feed" && !grid && !plot && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
+          {frame === "feed" && !grid && plot ? <PlotCardFacts item={item} /> : null}
+          {seller && verified && frame === "feed" ? <p className="card-meta">{seller}</p> : null}
+        </div>
+      )}
+      {sheet}
     </article>
   );
 }
