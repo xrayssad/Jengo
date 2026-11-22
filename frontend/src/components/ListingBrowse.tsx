@@ -690,11 +690,15 @@ export default function ListingBrowse({
         setSort("new");
         setVerifiedOnly(false);
         setFitFilters([]);
-        if (chrome === "home") window.scrollTo({ top: 0, behavior: "auto" });
-        return;
       }
-      setRegion(next);
-      setNear(null);
+      if (next !== "all") {
+        setRegion(next);
+        setNear(null);
+      }
+      if (chrome === "home") {
+        window.scrollTo({ top: 0, behavior: "auto" });
+        window.dispatchEvent(new Event("jengo-nav-show"));
+      }
     };
     const onNear = () => locate();
     window.addEventListener("jengo-region", onRegion);
@@ -703,7 +707,7 @@ export default function ListingBrowse({
       window.removeEventListener("jengo-region", onRegion);
       window.removeEventListener("jengo-near", onNear);
     };
-  }, [locate]);
+  }, [chrome, locate]);
 
   const regionLabel = region !== "all" && region !== "near" ? region : (queryText || scope || summaryLabel);
   const showSummary = homeChrome || Boolean(scope);

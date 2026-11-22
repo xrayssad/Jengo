@@ -159,10 +159,24 @@ export default function HomePage() {
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(apply);
     };
+    const reveal = () => {
+      last = window.scrollY;
+      hidden = false;
+      fade = "1";
+      greet = "on";
+      stick = window.scrollY > 8 ? "1" : "0";
+      bar = "show";
+      root.style.setProperty("--home-fade", fade);
+      root.dataset.homeGreet = greet;
+      root.dataset.homeStick = stick;
+      root.dataset.homeBar = bar;
+    };
     apply();
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("jengo-nav-show", reveal);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("jengo-nav-show", reveal);
       cancelAnimationFrame(raf);
       delete root.dataset.homeBar;
       delete root.dataset.homeGreet;
@@ -193,6 +207,18 @@ export default function HomePage() {
     window.addEventListener("jengo-browse-state", onPlace);
     return () => window.removeEventListener("jengo-browse-state", onPlace);
   }, []);
+
+  const locWasOpen = useRef(false);
+  useEffect(() => {
+    if (locOpen) {
+      locWasOpen.current = true;
+      return;
+    }
+    if (!locWasOpen.current) return;
+    locWasOpen.current = false;
+    window.scrollTo({ top: 0, behavior: "auto" });
+    window.dispatchEvent(new Event("jengo-nav-show"));
+  }, [locOpen]);
 
   const [locQuery, setLocQuery] = useState("");
   const placeLabel = place === "near" ? t("near") : place !== "all" ? place : t("region.all");

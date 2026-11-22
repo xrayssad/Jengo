@@ -75,9 +75,16 @@ export default function BottomNav({ hidden = false }: { hidden?: boolean }) {
     const onScroll = () => {
       if (!raf) raf = requestAnimationFrame(apply);
     };
+    const reveal = () => {
+      last = window.scrollY;
+      away = false;
+      setTucked(false);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("jengo-nav-show", reveal);
     return () => {
       window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("jengo-nav-show", reveal);
       cancelAnimationFrame(raf);
     };
   }, [hidden, path]);
