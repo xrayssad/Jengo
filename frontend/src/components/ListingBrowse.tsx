@@ -458,7 +458,9 @@ export default function ListingBrowse({
   const loose = narrowed.loose;
 
   const ranged = Object.values(plotRange).some((value) => amountOf(value) > 0);
-  const userFiltered = region !== "all" || sort !== "new" || verifiedOnly || fitFilters.length > 0 || bedsMin > 0 || Boolean(queryText) || ranged || (categoryIsFilter && Boolean(canonicalCategory(category)));
+  const layoutFiltered = sort !== "new" || verifiedOnly || fitFilters.length > 0 || bedsMin > 0 || Boolean(queryText) || ranged || (categoryIsFilter && Boolean(canonicalCategory(category)));
+  const userFiltered = region !== "all" || layoutFiltered;
+  const homeChrome = chrome === "home" ? layoutFiltered : userFiltered;
   const omit = useMemo(() => new Set(omitIds), [omitIds]);
   const pooled = userFiltered ? shown : shown.filter((item) => !omit.has(item.id));
   const feed = chrome === "home" && !userFiltered && pooled.length === 0 && shown[0] ? [shown[0]] : pooled;
@@ -502,19 +504,21 @@ export default function ListingBrowse({
   const showExtras = Boolean(beforeFeed);
   useLayoutEffect(() => {
     if (!showExtras) return;
-    if (!userFiltered) {
+    if (!homeChrome) {
       setMountExtras(true);
       return;
     }
     const id = window.setTimeout(() => setMountExtras(false), reduce ? 0 : 250);
     return () => window.clearTimeout(id);
-  }, [userFiltered, showExtras, reduce]);
+  }, [homeChrome, showExtras, reduce]);
 
   useEffect(() => {
     if (!booted) return;
     const signature = [region, sort, verifiedOnly ? "1" : "0", fitFilters.join(","), queryText, category, Object.values(plotRange).join(",")].join("|");
+    const keepHome = chrome === "home" && region !== "all" && !layoutFiltered;
     if (!filterKey.current) {
       filterKey.current = signature;
+      if (keepHome) return;
       if (userFiltered && !peekReturn()) {
         parkedScroll.current = 0;
         scrollToChips();
@@ -523,6 +527,7 @@ export default function ListingBrowse({
     }
     if (filterKey.current === signature) return;
     filterKey.current = signature;
+    if (keepHome) return;
     if (userFiltered) {
       if (parkedScroll.current == null) parkedScroll.current = window.scrollY;
       scrollToChips();
@@ -533,7 +538,7 @@ export default function ListingBrowse({
     requestAnimationFrame(() => {
       window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
     });
-  }, [booted, region, sort, verifiedOnly, fitFilters, queryText, userFiltered, reduce, category, plotRange]);
+  }, [booted, chrome, region, sort, verifiedOnly, fitFilters, queryText, userFiltered, layoutFiltered, reduce, category, plotRange]);
 
   useEffect(() => {
     if (!booted) return;
@@ -685,6 +690,7 @@ export default function ListingBrowse({
         setSort("new");
         setVerifiedOnly(false);
         setFitFilters([]);
+        if (chrome === "home") window.scrollTo({ top: 0, behavior: "auto" });
         return;
       }
       setRegion(next);
@@ -700,7 +706,7 @@ export default function ListingBrowse({
   }, [locate]);
 
   const regionLabel = region !== "all" && region !== "near" ? region : (queryText || scope || summaryLabel);
-  const showSummary = userFiltered || Boolean(scope);
+  const showSummary = homeChrome || Boolean(scope);
   const homeTabs = chrome === "home" && !queryText;
   const browseTools = (
     <div className="browse-tools">
@@ -888,7 +894,7 @@ export default function ListingBrowse({
       ) : null}
 
       {mountExtras && beforeFeed && chrome !== "home" ? (
-        <div className={userFiltered ? "home-extras is-out" : "home-extras"}>
+        <div className={homeChrome ? "home-extras is-out" : "home-extras"}>
           <div className="home-extras-inner">{beforeFeed}</div>
         </div>
       ) : null}
@@ -976,7 +982,7 @@ export default function ListingBrowse({
                 defer={i >= 6}
               />
               {chrome === "home" && i === 0 && mountExtras && beforeFeed ? (
-                <div className={userFiltered ? "home-extras is-out" : "home-extras"}>
+                <div className={homeChrome ? "home-extras is-out" : "home-extras"}>
                   <div className="home-extras-inner">{beforeFeed}</div>
                 </div>
               ) : null}
@@ -984,7 +990,7 @@ export default function ListingBrowse({
               </div>
             ))}
             {chrome === "home" && feed.length === 0 && mountExtras && beforeFeed ? (
-              <div className={userFiltered ? "home-extras is-out" : "home-extras"}>
+              <div className={homeChrome ? "home-extras is-out" : "home-extras"}>
                 <div className="home-extras-inner">{beforeFeed}</div>
               </div>
             ) : null}

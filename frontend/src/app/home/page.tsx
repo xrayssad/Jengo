@@ -195,7 +195,7 @@ export default function HomePage() {
   }, []);
 
   const [locQuery, setLocQuery] = useState("");
-  const placeLabel = place === "near" ? t("near") : place !== "all" ? place : "Dar es Salaam";
+  const placeLabel = place === "near" ? t("near") : place !== "all" ? place : t("region.all");
   const placeChoices = ["all", ...regionsFor(pool?.length ? pool : items)];
   const locNeedle = locQuery.trim().toLowerCase();
   const shownPlaces = locNeedle
