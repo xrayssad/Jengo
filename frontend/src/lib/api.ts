@@ -737,6 +737,36 @@ export function writeHomeListingsCache(items: Listing[]) {
   rememberListings(items);
 }
 
+export async function setMyListingStatus(id: string, status: "active" | "hidden") {
+  return request<Listing>(`/listings/${id}/mine`, { method: "PATCH", body: JSON.stringify({ status }) });
+}
+
+export async function deleteMyListing(id: string) {
+  return request<{ ok: boolean }>(`/listings/${id}`, { method: "DELETE" });
+}
+
+export async function recoverPassword(email: string, redirectTo: string) {
+  return request<{ ok: boolean }>("/auth/recover", {
+    method: "POST",
+    body: JSON.stringify({ email, redirect_to: redirectTo }),
+  });
+}
+
+export type TopSeller = {
+  user_id: string;
+  name: string;
+  verified: boolean;
+  listings: number;
+  reviews?: number;
+  rating?: number;
+  viewings?: number;
+  response_minutes?: number;
+};
+
+export async function fetchTopSellers(span: "week" | "month" | "all") {
+  return request<{ items: TopSeller[]; eligible: number }>(`/sellers/top?span=${span}`);
+}
+
 export async function fetchListing(id: string): Promise<Listing> {
   const data = await request<Listing>(`/listings/${id}`);
   if (data?.id) {
@@ -1431,6 +1461,48 @@ export async function suggestPlaces(q: string) {
 export async function placeDetails(placeId: string) {
   const sp = new URLSearchParams({ place_id: placeId });
   return request<PlaceHit>(`/places/details?${sp}`);
+}
+
+function placeNames(raw: unknown): string[] {
+  const props = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
+  const bag = (props.properties && typeof props.properties === "object" ? props.properties : props) as Record<string, unknown>;
+  const feature = Array.isArray(props.features) ? props.features[0] : null;
+  const fromFeature = feature && typeof feature === "object" && feature.properties && typeof feature.properties === "object" ? feature.properties as Record<string, unknown> : bag;
+  const names = ["district", "city", "county", "state", "locality", "name"]
+    .map((key) => String(fromFeature[key] || "").trim())
+    .filter((value) => value && !/^(tanzania|tz)$/i.test(value) && !/\b(road|street|avenue|lane|rd)\b/i.test(value));
+  return [...new Set(names)].slice(0, 8);
+}
+
+/** Area names around a point. Listings usually store a place name, not a map pin. */
+export async function reversePlace(lat: number, lng: number): Promise<{ names: string[] }> {
+  const api = (async () => {
+    const sp = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+    const row = await request<{ names?: string[] }>(`/places/reverse?${sp}`, { signal: AbortSignal.timeout(6000) });
+    return (row.names || []).map((name) => name.trim()).filter(Boolean);
+  })();
+  const photon = (async () => {
+    const res = await fetch(`https://photon.komoot.io/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&lang=en`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return [] as string[];
+    return placeNames(await res.json());
+  })();
+  return {
+    names: await new Promise<string[]>((resolve) => {
+      let settled = false;
+      const done = (names: string[]) => {
+        if (settled) return;
+        settled = true;
+        resolve(names);
+      };
+      api.then((names) => { if (names.length) done(names); }).catch(() => {});
+      photon.then((names) => { if (names.length) setTimeout(() => done(names), 700); }).catch(() => {});
+      void Promise.allSettled([api, photon]).then(([left, right]) => {
+        const fromApi = left.status === "fulfilled" ? left.value : [];
+        const fromPhoton = right.status === "fulfilled" ? right.value : [];
+        done(fromApi.length ? fromApi : fromPhoton);
+      });
+    }),
+  };
 }
 
 export async function fetchMqttSession() {

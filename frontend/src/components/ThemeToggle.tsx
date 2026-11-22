@@ -4,11 +4,26 @@ import { Moon, Sun } from "lucide-react";
 import { useT } from "@/lib/i18n";
 import { useTheme } from "./ThemeProvider";
 
-export default function ThemeToggle({ dense = false }: { dense?: boolean }) {
+export default function ThemeToggle({ dense = false, switchOnly = false }: { dense?: boolean; switchOnly?: boolean }) {
   const { theme, setTheme } = useTheme();
   const t = useT();
   const night = theme === "dark";
   const Icon = night ? Moon : Sun;
+
+  if (switchOnly) {
+    return (
+      <button
+        type="button"
+        role="switch"
+        aria-checked={night}
+        aria-label={night ? t("theme.light") : t("theme.dark")}
+        onClick={() => setTheme(night ? "light" : "dark")}
+        className="theme-switch"
+      >
+        <span />
+      </button>
+    );
+  }
 
   return (
     <button
@@ -41,14 +56,13 @@ export default function ThemeToggle({ dense = false }: { dense?: boolean }) {
         }}
       >
         <span
-          className="absolute top-[2px] rounded-full"
-
+          className="absolute top-[2px] left-[2px] rounded-full"
           style={{
             width: 20,
             height: 20,
-            left: night ? 19 : 2,
             background: night ? "var(--stamp)" : "var(--foam)",
-            transition: "left 0.2s ease",
+            transform: night ? "translateX(17px)" : "translateX(0)",
+            transition: "transform 0.2s ease",
           }}
         />
       </span>

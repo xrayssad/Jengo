@@ -16,3 +16,6 @@ export const VIEW_DWELL_MS = 1500;
 
 /** `/` goes straight to Home. The old marketing page lives at `/about`. */
 export const SHOW_LANDING_PAGE = false;
+
+/** Leaderboard stays off until a real seller ranking exists. */
+export const TOP_SELLERS_ENABLED = false;

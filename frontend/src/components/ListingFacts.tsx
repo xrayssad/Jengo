@@ -6,7 +6,10 @@ import { decideStay, decideViewing, formatPrice, getAuthUser, listStays, listVie
 import { canonicalCategory } from "@/lib/categories.config";
 import { categoryConfig } from "@/lib/categories.config";
 import { useT } from "@/lib/i18n";
+import { haptic } from "@/lib/motion";
 import { quoteStay, readFit, type Quote } from "@/lib/pricing";
+import BottomSheet from "./BottomSheet";
+import DateStrip from "./DateStrip";
 import PriceBreakdown from "./PriceBreakdown";
 
 function waNumber(value: string) {
@@ -29,6 +32,7 @@ export default function ListingFacts({ item }: { item: Listing }) {
   const config = categoryConfig(item.category);
   const [mine, setMine] = useState(false);
   const [visitDate, setVisitDate] = useState("");
+  const [viewOpen, setViewOpen] = useState(false);
   const [slot, setSlot] = useState("morning");
   const [start, setStart] = useState("");
   const [end, setEnd] = useState("");
@@ -70,7 +74,9 @@ export default function ListingFacts({ item }: { item: Listing }) {
     setNote("");
     try {
       await requestViewing(item.id, { visit_date: visitDate, slot });
+      haptic("success");
       setNote(t("fit.sent"));
+      setViewOpen(false);
     } catch (err) {
       if (needsLogin(err)) {
         redirectToLogin();
@@ -190,21 +196,38 @@ export default function ListingFacts({ item }: { item: Listing }) {
 
       {!mine && item.category !== "apartment_airbnb" && item.category !== "vifaa" ? (
         <div className="fit-form" id="viewing">
-          <p className="detail-heading">{canonicalCategory(item.category) === "plots" ? t("fit.siteVisit") : t("fit.viewing")}</p>
-          <label className="wizard-field">
-            <span className="wizard-label">{t("fit.date")}</span>
-            <input className="wizard-input" type="date" value={visitDate} onChange={(e) => setVisitDate(e.target.value)} />
-          </label>
-          <div className="wizard-chips">
-            {(["morning", "afternoon", "evening"] as const).map((value) => (
-              <button key={value} type="button" className={slot === value ? "filter-chip is-on" : "filter-chip"} onClick={() => setSlot(value)}>
-                {t(`fit.slot.${value}`)}
-              </button>
-            ))}
-          </div>
-          <button type="button" className="btn-primary" disabled={busy || !visitDate} onClick={() => { void sendViewing(); }}>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={() => {
+              if (!visitDate) {
+                const now = new Date();
+                const month = String(now.getMonth() + 1).padStart(2, "0");
+                const day = String(now.getDate()).padStart(2, "0");
+                setVisitDate(`${now.getFullYear()}-${month}-${day}`);
+              }
+              setViewOpen(true);
+            }}
+          >
             {canonicalCategory(item.category) === "plots" ? t("fit.siteVisit") : t("fit.viewing")}
           </button>
+          <BottomSheet
+            open={viewOpen}
+            title={canonicalCategory(item.category) === "plots" ? t("fit.siteVisit") : t("fit.viewing")}
+            onClose={() => setViewOpen(false)}
+          >
+            <DateStrip value={visitDate} onChange={setVisitDate} />
+            <div className="slot-row">
+              {(["morning", "afternoon", "evening"] as const).map((value) => (
+                <button key={value} type="button" className={slot === value ? "is-on" : ""} onClick={() => setSlot(value)}>
+                  {t(`fit.slot.${value}`)}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="btn-primary sheet-submit" disabled={busy || !visitDate} onClick={() => { void sendViewing(); }}>
+              {canonicalCategory(item.category) === "plots" ? t("fit.siteVisit") : t("fit.viewing")}
+            </button>
+          </BottomSheet>
         </div>
       ) : null}
 

@@ -77,7 +77,7 @@ function Thread() {
           {items.map((m) => (
             <div key={m.id} className="flex" style={{ justifyContent: m.mine ? "flex-end" : "flex-start" }}>
               <div
-                className="max-w-[80%] px-3.5 py-2.5 rounded-[18px] text-sm"
+                className="chat-bubble max-w-[80%] px-3.5 py-2.5 text-sm"
                 style={
                   m.mine
                     ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
@@ -90,7 +90,7 @@ function Thread() {
           ))}
         </div>
       )}
-      <form onSubmit={submit} className="sticky bottom-0 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+      <form onSubmit={submit} className="keyboard-dock sticky px-4 py-3" style={{ bottom: "var(--keyboard-inset, 0px)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
         <div className="nav-island canvas-read w-full px-3 py-2 flex gap-2">
           <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "var(--ink)" }} />
           <button type="submit" className="w-11 h-11 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "var(--ink)", boxShadow: "var(--shadow-float)" }} aria-label="Send message">

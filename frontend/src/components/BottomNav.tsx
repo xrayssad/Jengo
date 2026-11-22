@@ -1,12 +1,41 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { Home, Clapperboard, Plus, MessageCircle, User } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { motionDur, motionEase, tapSpring, usePrefersReducedMotion } from "@/lib/motion";
+import { haptic, motionDur, motionEase, tapSpring, usePrefersReducedMotion } from "@/lib/motion";
 import { useInboxLive } from "./MqttInbox";
+
+const STACK_KEY = "jengo_tab_stack";
+
+function tabFor(path: string) {
+  if (path.startsWith("/reels")) return "/reels";
+  if (path === "/messages" || path.startsWith("/messages/") || path.startsWith("/chat")) return "/messages";
+  if (path === "/profile" || path.startsWith("/settings") || path.startsWith("/hakiki")) return "/profile";
+  return "/home";
+}
+
+function readStack(): Record<string, string> {
+  try {
+    const data = JSON.parse(sessionStorage.getItem(STACK_KEY) || "{}") as Record<string, string>;
+    return data && typeof data === "object" ? data : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeStack(tab: string, full: string) {
+  const data = readStack();
+  data[tab] = full;
+  try {
+    sessionStorage.setItem(STACK_KEY, JSON.stringify(data));
+  } catch {
+    /* quota */
+  }
+}
 
 const items = [
   { href: "/home", label: "nav.home", icon: Home },
@@ -16,21 +45,51 @@ const items = [
 ];
 
 export default function BottomNav({ hidden = false }: { hidden?: boolean }) {
-  const path = usePathname();
+  const path = usePathname() || "/";
+  const router = useRouter();
   const t = useT();
   const reduce = usePrefersReducedMotion();
   const inbox = useInboxLive();
   const chatUnread = inbox.unread && path !== "/messages";
+  const currentTab = tabFor(path);
+
+  useEffect(() => {
+    if (hidden) return;
+    if (path.startsWith("/login") || path.startsWith("/register")) return;
+    writeStack(currentTab, `${path}${window.location.search}`);
+  }, [currentTab, hidden, path]);
 
   const link = (item: (typeof items)[number]) => {
     const Icon = item.icon;
-    const active = item.href === "/reels" ? path.startsWith("/reels") : path === item.href;
+    const active = currentTab === item.href;
     return (
       <Link
         key={item.href}
         href={item.href}
         className={active ? "nav-item is-active" : "nav-item"}
         aria-current={active ? "page" : undefined}
+        onClick={(event) => {
+          haptic("light");
+          if (active) {
+            event.preventDefault();
+            if (path !== item.href) {
+              router.push(item.href);
+              return;
+            }
+            if (window.scrollY > 16) {
+              window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+              return;
+            }
+            window.dispatchEvent(new Event("jengo-tab-refresh"));
+            return;
+          }
+          const saved = readStack()[item.href];
+          const savedPath = saved?.split("?")[0] || "";
+          if (saved && savedPath && savedPath !== item.href) {
+            event.preventDefault();
+            router.push(saved);
+          }
+        }}
       >
         {active ? (
           reduce ? (

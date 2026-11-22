@@ -2,33 +2,27 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Eye, EyeOff, User, Lock } from "lucide-react";
 import { afterAuthPath, login as apiLogin, resendOtp, startGoogle } from "@/lib/api";
 import { markIntroPending } from "@/lib/intro";
+import AuthCollage from "@/components/AuthCollage";
 import Brand from "@/components/Brand";
 import SignedInHome from "@/components/SignedInHome";
-
-const slides = [
-  { image: "/real/room.jpg", title: "Rooms & Houses" },
-  { image: "/real/warehouse.jpg", title: "Shops Store & Godown" },
-  { image: "/real/apartment.jpg", title: "Apartment & Airbnb" },
-  { image: "/real/shop.jpg", title: "Shop Frames" },
-];
+import { useT } from "@/lib/i18n";
 
 export default function LoginPage() {
+  const t = useT();
+  const [mode, setMode] = useState<"welcome" | "form">("welcome");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  const [slide, setSlide] = useState(0);
   const [error, setError] = useState("");
   const [unverified, setUnverified] = useState(false);
   const [googleMsg, setGoogleMsg] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    const t = setInterval(() => setSlide((s) => (s + 1) % slides.length), 8000);
-    return () => clearInterval(t);
+    if (new URLSearchParams(window.location.search).get("form") === "1") setMode("form");
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -66,76 +60,79 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
+    <main className="auth-screen">
       <SignedInHome />
-      <div className="relative h-[36vh] min-h-[220px]">
-        {slides.map((s, i) => (
-          <div key={s.image} className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: slide === i ? 1 : 0 }}>
-            <Image src={s.image} alt="" fill className="object-cover" priority={i === 0} />
-            <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(var(--veil-rgb),0.62), rgba(var(--veil-rgb),0.12) 70%, transparent)" }} />
-          </div>
-        ))}
+      <AuthCollage />
+      <div className="auth-brand">
+        <Brand variant="mark" size={56} />
+        <p className="auth-word">Jengo</p>
       </div>
-      <div className="px-5 -mt-14 relative z-10 pb-12">
-        <div className="sheet max-w-sm mx-auto p-6 fade-up">
-          <Brand variant="wordmark" size={32} />
-          <h1 className="text-[36px] font-bold leading-[1.05] tracking-tight mb-2" style={{ color: "var(--ink)" }}>Welcome back</h1>
-          <p className="text-sm mb-6" style={{ color: "var(--muted)" }}>Log in with your username or Google.</p>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--ink)" }}>Username</label>
-              <div className="relative">
-                <User size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="var(--mocha)" />
-                <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="jengo_duka" autoComplete="username" className="input-chocolate w-full pl-10 pr-4 py-3.5 text-sm" />
-              </div>
-            </div>
-            <div>
-              <label className="text-xs font-semibold mb-1.5 block" style={{ color: "var(--ink)" }}>Password</label>
-              <div className="relative">
-                <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2" color="var(--mocha)" />
-                <input type={show ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} className="input-chocolate w-full pl-10 pr-12 py-3.5 text-sm" />
-                <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 p-1">
-                  {show ? <EyeOff size={16} color="var(--mocha)" /> : <Eye size={16} color="var(--mocha)" />}
-                </button>
-              </div>
-            </div>
-            {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
-            {unverified && (
-              <button
-                type="button"
-                className="block text-sm font-semibold"
-                style={{ color: "var(--mocha)" }}
-                onClick={async () => {
-                  try {
-                    const sent = await resendOtp({ email: email.trim() });
-                    const inbox = sent.email || email.trim();
-                    window.location.href = `/verify?email=${encodeURIComponent(inbox)}&sent=1`;
-                  } catch (err) {
-                    const msg = err instanceof Error ? err.message : "Could not send";
-                    if (msg.toLowerCase().includes("60") || msg.toLowerCase().includes("baadaye") || msg.toLowerCase().includes("later")) {
-                      window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
-                      return;
-                    }
-                    setError(msg);
-                  }
-                }}
-              >
-                Resend code
-              </button>
-            )}
-            <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
-              {busy ? "Logging in..." : "Log in"}
-            </button>
-          </form>
-          <button type="button" onClick={google} disabled={busy} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
-            {busy ? "Opening Google..." : "Continue with Google"}
-          </button>
-          {googleMsg && <p className="text-sm mt-3 font-semibold" style={{ color: "var(--error)" }}>{googleMsg}</p>}
-          <p className="text-center text-sm mt-6" style={{ color: "var(--muted)" }}>
-            <Link href="/register" className="font-bold" style={{ color: "var(--mocha)" }}>Sign up</Link>
-          </p>
+      {mode === "welcome" ? (
+        <div className="auth-welcome">
+          <h1>{t("auth.headline")}</h1>
+          <Link href="/register" className="btn-primary w-full py-4 rounded-full text-sm font-semibold">{t("auth.join")}</Link>
+          <button type="button" className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold" onClick={() => setMode("form")}>{t("auth.enter")}</button>
+          <Link href="/home" className="auth-guest">{t("auth.guest")}</Link>
         </div>
-      </div>
+      ) : null}
+      {mode === "form" ? (
+        <>
+      <button type="button" className="auth-back" onClick={() => setMode("welcome")}>{t("back")}</button>
+      <h1>{t("auth.welcomeBack")}</h1>
+      <form onSubmit={handleSubmit} className="auth-form">
+        <label className="float-field">
+          <User size={16} aria-hidden />
+          <input required value={email} onChange={(e) => setEmail(e.target.value)} placeholder=" " autoComplete="username" enterKeyHint="next" className="input-chocolate" />
+          <span>Username</span>
+        </label>
+        <label className="float-field">
+          <Lock size={16} aria-hidden />
+          <input type={show ? "text" : "password"} required value={password} onChange={(e) => setPassword(e.target.value)} placeholder=" " autoComplete="current-password" enterKeyHint="go" className="input-chocolate" />
+          <span>Password</span>
+          <button type="button" className="eye" onClick={() => setShow(!show)} aria-label={show ? "Hide password" : "Show password"}>
+            {show ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </label>
+        <p className="text-sm">
+          <Link href="/recover" className="font-semibold" style={{ color: "var(--mocha)" }}>{t("auth.forgot")} {t("auth.recover")}</Link>
+        </p>
+        {error && <p className="text-sm font-semibold" style={{ color: "var(--error)" }}>{error}</p>}
+        {unverified && (
+          <button
+            type="button"
+            className="block text-sm font-semibold"
+            style={{ color: "var(--mocha)" }}
+            onClick={async () => {
+              try {
+                const sent = await resendOtp({ email: email.trim() });
+                const inbox = sent.email || email.trim();
+                window.location.href = `/verify?email=${encodeURIComponent(inbox)}&sent=1`;
+              } catch (err) {
+                const msg = err instanceof Error ? err.message : "Could not send";
+                if (msg.toLowerCase().includes("60") || msg.toLowerCase().includes("baadaye") || msg.toLowerCase().includes("later")) {
+                  window.location.href = `/verify?email=${encodeURIComponent(email.trim())}&sent=1`;
+                  return;
+                }
+                setError(msg);
+              }
+            }}
+          >
+            Resend code
+          </button>
+        )}
+        <button type="submit" disabled={busy} className="btn-primary w-full py-4 rounded-full text-sm font-semibold">
+          {busy ? "Logging in..." : "Log in"}
+        </button>
+      </form>
+      <button type="button" onClick={google} disabled={busy} className="btn-secondary w-full mt-3 py-3.5 rounded-full text-sm font-semibold">
+        {busy ? "Opening Google..." : "Continue with Google"}
+      </button>
+      {googleMsg && <p className="text-sm mt-3 font-semibold" style={{ color: "var(--error)" }}>{googleMsg}</p>}
+      <p className="text-center text-sm mt-6" style={{ color: "var(--muted)" }}>
+        <Link href="/register" className="font-bold" style={{ color: "var(--mocha)" }}>{t("auth.join")}</Link>
+      </p>
+        </>
+      ) : null}
     </main>
   );
 }

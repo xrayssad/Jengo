@@ -47,9 +47,11 @@ export default function HeroCarousel({ items, loading, version = 0 }: { items: L
         if (reduce) {
           frame.style.transform = "";
           frame.style.opacity = "";
+          frame.style.removeProperty("--hero-dim");
         } else {
-          frame.style.transform = `translateY(${t * 10}px) scale(${1 - t * 0.12})`;
-          frame.style.opacity = String(1 - t * 0.3);
+          frame.style.transform = `translateY(${t * 8}px) scale(${1 - t * 0.08})`;
+          frame.style.setProperty("--hero-dim", String(Math.min(1, t)));
+          frame.style.opacity = "1";
         }
         const img = slide.querySelector("img");
         if (img) {

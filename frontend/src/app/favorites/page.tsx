@@ -88,17 +88,24 @@ export default function FavoritesPage() {
             <p className="hint">Tap the heart on a listing, or save a reel, to see it here.</p>
           </div>
         )}
-        {ready && groupSaved(items).map((block) =>
-          block.kind === "reel" ? (
-            <ReelFavorite key={block.key} item={block.item} />
-          ) : (
-            <div key={block.key} className="listing-grid">
-              {block.items.map((item, i) => (
-                <ListingCard key={item.id} item={item as Listing} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
-              ))}
+        {ready && groupSaved(items).map((block) => {
+          const when = (block.kind === "reel" ? block.item.saved_at : block.items[0]?.saved_at || "").slice(0, 10);
+          return block.kind === "reel" ? (
+            <div key={block.key}>
+              {when ? <p className="day-label">{when}</p> : null}
+              <ReelFavorite item={block.item} />
             </div>
-          ),
-        )}
+          ) : (
+            <div key={block.key}>
+              {when ? <p className="day-label">{when}</p> : null}
+              <div className="listing-grid">
+              {block.items.map((item, i) => (
+                <ListingCard key={item.id} item={item as Listing} eager={i < 2} delay={i < 8 ? i * 50 : -1} defer={i >= 6} />
+              ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
     </main>
   );

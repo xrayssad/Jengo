@@ -3,9 +3,11 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUp, LayoutGrid, LocateFixed, RectangleVertical, X } from "lucide-react";
+import { ArrowUp, LayoutGrid, LocateFixed, RectangleVertical } from "lucide-react";
+import BottomSheet from "./BottomSheet";
+import { locationPermitSeen, markLocationPermit } from "@/lib/permit";
 import type { ReactNode } from "react";
-import type { Listing } from "@/lib/api";
+import { reversePlace, type Listing } from "@/lib/api";
 import JengoLoader from "@/components/JengoLoader";
 import JengoLogo from "@/components/JengoLogo";
 import {
@@ -117,6 +119,10 @@ export default function ListingBrowse({
   const [sort, setSort] = useState<SortKey>("new");
   const [view, setView] = useState<ViewMode>("large");
   const [near, setNear] = useState<NearPoint | null>(null);
+  const [nearNames, setNearNames] = useState<string[]>([]);
+  const announceNear = useRef(false);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [fitFilters, setFitFilters] = useState<string[]>([]);
   const [plotRange, setPlotRange] = useState({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
@@ -125,6 +131,7 @@ export default function ListingBrowse({
   const seenCategory = useRef(category);
   const [locating, setLocating] = useState(false);
   const [sheet, setSheet] = useState(false);
+  const [permit, setPermit] = useState(false);
   const [toast, setToast] = useState("");
   const [fading, setFading] = useState(false);
   const [showTop, setShowTop] = useState(false);
@@ -195,6 +202,7 @@ export default function ListingBrowse({
     setSort(nextSort);
     setRegion(nextRegion);
     setNear(hasNear ? { lat: saved!.nearLat as number, lng: saved!.nearLng as number } : null);
+    if (nextRegion === "near" && hasNear) setLocating(true);
     setVerifiedOnly(Boolean(saved?.verifiedOnly));
     const openingFilter = nextRegion !== "all" || nextSort !== "new" || Boolean(saved?.verifiedOnly);
     want.current = {
@@ -327,6 +335,17 @@ export default function ListingBrowse({
   }, [onRefresh]);
 
   useEffect(() => {
+    const onRefreshTab = () => onRefresh?.();
+    window.addEventListener("jengo-tab-refresh", onRefreshTab);
+    return () => window.removeEventListener("jengo-tab-refresh", onRefreshTab);
+  }, [onRefresh]);
+
+  useEffect(() => {
+    if (!booted) return;
+    window.dispatchEvent(new CustomEvent("jengo-browse-state", { detail: { region, sort } }));
+  }, [booted, region, sort]);
+
+  useEffect(() => {
     if (!toast) return;
     const id = window.setTimeout(() => setToast(""), 2800);
     return () => window.clearTimeout(id);
@@ -394,7 +413,7 @@ export default function ListingBrowse({
     const sizeMax = amountOf(plotRange.sizeMax);
     const apply = (list: Listing[]) => {
       let next = want ? list.filter((item) => canonicalCategory(item.category) === want) : list;
-      if (region === "near" && near) next = nearListings(next, near);
+      if (region === "near" && near) next = nearListings(next, near, nearNames);
       else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
       if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
       for (const key of fitFilters) next = next.filter((item) => fitOn(item, key));
@@ -423,7 +442,7 @@ export default function ListingBrowse({
     const base = exact.length ? exact : related;
     const shown = sort === "new" ? base : sortListings(base, sort === "featured" && !featured ? "new" : sort);
     return { shown, related: exact.length ? related.slice(0, 6) : [], loose };
-  }, [items, ranked, region, near, sort, featured, verifiedOnly, fitFilters, category, plotRange]);
+  }, [items, ranked, region, near, nearNames, sort, featured, verifiedOnly, fitFilters, category, plotRange]);
   const shown = narrowed.shown;
   const relatedShown = narrowed.related;
   const loose = narrowed.loose;
@@ -535,8 +554,11 @@ export default function ListingBrowse({
       const param = new URLSearchParams(window.location.search).get("region") || "";
       const next = param ? regionFromParam(param, regionsRef.current) : "all";
       fromHistory.current = true;
-      setRegion(next);
-      if (next !== "near") setNear(null);
+    setRegion(next);
+    if (next !== "near") {
+      setNear(null);
+      setNearNames([]);
+    }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -557,6 +579,7 @@ export default function ListingBrowse({
   const clearBrowse = () => {
     setRegion("all");
     setNear(null);
+    setNearNames([]);
     setSort("new");
     setVerifiedOnly(false);
     setFitFilters([]);
@@ -586,11 +609,18 @@ export default function ListingBrowse({
       return;
     }
     setRegion(next);
-    if (next !== "near") setNear(null);
+    if (next !== "near") {
+      setNear(null);
+      setNearNames([]);
+    }
   };
 
   const locate = () => {
     if (locating) return;
+    if (!locationPermitSeen()) {
+      setPermit(true);
+      return;
+    }
     if (!navigator.geolocation) {
       setToast(t("near.unsupported"));
       return;
@@ -598,15 +628,11 @@ export default function ListingBrowse({
     setLocating(true);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setLocating(false);
-        if (!items.some(hasCoords)) {
-          setToast(t("near.nocoords"));
-          return;
-        }
         const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        announceNear.current = true;
+        setNearNames([]);
         setNear(point);
         setRegion("near");
-        setToast(t("near.ok"));
       },
       (err) => {
         setLocating(false);
@@ -617,12 +643,32 @@ export default function ListingBrowse({
   };
 
   useEffect(() => {
+    if (region !== "near" || !near) return;
+    let stop = false;
+    void reversePlace(near.lat, near.lng).then((row) => {
+      if (stop) return;
+      const names = row.names || [];
+      setNearNames(names);
+      setLocating(false);
+      if (!announceNear.current) return;
+      announceNear.current = false;
+      const matched = nearListings(itemsRef.current, near, names);
+      if (matched.length) setToast(t("near.ok"));
+      else setToast(t(names.length ? "near.none" : "near.nocoords"));
+    });
+    return () => {
+      stop = true;
+    };
+  }, [region, near, t]);
+
+  useEffect(() => {
     const onRegion = (event: Event) => {
       const next = String((event as CustomEvent<string>).detail || "");
       if (!next || next === "near") return;
       if (next === "all") {
         setRegion("all");
         setNear(null);
+        setNearNames([]);
         setSort("new");
         setVerifiedOnly(false);
         setFitFilters([]);
@@ -649,7 +695,7 @@ export default function ListingBrowse({
         <JengoLoader variant="pull" size={22} refreshing={refreshing} done={pullDone} />
       </div>
       <div ref={chipsRef} className={showSummary ? "browse-pin" : "browse-stack"}>
-      <div className="loc-rail no-scrollbar" role="tablist" aria-label={t("near")}>
+      <div className="loc-rail no-scrollbar rail-fade" role="tablist" aria-label={t("near")}>
         <button
           type="button"
           className={region === "near" ? "loc-chip is-on" : "loc-chip"}
@@ -689,7 +735,7 @@ export default function ListingBrowse({
         ))}
       </div>
       {fitConfig && fitConfig.filters.length ? (
-        <div className="loc-rail no-scrollbar" aria-label={t("sort")}>
+        <div className="loc-rail no-scrollbar rail-fade" aria-label={t("sort")}>
           {fitConfig.filters.map((key) => (
             <button
               key={key}
@@ -731,6 +777,54 @@ export default function ListingBrowse({
               : `${summaryLabel} - ${shown.length} ${t("listings")}`}
           </p>
           <button type="button" onClick={resetFilters}>{t("filter.clear")}</button>
+        </div>
+      ) : null}
+      {!queryText ? (
+        <div className="text-tabs" role="tablist" aria-label={t("feed.recommended")}>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={region !== "near" && (sort === "featured" || sort === "views")}
+            className={region !== "near" && (sort === "featured" || sort === "views") ? "is-on" : ""}
+            onClick={() => {
+              if (region === "near") {
+                setRegion("all");
+                setNear(null);
+                setNearNames([]);
+              }
+              setSort(featured ? "featured" : "views");
+            }}
+          >
+            {t("feed.recommended")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={region !== "near" && sort === "new"}
+            className={region !== "near" && sort === "new" ? "is-on" : ""}
+            onClick={() => {
+              if (region === "near") {
+                setRegion("all");
+                setNear(null);
+                setNearNames([]);
+              }
+              setSort("new");
+            }}
+          >
+            {t("feed.new")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={region === "near"}
+            className={region === "near" ? "is-on" : ""}
+            onClick={() => {
+              setSort("new");
+              locate();
+            }}
+          >
+            {t("feed.nearby")}
+          </button>
         </div>
       ) : null}
       </div>
@@ -789,8 +883,8 @@ export default function ListingBrowse({
       {error ? <p className="browse-error">{error}</p> : null}
 
       <div className={fading ? "listing-stage is-fading" : "listing-stage"}>
-        {loading && shown.length === 0 && <ListingFeedSkeleton layout={view} />}
-        {!loading && !error && shown.length === 0 && (
+        {(loading || locating) && shown.length === 0 && <ListingFeedSkeleton layout={view} />}
+        {!loading && !locating && !error && shown.length === 0 && (
           <div className="empty-panel browse-empty">
             <span className="browse-empty-mark" aria-hidden>
               <JengoLogo variant="mark" size={32} title="" />
@@ -847,6 +941,7 @@ export default function ListingBrowse({
                 delay={i < 6 ? i * 60 : -1}
                 layout={view}
                 listIds={listIds}
+                defer={i >= 6}
               />
             ))}
           </div>
@@ -863,32 +958,43 @@ export default function ListingBrowse({
         ) : null}
       </div>
 
-      {sheet && (
-        <div className="sort-sheet" role="presentation" onClick={() => setSheet(false)}>
-          <div className="sort-panel" role="dialog" aria-label={t("sort")} onClick={(event) => event.stopPropagation()}>
-            <div className="sort-panel-bar">
-              <p>{t("sort")}</p>
-              <button type="button" className="soft-icon-btn" aria-label={t("close")} onClick={() => setSheet(false)}>
-                <X size={16} />
-              </button>
-            </div>
-            {sorts.map((key) => (
-              <button
-                key={key}
-                type="button"
-                className={sort === key ? "sort-option is-on" : "sort-option"}
-                aria-pressed={sort === key}
-                onClick={() => {
-                  setSort(key);
-                  setSheet(false);
-                }}
-              >
-                {t(`sort.${key}`)}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <BottomSheet
+        open={permit}
+        title={t("permit.location.title")}
+        onClose={() => {
+          markLocationPermit();
+          setPermit(false);
+        }}
+      >
+        <p className="sheet-copy">{t("permit.location.body")}</p>
+        <button
+          type="button"
+          className="btn-primary sheet-submit"
+          onClick={() => {
+            markLocationPermit();
+            setPermit(false);
+            window.setTimeout(() => locate(), 0);
+          }}
+        >
+          {t("permit.allow")}
+        </button>
+      </BottomSheet>
+      <BottomSheet open={sheet} title={t("sort")} onClose={() => setSheet(false)}>
+        {sorts.map((key) => (
+          <button
+            key={key}
+            type="button"
+            className={sort === key ? "sheet-option is-on" : "sheet-option"}
+            aria-pressed={sort === key}
+            onClick={() => {
+              setSort(key);
+              setSheet(false);
+            }}
+          >
+            {t(`sort.${key}`)}
+          </button>
+        ))}
+      </BottomSheet>
 
       {toast ? <div className="browse-toast" role="status">{toast}</div> : null}
 

@@ -36,10 +36,8 @@ export default function SaveButton({
     e.stopPropagation();
     const next = toggleSaved(item);
     setOn(next);
-    if (variant === "heart") {
-      setBurst(next ? "like" : "unlike");
-      if (next) haptic(10);
-    }
+    if (variant === "heart") setBurst(next ? "like" : "unlike");
+    haptic(next ? "success" : "light");
   };
 
   const Icon = Bookmark;
@@ -58,11 +56,13 @@ export default function SaveButton({
       className={className || "flex items-center gap-1"}
       style={style}
     >
-      {variant === "heart" ? (
-        <HeartMark on={on} burst={burst} size={size} />
-      ) : (
-        <Icon size={size} color={stroke} fill={fill} strokeWidth={1.8} />
-      )}
+      <span className={burst || (variant === "bookmark" && on) ? "heart-pop" : undefined}>
+        {variant === "heart" ? (
+          <HeartMark on={on} burst={burst} size={size} />
+        ) : (
+          <Icon size={size} color={stroke} fill={fill} strokeWidth={1.8} />
+        )}
+      </span>
     </button>
   );
 }

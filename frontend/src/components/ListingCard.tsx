@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { ViewTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUpRight, Eye, MapPin } from "lucide-react";
+import { Eye, MapPin } from "lucide-react";
 import { formatPrice, listingUnit, type Listing } from "@/lib/api";
 import { canonicalCategory, categoryConfig } from "@/lib/categories.config";
 import { PlotCardFacts } from "./PlotDetail";
@@ -41,6 +41,7 @@ export default function ListingCard({
   preview = false,
   listIds,
   highlight = false,
+  defer = false,
 }: {
   item: Listing;
   eager?: boolean;
@@ -51,6 +52,7 @@ export default function ListingCard({
   preview?: boolean;
   listIds?: string[];
   highlight?: boolean;
+  defer?: boolean;
 }) {
   const { t, lang } = useI18n();
   const config = categoryConfig(item.category);
@@ -87,7 +89,7 @@ export default function ListingCard({
     freezeBrowse(frame, ids, item.id);
   };
 
-  if (frame === "feed") {
+  if (frame === "feed" && grid) {
     const photo = (
       <div className="market-tile-media">
         <Link href={href} scroll={false} transitionTypes={["nav-forward"]} className="immerse-hit" aria-label={item.title} onClick={openListing}>
@@ -101,7 +103,7 @@ export default function ListingCard({
     );
     return (
       <article
-        className={["market-tile is-listing", grid ? "is-grid" : "is-large", stay && !grid ? "is-stay" : "", enter ? "card-enter" : "", highlight || pulsed ? "is-return" : ""].filter(Boolean).join(" ")}
+        className={["market-tile is-listing", grid ? "is-grid" : "is-large", stay && !grid ? "is-stay" : "", enter ? "card-enter" : "", highlight || pulsed ? "is-return" : "", defer ? "is-cv" : ""].filter(Boolean).join(" ")}
         data-listing-id={item.id}
         data-frame={frame}
         style={enter ? { animationDelay: `${delay}ms` } : undefined}
@@ -178,6 +180,7 @@ export default function ListingCard({
         </p>
         {!grid && !plot && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
         {!grid && plot ? <PlotCardFacts item={item} /> : null}
+        <span className="immerse-look">{t("look")}</span>
         {!grid && !plot && (readFit(item).costs_confirmed || readFit(item).direct_owner || readFit(item).free_viewing) ? (
           <p className="fit-badges">
             {readFit(item).direct_owner ? <span className="fit-badge">{t("fit.direct")}</span> : null}
@@ -192,11 +195,6 @@ export default function ListingCard({
           </p>
         ) : null}
       </div>
-      {!grid ? (
-        <span className="immerse-go" aria-hidden>
-          <ArrowUpRight size={18} />
-        </span>
-      ) : null}
       <div className="immerse-heart">
         <SaveButton item={item} variant="heart" size={16} className="heart-fab heart-fab-sm" />
       </div>
@@ -207,6 +205,7 @@ export default function ListingCard({
     <article
       className={[
         "market-tile is-immerse",
+        defer ? "is-cv" : "",
         grid ? "is-grid" : "is-large",
         stay && !grid ? "is-stay" : "",
         frame === "hero" ? "is-hero" : "",

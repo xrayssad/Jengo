@@ -1,20 +1,22 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { ViewTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "motion/react";
 import { ArrowLeft, Check, ChevronLeft, ChevronRight, Eye, Mail, MapPin, Phone, Send, Share2 } from "lucide-react";
-import { motionDur, moveSpring, usePrefersReducedMotion } from "@/lib/motion";
+import { haptic, motionDur, moveSpring, usePrefersReducedMotion } from "@/lib/motion";
 import {
   catLabel,
   catShort,
   fetchListing,
   formatPrice,
+  needsLogin,
   peekListing,
   recordListingView,
+  redirectToLogin,
   listingPhones,
   listingUnit,
   periodLabel,
@@ -27,6 +29,7 @@ import { formatViews, viewCount, warnMissingViews } from "@/lib/browse";
 import { VIEW_DWELL_MS } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
+import AmenityRow from "@/components/AmenityRow";
 import ListingFacts, { shareText } from "@/components/ListingFacts";
 import PlotDetail from "@/components/PlotDetail";
 import { canonicalCategory } from "@/lib/categories.config";
@@ -108,6 +111,9 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
   const [rev, setRev] = useState(0);
   const [swap, setSwap] = useState<"" | "next" | "prev">("");
   const [sheetSettled, setSheetSettled] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const shiftRef = useRef(0);
+  const dragRef = useRef<{ y: number; shift: number; lastY: number; lastT: number; moved: boolean } | null>(null);
   const trackedId = useRef("");
   const pageRef = useRef<HTMLElement>(null);
   const sheetRef = useRef<HTMLDivElement>(null);
@@ -308,6 +314,80 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
     else router.push("/home");
   };
 
+  const collapsedShift = () => Math.round(window.innerHeight * 0.47);
+
+  const placeSheet = (px: number, animate: boolean) => {
+    const node = sheetRef.current;
+    const max = collapsedShift();
+    const next = Math.max(0, px);
+    shiftRef.current = next;
+    if (!node) return;
+    const reduceNow = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    node.style.transition = animate && !reduceNow ? "translate 280ms cubic-bezier(0.22, 1, 0.36, 1)" : "none";
+    node.style.translate = `-50% ${next}px`;
+    const hero = pageRef.current?.querySelector<HTMLElement>(".detail-hero");
+    if (hero) {
+      const travel = max ? 1 - Math.min(next, max) / max : 0;
+      hero.style.setProperty("--parallax", `${Math.round(travel * 36)}px`);
+    }
+  };
+
+  const stage = Boolean(item) && !loading && !gone;
+
+  useLayoutEffect(() => {
+    if (!stage) return;
+    const reduceNow = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    placeSheet(reduceNow ? 0 : collapsedShift(), false);
+    setSheetOpen(reduceNow);
+  }, [id, stage]);
+
+  const onSheetDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = {
+      y: event.clientY,
+      shift: shiftRef.current,
+      lastY: event.clientY,
+      lastT: event.timeStamp,
+      moved: false,
+    };
+  };
+
+  const onSheetMove = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const dy = event.clientY - drag.y;
+    if (Math.abs(dy) > 6) drag.moved = true;
+    drag.lastY = event.clientY;
+    drag.lastT = event.timeStamp;
+    placeSheet(drag.shift + dy, false);
+  };
+
+  const onSheetUp = (event: PointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    dragRef.current = null;
+    if (!drag) return;
+    const max = collapsedShift();
+    if (!drag.moved) {
+      const open = shiftRef.current > 8;
+      placeSheet(open ? 0 : max, true);
+      setSheetOpen(open);
+      haptic("light");
+      return;
+    }
+    const dt = Math.max(1, event.timeStamp - drag.lastT);
+    const velocity = (event.clientY - drag.lastY) / dt;
+    const cur = shiftRef.current;
+    if (cur > max + 64 || (velocity > 0.55 && cur > max * 0.8)) {
+      close();
+      return;
+    }
+    const open = velocity < -0.35 || cur < max * 0.5;
+    placeSheet(open ? 0 : max, true);
+    setSheetOpen(open);
+    haptic("light");
+  };
+
   useEffect(() => {
     if (!inContext) return;
     const card = document.querySelector<HTMLElement>(".more-card.is-on");
@@ -350,7 +430,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
   }, [inContext, prevId, nextId]);
 
   return (
-    <main ref={pageRef} key={id} className={`detail-page${swap ? ` is-swap-${swap}` : ""}`}>
+    <main ref={pageRef} key={id} className={`detail-page${stage ? " is-stage" : ""}${swap ? ` is-swap-${swap}` : ""}`}>
       {loading && <DetailSkeleton />}
       {!loading && error && (
         <div className="text-center py-16 px-5">
@@ -380,11 +460,12 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
       )}
       {!loading && item && !gone && (
         <>
-          <div className="relative">
+          <div className="detail-hero-slot">
             <ViewTransition name={vtName} share="listing-morph" default="none">
             <PhotoGallery
               key={id}
               images={item.images}
+              onDismiss={close}
               onEdge={(dir) => {
                 const next = neighbor(dir);
                 if (next) go(next, dir);
@@ -445,7 +526,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
 
           <motion.div
             ref={sheetRef}
-            className={`detail-sheet canvas-read px-4 pt-5${sheetSettled ? " is-settled" : ""}`}
+            className={`detail-sheet canvas-read${sheetOpen ? " is-expanded" : ""}${sheetSettled ? " is-settled" : ""}`}
             initial={reduce ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={reduce ? { duration: motionDur.fast } : moveSpring}
@@ -459,44 +540,52 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
               setSheetSettled(true);
             }}
           >
-            <ViewTransition enter="detail-copy" default="none">
-            <div>
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="detail-price">
-                  TZS {formatPrice(item.price)}
-                  <span className="detail-unit">
-                    {item.category === "vifaa"
-                      ? listingUnit(item)
-                        ? `/ ${unitLabel(listingUnit(item))}`
-                        : ""
-                      : periodLabel(item.period)}
-                  </span>
-                </p>
-                <p className="detail-place">
-                  <MapPin size={14} color="var(--muted)" />
-                  <span>{place}</span>
-                </p>
+            <div
+              className="detail-sheet-head"
+              onPointerDown={onSheetDown}
+              onPointerMove={onSheetMove}
+              onPointerUp={onSheetUp}
+              onPointerCancel={onSheetUp}
+            >
+              <div className="detail-grab" aria-hidden />
+              <ViewTransition enter="detail-copy" default="none">
+              <div>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="detail-price">
+                    TZS {formatPrice(item.price)}
+                    <span className="detail-unit">
+                      {item.category === "vifaa"
+                        ? listingUnit(item)
+                          ? `/ ${unitLabel(listingUnit(item))}`
+                          : ""
+                        : periodLabel(item.period)}
+                    </span>
+                  </p>
+                  <p className="detail-place">
+                    <MapPin size={14} color="var(--muted)" />
+                    <span>{place}</span>
+                  </p>
+                </div>
+                <div className="detail-meta">
+                  {viewCount(item) != null ? (
+                    <span className="detail-views">
+                      <Eye size={14} aria-hidden />
+                      {t("views", { n: formatViews(viewCount(item) || 0) })}
+                    </span>
+                  ) : null}
+                  {viewDebug ? <span className="fit-note">{viewDebug}</span> : null}
+                  {item.views_7d != null ? <span className="fit-note">{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
+                  {ago ? <span className="time-pill shrink-0">{ago}</span> : null}
+                </div>
               </div>
-              <div className="detail-meta">
-                {viewCount(item) != null ? (
-                  <span className="detail-views">
-                    <Eye size={14} aria-hidden />
-                    {t("views", { n: formatViews(viewCount(item) || 0) })}
-                  </span>
-                ) : null}
-                {viewDebug ? <span className="fit-note">{viewDebug}</span> : null}
-                {item.views_7d != null ? <span className="fit-note">{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
-                {viewDebug ? <span className="fit-note">{viewDebug}</span> : null}
-                {item.views_7d != null ? <span className="fit-note">{t("views.week", { n: formatViews(item.views_7d) })}</span> : null}
-                {ago ? <span className="time-pill shrink-0">{ago}</span> : null}
+              <h1 className="detail-title">{item.title}</h1>
+              <p className="detail-accent">{catLabel[item.category || ""] || catShort[item.category || ""] || ""}</p>
               </div>
+              </ViewTransition>
             </div>
-
-            <h1 className="detail-title">{item.title}</h1>
-            <p className="detail-accent">{catLabel[item.category || ""] || catShort[item.category || ""] || ""}</p>
-            </div>
-            </ViewTransition>
+            <div className="detail-sheet-scroll">
+            <AmenityRow item={item} />
             <ListingFacts item={item} />
             {canonicalCategory(item.category) === "plots" ? <PlotDetail item={item} /> : null}
             <div className="seller-card">
@@ -536,9 +625,47 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
                 />
               </div>
             )}
+            {inContext && frozen && frozen.ids.length > 1 ? (
+              <div className="more-rail">
+                <p className="more-rail-label">{t("moreList")}</p>
+                <div className="more-rail-scroller no-scrollbar">
+                  {frozen.ids.map((rowId) => {
+                    const row = peekListing(rowId);
+                    const src = (row?.images || []).find(Boolean) || "";
+                    const missing = frozen.missing.includes(rowId);
+                    return (
+                      <button
+                        key={rowId}
+                        type="button"
+                        className={rowId === id ? "more-card is-on" : "more-card"}
+                        aria-current={rowId === id ? "true" : undefined}
+                        disabled={missing}
+                        onClick={() => {
+                          if (rowId === id || missing) return;
+                          go(rowId, frozen.ids.indexOf(rowId) > frozen.ids.indexOf(id) ? 1 : -1);
+                        }}
+                      >
+                        {src ? <img src={src} alt="" /> : <span>{(row?.title || "·").slice(0, 1)}</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : null}
+            </div>
           </motion.div>
 
           <DetailCtaBar>
+            <div className="detail-cta-price">
+              <strong>TZS {formatPrice(item.price)}</strong>
+              <span>
+                {item.category === "vifaa"
+                  ? listingUnit(item)
+                    ? `/ ${unitLabel(listingUnit(item))}`
+                    : ""
+                  : periodLabel(item.period)}
+              </span>
+            </div>
             <div className="detail-cta-row">
               {callHref ? (
                 <a href={callHref} className="detail-cta">
@@ -572,33 +699,6 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
           </DetailCtaBar>
         </>
       )}
-      {inContext && frozen && frozen.ids.length > 1 ? (
-        <div className="more-rail">
-          <p className="more-rail-label">{t("moreList")}</p>
-          <div className="more-rail-scroller no-scrollbar">
-            {frozen.ids.map((rowId) => {
-              const row = peekListing(rowId);
-              const src = (row?.images || []).find(Boolean) || "";
-              const missing = frozen.missing.includes(rowId);
-              return (
-                <button
-                  key={rowId}
-                  type="button"
-                  className={rowId === id ? "more-card is-on" : "more-card"}
-                  aria-current={rowId === id ? "true" : undefined}
-                  disabled={missing}
-                  onClick={() => {
-                    if (rowId === id || missing) return;
-                    go(rowId, frozen.ids.indexOf(rowId) > frozen.ids.indexOf(id) ? 1 : -1);
-                  }}
-                >
-                  {src ? <img src={src} alt="" /> : <span>{(row?.title || "·").slice(0, 1)}</span>}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
     </main>
   );
 }

@@ -1,13 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowLeft, Clapperboard, Hammer } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import ListingCard from "@/components/ListingCard";
 import PosterName from "@/components/PosterName";
 import { ListingFeedSkeleton } from "@/components/Skeletons";
-import { fetchMyPosts, type Job, type Listing, type Reel } from "@/lib/api";
+import { deleteMyListing, fetchMyPosts, setMyListingStatus, type Job, type Listing, type Reel } from "@/lib/api";
+import SwipeRow from "@/components/SwipeRow";
 import { photoMinimum } from "@/lib/categories.config";
 import { useT } from "@/lib/i18n";
 import { readFit } from "@/lib/pricing";
@@ -113,6 +115,10 @@ function health(item: Listing, label: (key: string) => string) {
 
 export default function Page() {
   const t = useT();
+  const router = useRouter();
+  const undoRef = useRef<(() => void) | null>(null);
+  const timer = useRef(0);
+  const [toast, setToast] = useState("");
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -165,19 +171,39 @@ export default function Page() {
     return () => window.removeEventListener("jengo-views", onView);
   }, []);
 
-  useEffect(() => {
-    const onView = (event: Event) => {
-      const detail = (event as CustomEvent).detail as { id?: string; views_count?: number };
-      if (!detail?.id || typeof detail.views_count !== "number") return;
-      setRows((cur) => cur.map((row) => (
-        row.kind === "listing" && row.item.id === detail.id
-          ? { ...row, item: { ...row.item, views_count: detail.views_count, views: detail.views_count } }
-          : row
-      )));
+  const askUndo = (message: string, undo: () => void, commit: () => void) => {
+    window.clearTimeout(timer.current);
+    undoRef.current = () => {
+      undo();
+      undoRef.current = null;
     };
-    window.addEventListener("jengo-views", onView);
-    return () => window.removeEventListener("jengo-views", onView);
-  }, []);
+    setToast(message);
+    timer.current = window.setTimeout(() => {
+      setToast("");
+      undoRef.current = null;
+      commit();
+    }, 5000);
+  };
+
+  const pause = (item: Listing) => {
+    const next = item.status === "hidden" ? "active" : "hidden";
+    const prev = item.status || "active";
+    setRows((cur) => cur.map((row) => (row.kind === "listing" && row.item.id === item.id ? { ...row, item: { ...row.item, status: next } } : row)));
+    void setMyListingStatus(item.id, next).catch(() => {
+      setRows((cur) => cur.map((row) => (row.kind === "listing" && row.item.id === item.id ? { ...row, item: { ...row.item, status: prev } } : row)));
+    });
+  };
+
+  const remove = (item: Listing) => {
+    let snapshot: Row[] = [];
+    setRows((cur) => {
+      snapshot = cur;
+      return cur.filter((row) => !(row.kind === "listing" && row.item.id === item.id));
+    });
+    askUndo(t("mine.deleted"), () => setRows(snapshot), () => {
+      void deleteMyListing(item.id).catch(() => setRows(snapshot));
+    });
+  };
 
   return (
     <AuthGate>
@@ -216,10 +242,20 @@ export default function Page() {
               return (
                 <div key={`listings-${block.key}`} className="listing-grid">
                   {block.items.map((item, i) => (
-                    <div key={item.id}>
-                      <ListingCard item={item} eager={i < 2} delay={i < 8 ? i * 50 : -1} />
-                      {health(item, t).map((tip) => <p key={tip} className="fit-note">{tip}</p>)}
-                    </div>
+                    <SwipeRow
+                      key={item.id}
+                      actions={[
+                        { id: "edit", label: t("mine.edit"), onClick: () => router.push(`/tangazo/${item.id}`) },
+                        { id: "pause", label: item.status === "hidden" ? t("mine.resume") : t("mine.pause"), onClick: () => pause(item) },
+                        { id: "delete", label: t("mine.delete"), tone: "danger", onClick: () => remove(item) },
+                      ]}
+                    >
+                      <div>
+                        {item.status ? <span className="status-chip">{t(`status.${item.status}`)}</span> : null}
+                        <ListingCard item={item} eager={i < 2} delay={i < 8 ? i * 50 : -1} defer={i >= 6} />
+                        {health(item, t).map((tip) => <p key={tip} className="fit-note">{tip}</p>)}
+                      </div>
+                    </SwipeRow>
                   ))}
                 </div>
               );
@@ -240,6 +276,21 @@ export default function Page() {
             );
           })}
         </div>
+        {toast ? (
+          <div className="undo-toast" role="status">
+            <span>{toast}</span>
+            <button
+              type="button"
+              onClick={() => {
+                window.clearTimeout(timer.current);
+                undoRef.current?.();
+                setToast("");
+              }}
+            >
+              {t("mine.undo")}
+            </button>
+          </div>
+        ) : null}
       </main>
     </AuthGate>
   );

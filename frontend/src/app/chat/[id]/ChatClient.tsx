@@ -1,13 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Send } from "lucide-react";
 import AuthGate from "@/components/AuthGate";
 import { ChatThreadSkeleton } from "@/components/Skeletons";
 import VerifiedBadge from "@/components/VerifiedBadge";
-import { fetchListingDm, sendListingDm, type ChatMessage } from "@/lib/api";
+import { fetchListing, fetchListingDm, formatPrice, sendListingDm, type ChatMessage, type Listing } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+
+function stampLabel(iso?: string) {
+  const at = Date.parse(iso || "");
+  if (!Number.isFinite(at)) return "";
+  return new Date(at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+}
+
+function gapBefore(current?: string, previous?: string) {
+  const at = Date.parse(current || "");
+  const before = Date.parse(previous || "");
+  if (!Number.isFinite(at)) return false;
+  if (!Number.isFinite(before)) return true;
+  return at - before > 30 * 60 * 1000;
+}
 
 export default function ChatClient({ id, title, peer }: { id: string; title: string; peer?: string }) {
   const router = useRouter();
@@ -20,6 +35,7 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
   const [text, setText] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
+  const [pin, setPin] = useState<Listing | null>(null);
 
   const load = (opts?: { quiet?: boolean }) => {
     if (!opts?.quiet) setLoading(true);
@@ -37,6 +53,18 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
   };
 
   useEffect(() => {
+    let stop = false;
+    fetchListing(id).then((row) => {
+      if (!stop) setPin(row);
+    }).catch(() => {
+      if (!stop) setPin(null);
+    });
+    return () => {
+      stop = true;
+    };
+  }, [id]);
+
+  useEffect(() => {
     load();
     const onPing = () => load({ quiet: true });
     window.addEventListener("jengo-chat", onPing);
@@ -48,6 +76,20 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
       window.clearInterval(t);
     };
   }, [id, peer]);
+
+  const sharePlace = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(async (pos) => {
+      const body = `https://maps.google.com/?q=${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
+      try {
+        const msg = await sendListingDm(id, body, peer);
+        setItems((cur) => [...cur, msg]);
+        setError("");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Message was not sent");
+      }
+    });
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,6 +122,15 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
             </div>
           </div>
         </header>
+        {pin ? (
+          <Link href={`/tangazo/${pin.id}`} className="chat-pin">
+            {pin.images?.[0] ? <img src={pin.images[0]} alt="" width={48} height={48} decoding="async" /> : <span aria-hidden />}
+            <span className="chat-pin-copy">
+              <strong>{pin.title}</strong>
+              <small>{formatPrice(pin.price)}</small>
+            </span>
+          </Link>
+        ) : null}
         {loading ? (
           <ChatThreadSkeleton />
         ) : (
@@ -94,10 +145,12 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
             {items.length === 0 && !error && (
               <p className="text-sm text-center py-10" style={{ color: "var(--muted)" }}>Write a direct message to the listing owner.</p>
             )}
-            {items.map((m) => (
-              <div key={m.id} className="flex" style={{ justifyContent: m.mine ? "flex-end" : "flex-start" }}>
+            {items.map((m, index) => (
+              <div key={m.id}>
+              {gapBefore(m.created_at, items[index - 1]?.created_at) ? <p className="chat-time">{stampLabel(m.created_at)}</p> : null}
+              <div className="flex" style={{ justifyContent: m.mine ? "flex-end" : "flex-start" }}>
                 <div
-                  className="max-w-[80%] px-3.5 py-2.5 rounded-[18px] text-sm"
+                  className="chat-bubble max-w-[80%] px-3.5 py-2.5 text-sm"
                   style={
                     m.mine
                       ? { backgroundColor: "var(--ink)", color: "var(--paper)", boxShadow: "var(--shadow-quiet)" }
@@ -107,17 +160,21 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
                   {m.body}
                 </div>
               </div>
+              </div>
             ))}
           </div>
         )}
-        <form onSubmit={submit} className="sticky bottom-0 px-4 py-3" style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
+        <form onSubmit={submit} className="keyboard-dock sticky px-4 py-3" style={{ bottom: "var(--keyboard-inset, 0px)", paddingBottom: "max(12px, env(safe-area-inset-bottom))" }}>
           <div className="nav-island canvas-read w-full px-3 py-2 flex flex-col gap-2">
             <div className="flex gap-2 overflow-x-auto">
-              {(["fit.quick.view", "fit.quick.where", "fit.quick.cost"] as const).map((key) => (
+              <button type="button" className="filter-chip shrink-0" onClick={() => setText(t("fit.quick.view"))}>{t("chat.viewing")}</button>
+              <button type="button" className="filter-chip shrink-0" onClick={sharePlace}>{t("chat.location")}</button>
+              {(["fit.quick.where", "fit.quick.cost"] as const).map((key) => (
                 <button key={key} type="button" className="filter-chip shrink-0" onClick={() => setText(t(key))}>{t(key)}</button>
               ))}
             </div>
-            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "var(--ink)" }} />
+            <div className="flex gap-2 items-center">
+            <input value={text} onChange={(e) => setText(e.target.value)} placeholder="Write a message..." className="flex-1 bg-transparent px-3 py-2.5 text-sm outline-none" style={{ color: "var(--ink)" }} enterKeyHint="send" />
             <button
               type="submit"
               className="w-11 h-11 rounded-full flex items-center justify-center shrink-0"
@@ -126,6 +183,7 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
             >
               <Send size={18} color="var(--paper)" />
             </button>
+            </div>
           </div>
         </form>
       </main>

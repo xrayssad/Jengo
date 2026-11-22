@@ -19,6 +19,30 @@ def suggest(query: str) -> list[dict]:
     return _photon(q) or _nominatim(q)
 
 
+def reverse(lat: float, lng: float) -> dict:
+    """Place names around a point, so listings written as text can match Near me."""
+    try:
+        res = httpx.get(
+            "https://nominatim.openstreetmap.org/reverse",
+            params={"lat": lat, "lon": lng, "format": "json", "addressdetails": 1, "zoom": 14},
+            headers=HEADERS,
+            timeout=8.0,
+        )
+        res.raise_for_status()
+        data = res.json() or {}
+        addr = data.get("address") or {}
+        names: list[str] = []
+        for key in ("suburb", "neighbourhood", "quarter", "city_district", "municipality", "city", "town", "village", "county", "state"):
+            value = str(addr.get(key) or "").strip()
+            if not value or value.lower() in {"tanzania", "tz"}:
+                continue
+            if value not in names:
+                names.append(value)
+        return {"names": names[:8], "label": data.get("display_name") or ""}
+    except Exception:
+        return {"names": [], "label": ""}
+
+
 def details(place_id: str) -> dict | None:
     pid = (place_id or "").strip()
     if not pid or not GOOGLE_KEY:

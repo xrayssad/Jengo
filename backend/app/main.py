@@ -1,6 +1,6 @@
 import os
 import re
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -150,6 +150,11 @@ class LoginIn(BaseModel):
     phone: str = ""
     username: str = ""
     password: str
+
+
+class RecoverIn(BaseModel):
+    email: str = ""
+    redirect_to: str = ""
 
 
 class VerifyIn(BaseModel):
@@ -872,6 +877,20 @@ def login(request: Request, body: LoginIn):
     return _password_session(body.password, email=ident)
 
 
+@app.post("/auth/recover")
+def recover_password(request: Request, body: RecoverIn):
+    limiter.check(f"recover:{_client_key(request)}", 5)
+    email = body.email.strip().lower()
+    redirect = body.redirect_to.strip()
+    if "@" in email and not email.endswith("@simu.jengo.app"):
+        try:
+            options = {"redirect_to": redirect} if redirect.startswith("https://") or redirect.startswith("http://localhost") else {}
+            anon().auth.reset_password_for_email(email, options)
+        except Exception:
+            pass
+    return {"ok": True}
+
+
 GOOGLE_OFF = "Google is not connected in Supabase. Turn on the Google provider, or log in with email."
 
 
@@ -1347,6 +1366,160 @@ def set_listing_status(listing_id: str, body: ListingStatusIn, user=Depends(curr
     return decorate_listing(rows[0])
 
 
+def _owned_listing(listing_id: str, user):
+    cur = db().table("listings").select("id,owner_id").eq("id", listing_id).limit(1).execute()
+    rows = cur.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if str(rows[0].get("owner_id") or "") != str(user.id):
+        raise HTTPException(status_code=403, detail="Only the owner can change this listing")
+    return rows[0]
+
+
+@app.patch("/listings/{listing_id}/mine")
+def owner_set_listing_status(listing_id: str, body: ListingStatusIn, user=Depends(current_user)):
+    if body.status not in {"active", "hidden"}:
+        raise HTTPException(status_code=400, detail="Invalid status")
+    _owned_listing(listing_id, user)
+    res = db().table("listings").update({"status": body.status}).eq("id", listing_id).execute()
+    rows = res.data or []
+    if not rows:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    return decorate_listing(rows[0])
+
+
+@app.delete("/listings/{listing_id}")
+def owner_delete_listing(listing_id: str, user=Depends(current_user)):
+    _owned_listing(listing_id, user)
+    try:
+        db().table("listings").delete().eq("id", listing_id).execute()
+    except Exception as exc:
+        raise HTTPException(status_code=409, detail="Could not delete this listing") from exc
+    return {"ok": True}
+
+
+def _when(value):
+    if not value:
+        return None
+    try:
+        at = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if at.tzinfo is None:
+        at = at.replace(tzinfo=timezone.utc)
+    return at
+
+
+def _in_window(value, since):
+    if since is None:
+        return True
+    at = _when(value)
+    return bool(at and at >= since)
+
+
+def _safe_rows(build):
+    try:
+        res = build()
+        return res.data or []
+    except Exception:
+        return []
+
+
+@app.get("/sellers/top")
+def top_sellers(span: str = "all"):
+    since = None
+    if span == "week":
+        since = datetime.now(timezone.utc) - timedelta(days=7)
+    elif span == "month":
+        since = datetime.now(timezone.utc) - timedelta(days=30)
+    listings = _safe_rows(lambda: db().table("listings").select("id,owner_id,status,created_at").eq("status", "active").limit(800))
+    listings = [row for row in listings if row.get("owner_id") and _in_window(row.get("created_at"), since)]
+    owners: dict[str, dict] = {}
+    listing_owner: dict[str, str] = {}
+    for row in listings:
+        oid = str(row["owner_id"])
+        slot = owners.setdefault(oid, {"listings": 0, "reviews": 0, "rating_sum": 0, "viewings": 0, "replies": []})
+        slot["listings"] += 1
+        listing_owner[str(row["id"])] = oid
+    if not owners:
+        return {"items": [], "eligible": 0}
+    profiles = _safe_rows(lambda: db().table("profiles").select("id,username,full_name,is_verified,verified_type").in_("id", list(owners)).limit(800))
+    named = {str(row.get("id")): row for row in profiles}
+    bookings = _safe_rows(lambda: db().table("bookings").select("listing_id,status,created_at,message").limit(800))
+    for row in bookings:
+        oid = listing_owner.get(str(row.get("listing_id") or ""))
+        if not oid or not _in_window(row.get("created_at"), since):
+            continue
+        if row.get("status") == "moved_in":
+            owners[oid]["viewings"] += 1
+    reviews = _safe_rows(lambda: db().table("reviews").select("listing_id,rating,created_at").limit(800))
+    if not reviews:
+        for row in bookings:
+            oid = listing_owner.get(str(row.get("listing_id") or ""))
+            rev = review_from_booking(row) if oid and _in_window(row.get("created_at"), since) else None
+            if not oid or not rev or not rev.get("rating"):
+                continue
+            owners[oid]["reviews"] += 1
+            owners[oid]["rating_sum"] += float(rev["rating"])
+    for row in reviews:
+        oid = listing_owner.get(str(row.get("listing_id") or ""))
+        if not oid or not _in_window(row.get("created_at"), since):
+            continue
+        try:
+            rating = float(row.get("rating"))
+        except (TypeError, ValueError):
+            continue
+        owners[oid]["reviews"] += 1
+        owners[oid]["rating_sum"] += rating
+    messages = _safe_rows(lambda: db().table("jengo_messages").select("sender_id,thread_key,created_at").order("created_at").limit(1000))
+    threads: dict[str, list] = {}
+    for row in messages:
+        key = str(row.get("thread_key") or "")
+        at = _when(row.get("created_at"))
+        if key and at:
+            threads.setdefault(key, []).append((at, str(row.get("sender_id") or "")))
+    for key, events in threads.items():
+        events.sort(key=lambda item: item[0])
+        for owner_id in owners:
+            if owner_id not in key:
+                continue
+            waiting = None
+            for at, sender in events:
+                if sender != owner_id:
+                    waiting = at
+                elif waiting is not None:
+                    minutes = (at - waiting).total_seconds() / 60
+                    if 0 <= minutes <= 60 * 24 * 14:
+                        owners[owner_id]["replies"].append(minutes)
+                    waiting = None
+    items = []
+    for oid, slot in owners.items():
+        profile = named.get(oid) or {}
+        verified = bool(badge_public(profile)["is_verified"])
+        replies = slot["replies"]
+        has_metric = slot["reviews"] > 0 or slot["viewings"] > 0 or len(replies) > 0
+        if not verified or slot["listings"] < 1 or not has_metric:
+            continue
+        item = {
+            "user_id": oid,
+            "name": profile.get("username") or profile.get("full_name") or "Seller",
+            "verified": True,
+            "listings": slot["listings"],
+        }
+        if slot["reviews"]:
+            item["reviews"] = slot["reviews"]
+            item["rating"] = round(slot["rating_sum"] / slot["reviews"], 1)
+        if slot["viewings"]:
+            item["viewings"] = slot["viewings"]
+        if replies:
+            ordered = sorted(replies)
+            item["response_minutes"] = int(ordered[len(ordered) // 2])
+        items.append(item)
+    items.sort(key=lambda row: (row.get("rating") or 0, row.get("viewings") or 0, row.get("reviews") or 0, -(row.get("response_minutes") or 10_000)), reverse=True)
+    eligible = len(items)
+    return {"items": items if eligible >= 5 else [], "eligible": eligible}
+
+
 @app.post("/listings/{listing_id}/like")
 def like_listing(listing_id: str, body: LikeIn, user=Depends(current_user)):
     cur = db().table("listings").select("id,likes_count,owner_id").eq("id", listing_id).limit(1).execute()
@@ -1560,6 +1733,11 @@ def upload_photo(user=Depends(current_user), file: UploadFile = File(...)):
 @app.get("/places")
 def place_suggest(q: str = ""):
     return {"items": places.suggest(q)}
+
+
+@app.get("/places/reverse")
+def place_reverse(lat: float, lng: float):
+    return places.reverse(lat, lng)
 
 
 @app.get("/places/details")

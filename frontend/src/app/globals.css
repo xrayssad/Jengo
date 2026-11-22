@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "./native.css";
 
 @theme {
   --color-cream: #F6E9CB;
@@ -155,6 +156,40 @@ body {
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  user-select: none;
+  -webkit-user-select: none;
+  overscroll-behavior-y: none;
+}
+
+html {
+  overscroll-behavior-y: none;
+}
+
+a {
+  text-decoration: none;
+}
+
+button,
+a,
+[role="button"],
+.nav-item,
+.loc-chip,
+.soft-icon-btn {
+  touch-action: manipulation;
+}
+
+input,
+textarea,
+.detail-copy,
+.selectable,
+a[href^="tel:"],
+.listing-name,
+.immerse-title,
+.detail-title {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 :focus-visible {
@@ -314,12 +349,15 @@ h1, h2, h3 {
 }
 
 .listing-grid > .market-tile {
-  content-visibility: auto;
-  contain-intrinsic-block-size: auto calc((100vw - 44px) / 2 + 92px);
   box-shadow: none;
 }
 
-.listing-grid.is-large > .market-tile {
+.listing-grid > .market-tile.is-cv {
+  content-visibility: auto;
+  contain-intrinsic-block-size: auto calc((100vw - 44px) / 2 + 92px);
+}
+
+.listing-grid.is-large > .market-tile.is-cv {
   contain-intrinsic-block-size: auto calc((min(100vw, 1120px) - 32px) * 0.75 + 118px);
 }
 
@@ -419,9 +457,7 @@ h1, h2, h3 {
   font-size: 12px;
   font-weight: 650;
   color: var(--ink);
-  background: rgba(var(--surface-rgb), 0.82);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: rgba(var(--surface-rgb), 0.94);
 }
 
 .market-price {
@@ -1248,12 +1284,26 @@ a.sheet:active {
 }
 
 @keyframes screenIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: none; }
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes screen-push {
+  from { transform: translate3d(100%, 0, 0); }
+  to { transform: none; }
+}
+
+@keyframes screen-dim {
+  to { transform: translate3d(-30%, 0, 0); filter: brightness(0.72); }
+}
+
+@keyframes screen-undim {
+  from { transform: translate3d(-30%, 0, 0); filter: brightness(0.72); }
+  to { transform: none; filter: none; }
 }
 
 main:not(.reel-stage) {
-  animation: screenIn 250ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  animation: screenIn 180ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes sheetUp {
@@ -2340,8 +2390,11 @@ html[data-theme="dark"] .search-overlay {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--keyboard-inset, 0px);
   z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   background: var(--bg);
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px));
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
@@ -2350,8 +2403,8 @@ html[data-theme="dark"] .search-overlay {
 .detail-cta-row {
   display: flex;
   gap: 12px;
-  width: 100%;
-  max-width: 680px;
+  flex: 1;
+  min-width: 0;
   margin-inline: auto;
 }
 
@@ -2588,11 +2641,19 @@ a,
 }
 
 ::view-transition-old(.page-exit) {
-  animation: 150ms linear both fade-only reverse;
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both screen-dim;
 }
 
 ::view-transition-new(.page-enter) {
-  animation: 250ms cubic-bezier(0.22, 1, 0.36, 1) both screenIn;
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both screen-push;
+}
+
+html[data-nav="back"] ::view-transition-old(.page-exit) {
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both screen-push reverse;
+}
+
+html[data-nav="back"] ::view-transition-new(.page-enter) {
+  animation: 280ms cubic-bezier(0.22, 1, 0.36, 1) both screen-undim;
 }
 
 ::view-transition-new(.detail-copy) {
@@ -3893,11 +3954,11 @@ html[data-theme="dark"] .immerse-shade {
 
 .detail-page .detail-hero,
 .detail-hero {
-  height: 55dvh;
+  height: 58dvh;
   min-height: 240px;
   max-height: none;
   aspect-ratio: auto;
-  border-radius: 0 0 32px 32px;
+  border-radius: 0;
 }
 
 .detail-hero img {
@@ -4058,9 +4119,11 @@ html[data-theme="dark"] .immerse-shade {
 
 .wizard-progress span {
   display: block;
+  width: 100%;
   height: 100%;
   background: var(--primary);
-  transition: width 250ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: left center;
+  transition: transform 250ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .wizard-body {
@@ -4417,8 +4480,10 @@ button.shot {
 
 .wizard-meter span {
   display: block;
+  width: 100%;
   height: 100%;
   background: var(--primary);
+  transform-origin: left center;
 }
 
 .wizard-banner {
@@ -5465,4 +5530,3 @@ html[data-splash="on"] .install-sheet,
 html[data-intro="1"] .install-sheet {
   display: none;
 }
-

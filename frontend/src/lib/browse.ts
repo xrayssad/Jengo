@@ -273,14 +273,29 @@ export function sortListings(items: Listing[], sort: SortKey): Listing[] {
   return next;
 }
 
-/** Keep listings we can place, nearest first. Prefer a local radius when any fall inside it. */
-export function nearListings(items: Listing[], near: NearPoint): Listing[] {
+/** Nearest pinned listings, then ones whose written place matches the area around the user. */
+export function nearListings(items: Listing[], near: NearPoint, places: string[] = []): Listing[] {
   const ranked = items.flatMap((item) => {
     const point = pointOf(item);
     if (!point) return [];
     return [{ item, distance: distanceKm(near.lat, near.lng, point.lat, point.lng) }];
   });
   ranked.sort((a, b) => a.distance - b.distance || (a.item.id < b.item.id ? -1 : a.item.id > b.item.id ? 1 : 0));
-  const close = ranked.filter((row) => row.distance <= 80);
-  return (close.length ? close : ranked).map((row) => row.item);
+  const close = ranked.filter((row) => row.distance <= 80).map((row) => row.item);
+  const seen = new Set(close.map((item) => item.id));
+  const names = places.map((name) => name.trim().toLowerCase()).filter((name) => name.length >= 3);
+  const named = items.filter((item) => !seen.has(item.id) && names.some((name) => placeHit(item, name)));
+  if (close.length || named.length) return [...close, ...named];
+  return ranked.map((row) => row.item);
+}
+
+/** A listing's written place matches a resolved area, including short forms like "Dar". */
+function placeHit(item: Listing, name: string): boolean {
+  const blob = `${item.city || ""} ${item.location || ""}`.toLowerCase();
+  if (!blob.trim() || name.length < 3) return false;
+  if (blob.includes(name)) return true;
+  return blob.split(/[^a-z0-9]+/).some((part) => {
+    if (part.length < 3 || !name.startsWith(part)) return false;
+    return name.length === part.length || name[part.length] === " ";
+  });
 }

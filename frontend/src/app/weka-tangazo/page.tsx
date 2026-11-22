@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Boxes, Building2, Camera, Check, Home, ImagePlus, LandPlot, Store, Warehouse } from "lucide-react";
+import { Boxes, Building2, Camera, Check, Home, ImagePlus, LandPlot, Store, Warehouse } from "lucide-react";
 import JengoLoader from "@/components/JengoLoader";
 import { queueInstallNudge } from "@/lib/install";
 import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
@@ -15,6 +15,8 @@ import { usePrefersReducedMotion } from "@/lib/motion";
 import AuthGate from "@/components/AuthGate";
 import ListingCard from "@/components/ListingCard";
 import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
+import ScreenHeader from "@/components/ScreenHeader";
+import DateStrip from "@/components/DateStrip";
 
 const DRAFT_KEY = "jengo_listing_draft";
 
@@ -740,23 +742,15 @@ export default function WekaTangazoPage() {
   return (
     <AuthGate>
       <main className="wizard-page">
-        <header className="wizard-top">
-          <button
-            type="button"
-            className="soft-icon-btn shrink-0"
-            aria-label={t("wizard.back")}
-            onClick={() => (step > 1 ? go(step - 1) : router.push("/home"))}
-          >
-            <ArrowLeft size={18} />
-          </button>
-          <div>
-            <h1>{t("wizard.post")}</h1>
-            <p className="wizard-step-label">{t("wizard.step", { n: step })}</p>
-          </div>
-        </header>
-        <div className="wizard-progress" aria-hidden>
-          <span style={{ width: `${(step / 5) * 100}%` }} />
-        </div>
+        <ScreenHeader
+          compact
+          title={t("wizard.post")}
+          note={t("wizard.step", { n: step })}
+          backLabel={t("wizard.back")}
+          step={step}
+          steps={5}
+          onBack={() => (step > 1 ? go(step - 1) : router.push("/home"))}
+        />
 
         <div className="wizard-body">
           <div key={step} className={dir === "back" ? "wizard-pane is-back" : "wizard-pane"}>
@@ -1009,10 +1003,10 @@ export default function WekaTangazoPage() {
                       <span className="wizard-label">Deposit <span className="wizard-optional">({t("optional")})</span></span>
                       <input className="wizard-input" inputMode="numeric" value={grouped(deposit)} onChange={(e) => setDeposit(digits(e.target.value))} />
                     </label>
-                    <label className="wizard-field">
+                    <div className="wizard-field">
                       <span className="wizard-label">Available from <span className="wizard-optional">({t("optional")})</span></span>
-                      <input className="wizard-input" type="date" value={available} onChange={(e) => setAvailable(e.target.value)} />
-                    </label>
+                      <DateStrip value={available} onChange={setAvailable} count={21} />
+                    </div>
                   </>
                 )}
                 {category === "apartment_airbnb" && (
@@ -1238,14 +1232,14 @@ export default function WekaTangazoPage() {
                   </div>
                 ))}
                 <p className="wizard-label" style={{ marginTop: 8 }}>{t("wizard.strength", { n: score })}</p>
-                <div className="wizard-meter" aria-hidden><span style={{ width: `${score}%` }} /></div>
+                <div className="wizard-meter" aria-hidden><span style={{ transform: `scaleX(${score / 100})` }} /></div>
                 {failed ? <p className="wizard-error" style={{ marginTop: 10 }}>{t("wizard.retry")}</p> : null}
               </div>
             )}
           </div>
         </div>
 
-        <div className="wizard-actions">
+        <div className="wizard-actions keyboard-dock" style={{ bottom: "var(--keyboard-inset, 0px)" }}>
           {step > 1 ? (
             <button type="button" className="btn-secondary" onClick={() => go(step - 1)}>{t("wizard.back")}</button>
           ) : null}

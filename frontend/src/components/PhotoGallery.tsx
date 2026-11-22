@@ -8,10 +8,12 @@ export default function PhotoGallery({
   images,
   fallback,
   onEdge,
+  onDismiss,
 }: {
   images?: string[] | null;
   fallback: ReactNode;
   onEdge?: (dir: 1 | -1) => void;
+  onDismiss?: () => void;
 }) {
   const photos = (images || []).filter(Boolean);
   const scroller = useRef<HTMLDivElement>(null);
@@ -31,6 +33,7 @@ export default function PhotoGallery({
     const onScroll = () => {
       cancelAnimationFrame(raf);
       raf = requestAnimationFrame(() => {
+        if (document.querySelector(".detail-page.is-stage")) return;
         const y = Math.max(0, Math.min(window.scrollY * 0.5, node.clientHeight * 0.35));
         node.style.setProperty("--parallax", `${y}px`);
       });
@@ -133,6 +136,11 @@ export default function PhotoGallery({
           const dx = event.clientX - drag.current.x;
           const dy = event.clientY - drag.current.y;
           drag.current.active = false;
+          if (onDismiss && dy > 72 && dy > Math.abs(dx) * 1.2) {
+            swallow.current = true;
+            onDismiss();
+            return;
+          }
           if (Math.abs(dx) > 12) swallow.current = true;
           if (Math.abs(dx) < 56 || Math.abs(dx) < Math.abs(dy) * 1.2) return;
           const atStart = drag.current.i <= 0;

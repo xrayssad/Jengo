@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { placeDetails, suggestPlaces, type PlaceHit } from "@/lib/api";
 import { useT } from "@/lib/i18n";
+import { locationPermitSeen, markLocationPermit } from "@/lib/permit";
+import BottomSheet from "./BottomSheet";
 
 const MapPreview = dynamic(() => import("./MapPreview"), { ssr: false });
 
@@ -26,7 +28,20 @@ export default function PlacePicker({
   const t = useT();
   const [hits, setHits] = useState<PlaceHit[]>([]);
   const [open, setOpen] = useState(false);
+  const [permit, setPermit] = useState(false);
   const box = useRef<HTMLDivElement>(null);
+
+  const readPosition = () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition((pos) => {
+      onChange({
+        ...value,
+        location: value.location.trim() || "Current location",
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+      });
+    });
+  };
 
   useEffect(() => {
     const q = value.location.trim();
@@ -104,14 +119,11 @@ export default function PlacePicker({
             className="wizard-locate"
             onClick={() => {
               if (!navigator.geolocation) return;
-              navigator.geolocation.getCurrentPosition((pos) => {
-                onChange({
-                  ...value,
-                  location: value.location.trim() || "Current location",
-                  lat: pos.coords.latitude,
-                  lng: pos.coords.longitude,
-                });
-              });
+              if (!locationPermitSeen()) {
+                setPermit(true);
+                return;
+              }
+              readPosition();
             }}
           >
             {t("wizard.locate")}
@@ -131,6 +143,27 @@ export default function PlacePicker({
           <MapPreview lat={value.lat} lng={value.lng} />
         </div>
       )}
+      <BottomSheet
+        open={permit}
+        title={t("permit.location.title")}
+        onClose={() => {
+          markLocationPermit();
+          setPermit(false);
+        }}
+      >
+        <p className="sheet-copy">{t("permit.location.body")}</p>
+        <button
+          type="button"
+          className="btn-primary sheet-submit"
+          onClick={() => {
+            markLocationPermit();
+            setPermit(false);
+            readPosition();
+          }}
+        >
+          {t("permit.allow")}
+        </button>
+      </BottomSheet>
     </div>
   );
 }

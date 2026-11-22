@@ -6,6 +6,8 @@ import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
 import { SHOW_LANDING_PAGE } from "@/lib/productFlags";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";
+import NativeChrome from "./NativeChrome";
+import PerfDebug from "./PerfDebug";
 import { InstallProvider } from "./InstallUI";
 import MqttInbox from "./MqttInbox";
 import Splash from "./Splash";
@@ -92,6 +94,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   return (
     <InstallProvider>
       <MqttInbox>
+        <NativeChrome />
+        <PerfDebug />
         <Splash />
         <VerificationNotice />
         {children}

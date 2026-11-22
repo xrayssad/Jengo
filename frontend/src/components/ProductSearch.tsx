@@ -58,6 +58,17 @@ export default function ProductSearch({
   );
 
   useEffect(() => {
+    const openSearch = () => {
+      setDraft(query);
+      setDebounced(query.trim());
+      setRecent(readRecent());
+      setOpen(true);
+    };
+    window.addEventListener("jengo-open-search", openSearch);
+    return () => window.removeEventListener("jengo-open-search", openSearch);
+  }, [query]);
+
+  useEffect(() => {
     const id = window.setTimeout(() => setDebounced(draft.trim()), 200);
     return () => window.clearTimeout(id);
   }, [draft]);
