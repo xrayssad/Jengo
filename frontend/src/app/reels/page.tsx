@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Clapperboard, Pause, Play, Plus, Volume2, VolumeX } from "lucide-react";
 import Brand from "@/components/Brand";
+import MenuButton from "@/components/MenuButton";
 import PosterName from "@/components/PosterName";
 import ReelActions from "@/components/ReelActions";
 import { fetchReels, getAuthUser, type Reel } from "@/lib/api";
@@ -568,6 +569,7 @@ export default function ReelsPage() {
         style={{ paddingTop: "max(16px, env(safe-area-inset-top))" }}
       >
         <div className="w-full max-w-[480px] flex items-center justify-between gap-3">
+          <MenuButton />
           <div className="min-w-0">
             <span className="brand-on-dark"><Brand variant="mark" size={22} /></span>
             <h1 className="text-3xl font-bold leading-none tracking-tight" style={{ color: "#FFF6ED" }}>Reels</h1>

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import ListingPhoto from "./ListingPhoto";
 
 export default function PhotoGallery({
   images,
@@ -178,7 +179,7 @@ export default function PhotoGallery({
             }}
             aria-label={`View photo ${n + 1}`}
           >
-            <img src={src} alt="" className="w-full h-full object-cover" />
+            <ListingPhoto src={src} ratio={[4, 3]} eager={n === 0} priority={n === 0} detail fill />
           </button>
         ))}
       </div>

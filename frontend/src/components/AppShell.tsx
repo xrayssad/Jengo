@@ -6,6 +6,7 @@ import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
 import { SHOW_LANDING_PAGE } from "@/lib/productFlags";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";
+import SideDrawer from "./SideDrawer";
 import NativeChrome from "./NativeChrome";
 import PerfDebug from "./PerfDebug";
 import { InstallProvider } from "./InstallUI";
@@ -99,18 +100,26 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     const onStart = (event: TouchEvent) => {
       if (event.touches.length !== 1) return;
       const touch = event.touches[0];
-      armed = touch.clientX < 28 && document.documentElement.dataset.sheet !== "1";
+      armed = touch.clientX < 28 && document.documentElement.dataset.sheet !== "1" && document.documentElement.dataset.drawer !== "1";
       startX = touch.clientX;
       startY = touch.clientY;
     };
     const onEnd = (event: TouchEvent) => {
       if (!armed) return;
       armed = false;
-      if (rootTab) return;
       const touch = event.changedTouches[0];
       const dx = touch.clientX - startX;
       const dy = touch.clientY - startY;
-      if (dx > 72 && Math.abs(dy) < 48) window.history.back();
+      if (dx <= 72 || Math.abs(dy) >= 48) return;
+      if (document.documentElement.dataset.drawer === "1") {
+        window.dispatchEvent(new Event("jengo-drawer-close"));
+        return;
+      }
+      if (rootTab) {
+        window.dispatchEvent(new Event("jengo-drawer-open"));
+        return;
+      }
+      window.history.back();
     };
     window.addEventListener("touchstart", onStart, { passive: true });
     window.addEventListener("touchend", onEnd, { passive: true });
@@ -124,6 +133,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     <InstallProvider>
       <MqttInbox>
         <NativeChrome />
+        <SideDrawer />
         <PerfDebug />
         <Splash />
         <VerificationNotice />

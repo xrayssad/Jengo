@@ -3,8 +3,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ArrowUp, ArrowUpDown, LayoutGrid, LocateFixed, RectangleVertical } from "lucide-react";
+import { ArrowUp, ArrowUpDown, LayoutGrid, LocateFixed, RectangleVertical, X } from "lucide-react";
 import BottomSheet from "./BottomSheet";
+import FeaturedStrip from "./FeaturedStrip";
 import { locationPermitSeen, markLocationPermit } from "@/lib/permit";
 import type { ReactNode } from "react";
 import { reversePlace, type Listing } from "@/lib/api";
@@ -18,7 +19,11 @@ import {
   isSortKey,
   bedCount,
   nearListings,
+  pickFeatured,
+  pickFresh,
+  pushRecentRegion,
   readBrowse,
+  readRememberedRegion,
   readView,
   regionFromParam,
   regionSlug,
@@ -26,12 +31,14 @@ import {
   sellerVerified,
   sortListings,
   writeBrowse,
+  writeRememberedRegion,
   writeView,
   type NearPoint,
   type SortKey,
   type ViewMode,
 } from "@/lib/browse";
-import { CATEGORIES, canonicalCategory, categoryConfig } from "@/lib/categories.config";
+import { CATEGORIES, canonicalCategory, categoryConfig, tileCopy } from "@/lib/categories.config";
+import { homeMode } from "@/lib/homeMode";
 import { rankListings, stickOrder } from "@/lib/productSearch";
 import { readFit } from "@/lib/pricing";
 import { pricePerM2Of, sizeM2Of } from "@/lib/plots";
@@ -87,12 +94,14 @@ export default function ListingBrowse({
   beforeFeed = null,
   pending = 0,
   stale = false,
+  offline = false,
   onRefresh,
   category = "",
   categoryIsFilter = false,
   query = "",
   scope = "",
   onClear,
+  onClearCategory,
   onQuery,
   omitIds = [],
   midFeed = null,
@@ -102,15 +111,17 @@ export default function ListingBrowse({
   loading?: boolean;
   error?: string;
   scrollTop?: boolean;
-  beforeFeed?: ReactNode;
+  beforeFeed?: ReactNode | ((list: Listing[], region: string) => ReactNode);
   pending?: number;
   stale?: boolean;
+  offline?: boolean;
   onRefresh?: () => void;
   category?: string;
   categoryIsFilter?: boolean;
   query?: string;
   scope?: string;
   onClear?: () => void;
+  onClearCategory?: () => void;
   onQuery?: (next: string) => void;
   omitIds?: string[];
   midFeed?: ReactNode;
@@ -159,7 +170,7 @@ export default function ListingBrowse({
   const pullRef = useRef<HTMLDivElement>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [pullDone, setPullDone] = useState(false);
-  const [mountExtras, setMountExtras] = useState(true);
+  const [freshAt, setFreshAt] = useState(0);
 
   const regions = useMemo(() => {
     const list = regionsFor(items);
@@ -204,7 +215,12 @@ export default function ListingBrowse({
     const savedSort = saved?.sort && isSortKey(saved.sort) ? saved.sort : "new";
     const nextSort = savedSort === "verified" && !VERIFIED_FIRST_SORT ? "new" : savedSort;
     const hasNear = typeof saved?.nearLat === "number" && typeof saved?.nearLng === "number";
-    const storedRegion = saved?.region === "near" && hasNear ? "near" : saved?.region && saved.region !== "near" ? saved.region : "all";
+    const remembered = readRememberedRegion();
+    const storedRegion = saved?.region === "near" && hasNear
+      ? "near"
+      : saved?.region && saved.region !== "near" && saved.region !== "all"
+        ? saved.region
+        : remembered || "all";
     const param = new URLSearchParams(window.location.search).get("region") || "";
     const nextRegion = param ? regionFromParam(param, regionsFor(items)) : storedRegion;
     setView(nextView);
@@ -213,7 +229,7 @@ export default function ListingBrowse({
     setNear(hasNear ? { lat: saved!.nearLat as number, lng: saved!.nearLng as number } : null);
     if (nextRegion === "near" && hasNear) setLocating(true);
     setVerifiedOnly(Boolean(saved?.verifiedOnly));
-    const openingFilter = nextRegion !== "all" || nextSort !== "new" || Boolean(saved?.verifiedOnly);
+    const openingFilter = (nextSort !== "new" && nextSort !== "featured" && nextSort !== "views") || Boolean(saved?.verifiedOnly);
     want.current = {
       region: nextRegion,
       sort: nextSort,
@@ -459,11 +475,27 @@ export default function ListingBrowse({
 
   const ranged = Object.values(plotRange).some((value) => amountOf(value) > 0);
   const layoutFiltered = sort !== "new" || verifiedOnly || fitFilters.length > 0 || bedsMin > 0 || Boolean(queryText) || ranged || (categoryIsFilter && Boolean(canonicalCategory(category)));
-  const userFiltered = region !== "all" || layoutFiltered;
-  const homeChrome = chrome === "home" ? layoutFiltered : userFiltered;
-  const omit = useMemo(() => new Set(omitIds), [omitIds]);
-  const pooled = userFiltered ? shown : shown.filter((item) => !omit.has(item.id));
-  const feed = chrome === "home" && !userFiltered && pooled.length === 0 && shown[0] ? [shown[0]] : pooled;
+  const resultsMode = chrome === "home" && homeMode({
+    query: queryText,
+    category: categoryIsFilter ? category : "",
+    verified: verifiedOnly,
+    fits: fitFilters.length,
+    beds: bedsMin,
+    ranged,
+    sort,
+  }) === "results";
+  const userFiltered = chrome === "home" ? resultsMode : region !== "all" || layoutFiltered;
+  const homeChrome = userFiltered;
+  const sectionIds = useMemo(() => {
+    if (chrome !== "home") return new Set(omitIds);
+    if (resultsMode) return new Set(pickFeatured(shown).slice(0, 6).map((item) => item.id));
+    const featuredIds = pickFeatured(shown).map((item) => item.id);
+    const fresh = pickFresh(shown, 8, freshAt);
+    const freshIds = (region !== "all" ? fresh.length >= 1 : fresh.length >= 2) ? fresh.map((item) => item.id) : [];
+    return new Set([...featuredIds, ...freshIds]);
+  }, [chrome, omitIds, resultsMode, shown, freshAt, region]);
+  const pooled = shown.filter((item) => !sectionIds.has(item.id));
+  const feed = pooled;
   const feedIds = useMemo(() => feed.map((item) => item.id), [feed]);
   const summaryLabel = region === "near"
     ? t("near")
@@ -486,7 +518,7 @@ export default function ListingBrowse({
   const scrollToChips = () => {
     const el = chipsRef.current;
     if (!el) return;
-    const header = document.querySelector("header.topbar");
+    const header = document.querySelector("header.home-appbar, header.topbar");
     const height = Math.ceil(header?.getBoundingClientRect().height || 0);
     if (height) document.documentElement.style.setProperty("--header-h", `${height}px`);
     el.style.scrollMarginTop = `${height}px`;
@@ -496,26 +528,25 @@ export default function ListingBrowse({
   };
 
   useLayoutEffect(() => {
-    const header = document.querySelector("header.topbar");
+    const header = document.querySelector("header.home-appbar, header.topbar");
     const height = Math.ceil(header?.getBoundingClientRect().height || 0);
     if (height) document.documentElement.style.setProperty("--header-h", `${height}px`);
   }, [path, userFiltered]);
 
-  const showExtras = Boolean(beforeFeed);
-  useLayoutEffect(() => {
-    if (!showExtras) return;
-    if (!homeChrome) {
-      setMountExtras(true);
-      return;
-    }
-    const id = window.setTimeout(() => setMountExtras(false), reduce ? 0 : 250);
-    return () => window.clearTimeout(id);
-  }, [homeChrome, showExtras, reduce]);
+  const showExtras = Boolean(beforeFeed) && !resultsMode;
+  useEffect(() => {
+    setFreshAt(Date.now());
+  }, []);
+  useEffect(() => {
+    if (!booted) return;
+    writeRememberedRegion(region);
+    if (region !== "all" && region !== "near") pushRecentRegion(region);
+  }, [booted, region]);
 
   useEffect(() => {
     if (!booted) return;
     const signature = [region, sort, verifiedOnly ? "1" : "0", fitFilters.join(","), queryText, category, Object.values(plotRange).join(",")].join("|");
-    const keepHome = chrome === "home" && region !== "all" && !layoutFiltered;
+    const keepHome = chrome === "home" && !resultsMode;
     if (!filterKey.current) {
       filterKey.current = signature;
       if (keepHome) return;
@@ -538,7 +569,7 @@ export default function ListingBrowse({
     requestAnimationFrame(() => {
       window.scrollTo({ top: y, behavior: reduce ? "auto" : "smooth" });
     });
-  }, [booted, chrome, region, sort, verifiedOnly, fitFilters, queryText, userFiltered, layoutFiltered, reduce, category, plotRange]);
+  }, [booted, chrome, region, sort, verifiedOnly, fitFilters, queryText, userFiltered, resultsMode, reduce, category, plotRange]);
 
   useEffect(() => {
     if (!booted) return;
@@ -605,13 +636,18 @@ export default function ListingBrowse({
   };
 
   const resetFilters = () => {
+    if (chrome === "home") {
+      setSort("new");
+      setVerifiedOnly(false);
+      setFitFilters([]);
+      setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
+      setBedsMin(0);
+      onClear?.();
+      return;
+    }
     clearBrowse();
     setBedsMin(0);
     onClear?.();
-    if (chrome === "home") {
-      window.scrollTo({ top: 0, behavior: "auto" });
-      window.dispatchEvent(new Event("jengo-nav-show"));
-    }
   };
 
   const saveNotify = () => {
@@ -688,33 +724,23 @@ export default function ListingBrowse({
     const onRegion = (event: Event) => {
       const next = String((event as CustomEvent<string>).detail || "");
       if (!next || next === "near") return;
-      const releaseHome = () => {
-        setSort("new");
-        setVerifiedOnly(false);
-        setFitFilters([]);
-        setBedsMin(0);
-        setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
-      };
       if (next === "all") {
         setRegion("all");
         setNear(null);
         setNearNames([]);
-        releaseHome();
       } else {
         setRegion(next);
         setNear(null);
-        releaseHome();
+        setNearNames([]);
       }
-      if (chrome === "home") {
-        window.scrollTo({ top: 0, behavior: "auto" });
-        window.dispatchEvent(new Event("jengo-nav-show"));
+      if (chrome !== "home") return;
+      const el = chipsRef.current;
+      if (el && el.getBoundingClientRect().top < 72) {
+        requestAnimationFrame(() => el.scrollIntoView({ block: "start", behavior: "auto" }));
       }
     };
     const onNear = () => locate();
     const onRestore = () => {
-      setRegion("all");
-      setNear(null);
-      setNearNames([]);
       setSort("new");
       setVerifiedOnly(false);
       setFitFilters([]);
@@ -724,15 +750,19 @@ export default function ListingBrowse({
     window.addEventListener("jengo-region", onRegion);
     window.addEventListener("jengo-near", onNear);
     window.addEventListener("jengo-home-restore", onRestore);
+    window.addEventListener("jengo-results-clear", onRestore);
     return () => {
       window.removeEventListener("jengo-region", onRegion);
       window.removeEventListener("jengo-near", onNear);
       window.removeEventListener("jengo-home-restore", onRestore);
+      window.removeEventListener("jengo-results-clear", onRestore);
     };
   }, [chrome, locate]);
 
   const regionLabel = region !== "all" && region !== "near" ? region : (queryText || scope || summaryLabel);
   const showSummary = homeChrome || Boolean(scope);
+  const placeName = region === "near" ? t("near") : region !== "all" ? region : "";
+  const beforeNode = showExtras ? (typeof beforeFeed === "function" ? beforeFeed(shown, region) : beforeFeed) : null;
   const homeTabs = chrome === "home" && !queryText;
   const browseTools = (
     <div className="browse-tools">
@@ -840,7 +870,12 @@ export default function ListingBrowse({
           ))}
         </div>
       ) : null}
-      {showSummary ? (
+      {chrome === "home" && (resultsMode || region !== "all") ? (
+        <div className="browse-summary">
+          <p>{`${shown.length} ${t("listings")}${placeName ? ` - ${placeName}` : ""}`}</p>
+          {resultsMode ? <button type="button" onClick={resetFilters}>{t("filter.clear")}</button> : null}
+        </div>
+      ) : showSummary ? (
         <div className="browse-summary">
           <p>
             {queryText
@@ -848,6 +883,21 @@ export default function ListingBrowse({
               : `${summaryLabel} - ${shown.length} ${t("listings")}`}
           </p>
           <button type="button" onClick={resetFilters}>{t("filter.clear")}</button>
+        </div>
+      ) : null}
+      {resultsMode ? (
+        <div className="result-chips no-scrollbar">
+          {queryText ? <button type="button" onClick={() => onQuery?.("")}>{queryText}<X size={12} /></button> : null}
+          {category ? <button type="button" onClick={() => onClearCategory?.()}>{tileCopy(category, lang).label}<X size={12} /></button> : null}
+          {verifiedOnly ? <button type="button" onClick={() => setVerifiedOnly(false)}>{t("filter.verified")}<X size={12} /></button> : null}
+          {fitFilters.map((key) => (
+            <button key={key} type="button" onClick={() => setFitFilters((cur) => cur.filter((item) => item !== key))}>{t(`fit.filter.${key}`)}<X size={12} /></button>
+          ))}
+          {bedsMin > 0 ? <button type="button" onClick={() => setBedsMin(0)}>{t("bed", { n: bedsMin })}<X size={12} /></button> : null}
+          {sort !== "new" && sort !== "featured" && sort !== "views" ? (
+            <button type="button" onClick={() => setSort("new")}>{t(`sort.${sort}`)}<X size={12} /></button>
+          ) : null}
+          <button type="button" className="is-clear" onClick={resetFilters}>{t("filter.clear")}</button>
         </div>
       ) : null}
       {!queryText ? (
@@ -919,9 +969,10 @@ export default function ListingBrowse({
         </button>
       ) : null}
 
-      {mountExtras && beforeFeed && chrome !== "home" ? (
-        <div className={homeChrome ? "home-extras is-out" : "home-extras"}>
-          <div className="home-extras-inner">{beforeFeed}</div>
+      {resultsMode ? <FeaturedStrip items={shown} /> : null}
+      {beforeNode ? (
+        <div className="home-extras">
+          <div className="home-extras-inner">{beforeNode}</div>
         </div>
       ) : null}
 
@@ -930,7 +981,12 @@ export default function ListingBrowse({
           {t("newListings", { n: pending })}
         </button>
       ) : null}
-      {stale ? <p className="stale-banner">{t("staleList")}</p> : null}
+      {stale ? (
+        <p className="stale-banner">
+          <span>{offline ? t("staleList") : t("staleServer")}</span>
+          <button type="button" onClick={() => onRefresh?.()}>{t("retry")}</button>
+        </p>
+      ) : null}
 
       {homeTabs ? null : (
       <div className="browse-head">
@@ -948,7 +1004,7 @@ export default function ListingBrowse({
 
       <div className={fading ? "listing-stage is-fading" : "listing-stage"}>
         {(loading || locating) && feed.length === 0 && <ListingFeedSkeleton layout={view} />}
-        {!loading && !locating && !error && feed.length === 0 && (
+        {!loading && !locating && !error && shown.length === 0 && (
           <div className="empty-panel browse-empty">
             <span className="browse-empty-mark" aria-hidden>
               <JengoLogo variant="mark" size={32} title="" />
@@ -956,6 +1012,8 @@ export default function ListingBrowse({
             <p className="lead">
               {queryText
                 ? t("search.none", { query: queryText })
+                : chrome === "home" && region !== "all"
+                  ? t("home.emptyPlace", { place: placeName })
                 : region === "near"
                   ? t("empty.near")
                   : region !== "all"
@@ -971,6 +1029,19 @@ export default function ListingBrowse({
               {queryText ? (
                 <button type="button" className="btn-secondary browse-empty-btn" onClick={saveNotify}>
                   {t("search.saveNotify")}
+                </button>
+              ) : null}
+              {chrome === "home" && region !== "all" ? (
+                <button
+                  type="button"
+                  className="btn-secondary browse-empty-btn"
+                  onClick={() => {
+                    setRegion("all");
+                    setNear(null);
+                    setNearNames([]);
+                  }}
+                >
+                  {t("region.all")}
                 </button>
               ) : null}
               {showSummary ? (
@@ -1007,20 +1078,10 @@ export default function ListingBrowse({
                 listIds={feedIds}
                 defer={i >= 6}
               />
-              {chrome === "home" && i === 0 && mountExtras && beforeFeed ? (
-                <div className={homeChrome ? "home-extras is-out" : "home-extras"}>
-                  <div className="home-extras-inner">{beforeFeed}</div>
-                </div>
-              ) : null}
               {midFeed && i === 3 ? midFeed : null}
               </div>
             ))}
-            {chrome === "home" && feed.length === 0 && mountExtras && beforeFeed ? (
-              <div className={homeChrome ? "home-extras is-out" : "home-extras"}>
-                <div className="home-extras-inner">{beforeFeed}</div>
-              </div>
-            ) : null}
-            {midFeed && feed.length < 4 ? midFeed : null}
+            {midFeed && feed.length > 0 && feed.length < 4 ? midFeed : null}
           </div>
         )}
         {relatedShown.length > 0 ? (

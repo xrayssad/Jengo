@@ -18,7 +18,14 @@ export function useListings(params: ListingQuery) {
   const [error, setError] = useState("");
   const [pending, setPending] = useState(0);
   const [stale, setStale] = useState(false);
+  const [offline, setOffline] = useState(false);
   const [version, setVersion] = useState(0);
+
+  const markFailure = (hasRows: boolean) => {
+    const disconnected = typeof navigator !== "undefined" && navigator.onLine === false;
+    setOffline(disconnected);
+    if (hasRows) setStale(true);
+  };
 
   useLayoutEffect(() => {
     let stop = false;
@@ -45,13 +52,14 @@ export function useListings(params: ListingQuery) {
         setItems(absorbed.items);
         setPending(absorbed.pending);
         setStale(false);
+        setOffline(false);
         setError("");
         if (!had) setVersion((n) => n + 1);
       })
       .catch((err) => {
         if (stop) return;
-        if (paint.length) setStale(true);
-        else setError(err instanceof Error ? err.message : "Could not load listings");
+        markFailure(paint.length > 0);
+        if (!paint.length) setError(err instanceof Error ? err.message : "Could not load listings");
       })
       .finally(() => {
         if (!stop) setLoading(false);
@@ -92,12 +100,29 @@ export function useListings(params: ListingQuery) {
         setItems(next);
         setPending(0);
         setStale(false);
+        setOffline(false);
         setError("");
       })
       .catch(() => {
+        const disconnected = typeof navigator !== "undefined" && navigator.onLine === false;
+        setOffline(disconnected);
         setStale(true);
       });
   }, [key]);
 
-  return { items, setItems: updateItems, loading, error, pending, stale, refresh, version };
+  useEffect(() => {
+    const onOnline = () => {
+      setOffline(false);
+      void refresh();
+    };
+    const onOffline = () => setOffline(true);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [refresh]);
+
+  return { items, setItems: updateItems, loading, error, pending, stale, offline, refresh, version };
 }

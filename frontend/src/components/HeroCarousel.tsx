@@ -9,7 +9,7 @@ import { listRoute, readCarousel, writeCarousel } from "@/lib/listSession";
 import { usePrefersReducedMotion } from "@/lib/motion";
 import ListingCard from "./ListingCard";
 
-export default function HeroCarousel({ items, loading, version = 0 }: { items: Listing[]; loading?: boolean; version?: number }) {
+export default function HeroCarousel({ items, loading, version = 0, compact = false, title }: { items: Listing[]; loading?: boolean; version?: number; compact?: boolean; title?: string }) {
   const reduce = usePrefersReducedMotion();
   const path = usePathname() || "/";
   const route = listRoute(path);
@@ -44,7 +44,7 @@ export default function HeroCarousel({ items, loading, version = 0 }: { items: L
         const t = Math.min(dist / Math.max(slide.offsetWidth, 1), 1);
         const frame = slide.querySelector<HTMLElement>(".hero-slide-frame");
         if (!frame) return;
-        if (reduce) {
+        if (reduce || compact) {
           frame.style.transform = "";
           frame.style.opacity = "";
           frame.style.removeProperty("--hero-dim");
@@ -55,7 +55,7 @@ export default function HeroCarousel({ items, loading, version = 0 }: { items: L
         }
         const img = slide.querySelector("img");
         if (img) {
-          if (reduce || lite) img.style.transform = "";
+          if (reduce || lite || compact) img.style.transform = "";
           else {
             const signed = (center - mid) / Math.max(slide.offsetWidth, 1);
             const shift = Math.max(-8, Math.min(8, signed * -8));
@@ -75,7 +75,7 @@ export default function HeroCarousel({ items, loading, version = 0 }: { items: L
       el.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf);
     };
-  }, [featured.length, loading, reduce]);
+  }, [featured.length, loading, reduce, compact]);
 
   useLayoutEffect(() => {
     const el = scroller.current;
@@ -140,7 +140,8 @@ export default function HeroCarousel({ items, loading, version = 0 }: { items: L
   if (!loading && featured.length === 0) return null;
 
   return (
-    <section className="hero-block bleed-cancel" aria-label="Featured">
+    <section className={compact ? "hero-block is-compact bleed-cancel" : "hero-block bleed-cancel"} aria-label={title || "Featured"}>
+      {title ? <h2 className="home-section-title">{title}</h2> : null}
       <div ref={scroller} className="hero-carousel no-scrollbar">
         {loading && featured.length === 0
           ? [0, 1].map((n) => (

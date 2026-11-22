@@ -9,6 +9,7 @@ import { ChatListSkeleton } from "@/components/Skeletons";
 import SwipeRow from "@/components/SwipeRow";
 import { fetchInbox, getAuthUser, peekInbox, type ChatMessage } from "@/lib/api";
 import { useInboxLive } from "@/components/MqttInbox";
+import MenuButton from "@/components/MenuButton";
 import { useT } from "@/lib/i18n";
 
 const HIDDEN = "jengo_inbox_hidden";
@@ -125,7 +126,8 @@ export default function MessagesPage() {
     <AuthGate>
       <main className="min-h-screen pb-8" style={{ backgroundColor: "var(--paper)" }}>
         <header className="topbar">
-          <div className="canvas-read px-5">
+          <div className="canvas-read flex items-center gap-3 px-5">
+            <MenuButton />
             <h1 className="page-title">Messages</h1>
             <p className="page-note">Direct messages and request chats</p>
             {archived.size > 0 ? (

@@ -9,7 +9,7 @@ import { useT } from "@/lib/i18n";
 import { usePersistentScroll } from "@/lib/listSession";
 import ListingCard from "./ListingCard";
 
-export default function FreshRail({ items, version = 0 }: { items: Listing[]; version?: number }) {
+export default function FreshRail({ items, version = 0, title, allowSingle = false }: { items: Listing[]; version?: number; title?: string; allowSingle?: boolean }) {
   const t = useT();
   const railRef = useRef<HTMLDivElement>(null);
   const [now, setNow] = useState(0);
@@ -20,12 +20,12 @@ export default function FreshRail({ items, version = 0 }: { items: Listing[]; ve
     .map((id) => items.find((item) => item.id === id))
     .filter((item): item is Listing => Boolean(item));
   usePersistentScroll("fresh", railRef, fresh.length > 1);
-  if (fresh.length < 2) return null;
+  if (fresh.length < (allowSingle ? 1 : 2)) return null;
 
   return (
-    <section className="fresh-block bleed-cancel" aria-label={t("fresh")}>
+    <section className="fresh-block bleed-cancel" aria-label={title || t("fresh")}>
       <div className="fresh-head">
-        <h2 className="home-section-title">{t("fresh")}</h2>
+        <h2 className="home-section-title">{title || t("fresh")}</h2>
         <Link href="/discover" className="see-all">
           {t("seeAll")}
           <i aria-hidden><ChevronRight size={16} /></i>

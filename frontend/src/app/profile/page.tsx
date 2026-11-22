@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import {
-  ArrowLeft, Mail, FileText, Heart, Settings, LogOut,
+  Mail, FileText, Heart, Settings, LogOut,
   ChevronRight, Home, Plus, BadgeCheck, Receipt, Inbox, Download, CreditCard, Hammer,
 } from "lucide-react";
 import Link from "next/link";
@@ -13,6 +13,7 @@ import AdminLink from "@/components/AdminLink";
 import ReportImpersonation from "@/components/ReportImpersonation";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { InstallMenuItem } from "@/components/InstallUI";
+import MenuButton from "@/components/MenuButton";
 import { ProfileSkeleton } from "@/components/Skeletons";
 import { useT } from "@/lib/i18n";
 import { readSaved } from "@/lib/social";
@@ -129,9 +130,7 @@ export default function ProfilePage() {
     <main className="min-h-screen pb-10 overflow-x-hidden" style={{ backgroundColor: "var(--paper)" }}>
       <header className="topbar">
         <div className="canvas-read flex items-center gap-3 px-5">
-          <Link href="/home" className="soft-icon-btn shrink-0" aria-label={t("back")}>
-            <ArrowLeft size={18} strokeWidth={2.2} color="var(--ink)" />
-          </Link>
+          <MenuButton />
           <h1 className="page-title">{t("nav.profile")}</h1>
         </div>
       </header>

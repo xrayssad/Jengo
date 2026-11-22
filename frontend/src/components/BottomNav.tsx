@@ -77,8 +77,8 @@ export default function BottomNav({ hidden = false }: { hidden?: boolean }) {
     };
     const reveal = () => {
       last = window.scrollY;
-      away = false;
-      setTucked(false);
+      away = window.scrollY > 24;
+      setTucked(away);
     };
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("jengo-nav-show", reveal);

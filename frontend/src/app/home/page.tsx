@@ -7,6 +7,8 @@ import HeroCarousel from "@/components/HeroCarousel";
 import PromoBanner from "@/components/PromoBanner";
 import { Bell, ChevronDown, MapPin, X } from "lucide-react";
 import BottomSheet from "@/components/BottomSheet";
+import LocationSheet from "@/components/LocationSheet";
+import MenuButton from "@/components/MenuButton";
 import ListingBrowse from "@/components/ListingBrowse";
 import CategoryGrid from "@/components/CategoryGrid";
 import ProductSearch from "@/components/ProductSearch";
@@ -21,17 +23,39 @@ import { usePersistentScroll } from "@/lib/listSession";
 
 if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 });
 
-function HomeBar({ placeLabel, onLocate }: { placeLabel: string; onLocate: () => void }) {
+function HomeBar({ placeLabel, scoped, onLocate, onClear }: { placeLabel: string; scoped: boolean; onLocate: () => void; onClear: () => void }) {
   const t = useT();
   const inbox = useInboxLive();
   const [notes, setNotes] = useState(false);
 
   return (
     <header className="home-appbar">
+      <MenuButton />
       <button type="button" className="home-loc" onClick={onLocate}>
         <MapPin size={18} aria-hidden />
         <span>{placeLabel}</span>
-        <ChevronDown size={16} aria-hidden />
+        {scoped ? (
+          <span
+            role="button"
+            tabIndex={0}
+            className="home-loc-x"
+            aria-label={t("loc.clear")}
+            onClick={(event) => {
+              event.stopPropagation();
+              onClear();
+            }}
+            onKeyDown={(event) => {
+              if (event.key !== "Enter" && event.key !== " ") return;
+              event.preventDefault();
+              event.stopPropagation();
+              onClear();
+            }}
+          >
+            <X size={14} />
+          </span>
+        ) : (
+          <ChevronDown size={16} aria-hidden />
+        )}
       </button>
       <div className="home-tools">
         <button type="button" className="soft-icon-btn home-icon-btn" aria-label={t("notes")} onClick={() => setNotes(true)}>
@@ -64,7 +88,7 @@ export default function HomePage() {
   const pendingQuery = useRef<string | null>(null);
   const [pool, setPool] = useState<Listing[] | null>(null);
   const railRef = useRef<HTMLDivElement>(null);
-  const { items, setItems, loading: waiting, error, pending, stale, refresh, version } = useListings({ status: "active", limit: 40 });
+  const { items, setItems, loading: waiting, error, pending, stale, offline, refresh, version } = useListings({ status: "active", limit: 40 });
 
   usePersistentScroll("cats", railRef, true);
 
@@ -130,15 +154,11 @@ export default function HomePage() {
     const apply = () => {
       raf = 0;
       const y = window.scrollY;
-      const down = y > last + 6;
-      const up = y < last - 6;
       last = y;
       const nextFade = y >= 40 ? "0" : String(Math.max(0, 1 - y / 40));
       const nextGreet = y > 40 ? "off" : "on";
       const nextStick = y > 8 ? "1" : "0";
-      if (y < 8) hidden = false;
-      else if (down) hidden = true;
-      else if (up) hidden = false;
+      hidden = false;
       const nextBar = hidden ? "hide" : "show";
       if (nextFade !== fade) {
         fade = nextFade;
@@ -217,8 +237,7 @@ export default function HomePage() {
     }
     if (!locWasOpen.current) return;
     locWasOpen.current = false;
-    window.scrollTo({ top: 0, behavior: "auto" });
-    window.dispatchEvent(new Event("jengo-nav-show"));
+    if (window.scrollY < 24) window.dispatchEvent(new Event("jengo-nav-show"));
   }, [locOpen]);
 
   const hadCategory = useRef(false);
@@ -229,25 +248,20 @@ export default function HomePage() {
     }
     if (!hadCategory.current) return;
     hadCategory.current = false;
-    window.scrollTo({ top: 0, behavior: "auto" });
-    window.dispatchEvent(new Event("jengo-nav-show"));
+    if (window.scrollY < 24) window.dispatchEvent(new Event("jengo-nav-show"));
   }, [category]);
 
   const restoreHome = () => {
     setQuery("");
     setCategory("");
-    window.dispatchEvent(new Event("jengo-home-restore"));
-    window.scrollTo({ top: 0, behavior: "auto" });
-    window.dispatchEvent(new Event("jengo-nav-show"));
+    window.dispatchEvent(new Event("jengo-results-clear"));
   };
 
-  const [locQuery, setLocQuery] = useState("");
   const placeLabel = place === "near" ? t("near") : place !== "all" ? place : t("region.all");
-  const placeChoices = ["all", ...regionsFor(pool?.length ? pool : items)];
-  const locNeedle = locQuery.trim().toLowerCase();
-  const shownPlaces = locNeedle
-    ? placeChoices.filter((name) => name === "all" || name.toLowerCase().includes(locNeedle))
-    : placeChoices;
+  const placeChoices = regionsFor(pool?.length ? pool : items);
+  const clearPlace = () => {
+    window.dispatchEvent(new CustomEvent("jengo-region", { detail: "all" }));
+  };
   const started = useRef(Date.now());
   const source = query ? (pool?.length ? pool : items) : items;
   const omitIds = useMemo(() => {
@@ -259,9 +273,10 @@ export default function HomePage() {
 
   return (
     <main className="home-settle min-h-screen">
-      <HomeBar placeLabel={placeLabel} onLocate={() => setLocOpen(true)} />
+      <HomeBar placeLabel={placeLabel} scoped={place !== "all"} onLocate={() => setLocOpen(true)} onClear={clearPlace} />
 
       <div className="canvas home-body">
+        <div className="home-top">
         <h1 className="home-line">
           {t("home.line.before")}<em>{t("home.line.accent")}</em>{t("home.line.after")}
         </h1>
@@ -277,11 +292,11 @@ export default function HomePage() {
             onRegion={(name) => {
               pendingQuery.current = "";
               setQuery("");
-              setCategory("");
               if (name === "near") window.dispatchEvent(new Event("jengo-near"));
               else window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
             }}
           />
+        </div>
         </div>
 
         <div ref={railRef}>
@@ -314,6 +329,7 @@ export default function HomePage() {
             error={error}
             pending={pending}
             stale={stale}
+            offline={offline}
             query={query || ""}
             category={category}
             categoryIsFilter
@@ -322,54 +338,44 @@ export default function HomePage() {
               setQuery("");
               setCategory("");
             }}
+            onClearCategory={() => setCategory("")}
             onRefresh={() => { void refresh(); }}
-            beforeFeed={
-              <>
-                <HeroCarousel items={items} loading={waiting} version={version} />
-                <FreshRail items={items} version={version} />
-              </>
-            }
-            midFeed={<PromoBanner />}
+            beforeFeed={(list, region) => {
+              const where = region === "near" ? t("near") : region;
+              const scoped = region !== "all";
+              return (
+                <>
+                  <HeroCarousel
+                    items={list}
+                    loading={waiting && list.length === 0}
+                    version={version}
+                    compact={scoped}
+                    title={scoped ? t("home.featuredIn", { place: where }) : undefined}
+                  />
+                  <FreshRail
+                    items={list}
+                    version={version}
+                    allowSingle={scoped}
+                    title={scoped ? t("home.freshIn", { place: where }) : undefined}
+                  />
+                  <PromoBanner />
+                </>
+              );
+            }}
           />
         </div>
       </div>
-      <BottomSheet open={locOpen} title={t("loc.choose")} onClose={() => { setLocOpen(false); setLocQuery(""); }}>
-        <input
-          className="sheet-search"
-          value={locQuery}
-          placeholder={t("loc.search")}
-          onChange={(event) => setLocQuery(event.target.value)}
-        />
-        <button
-          type="button"
-          className={place === "near" ? "sheet-option is-on" : "sheet-option"}
-          onClick={() => {
-            setQuery("");
-            setCategory("");
-            window.dispatchEvent(new Event("jengo-near"));
-            setLocQuery("");
-            setLocOpen(false);
-          }}
-        >
-          {t("near")}
-        </button>
-        {shownPlaces.map((name) => (
-          <button
-            key={name}
-            type="button"
-            className={place === name ? "sheet-option is-on" : "sheet-option"}
-            onClick={() => {
-              setQuery("");
-              setCategory("");
-              window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
-              setLocQuery("");
-              setLocOpen(false);
-            }}
-          >
-            {name === "all" ? t("region.all") : name}
-          </button>
-        ))}
-      </BottomSheet>
+      <LocationSheet
+        open={locOpen}
+        value={place}
+        places={placeChoices}
+        onClose={() => setLocOpen(false)}
+        onSelect={(name) => {
+          if (name === "near") window.dispatchEvent(new Event("jengo-near"));
+          else window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
+          setLocOpen(false);
+        }}
+      />
     </main>
   );
 }
