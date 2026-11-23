@@ -113,19 +113,32 @@ export default function SideDrawer() {
     setOpen(false);
   };
 
-  const drag = useRef({ x: 0, on: false });
+  const drag = useRef({ x: 0, y: 0, on: false, sliding: false });
   const onDragStart = (event: PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return;
-    drag.current = { x: event.clientX, on: true };
+    drag.current = { x: event.clientX, y: event.clientY, on: true, sliding: false };
   };
   const onDragMove = (event: PointerEvent<HTMLDivElement>) => {
     if (!drag.current.on || !panel.current) return;
-    const next = Math.min(0, event.clientX - drag.current.x);
-    panel.current.style.transform = `translateX(${next}px)`;
+    const dx = event.clientX - drag.current.x;
+    const dy = event.clientY - drag.current.y;
+    if (!drag.current.sliding) {
+      if (Math.abs(dy) > 8 && Math.abs(dy) >= Math.abs(dx)) {
+        drag.current.on = false;
+        return;
+      }
+      if (dx > -16 || Math.abs(dx) < Math.abs(dy)) return;
+      drag.current.sliding = true;
+    }
+    panel.current.style.transform = `translateX(${Math.min(0, dx)}px)`;
   };
   const onDragEnd = (event: PointerEvent<HTMLDivElement>) => {
-    if (!drag.current.on) return;
+    if (!drag.current.sliding) {
+      drag.current.on = false;
+      return;
+    }
     drag.current.on = false;
+    drag.current.sliding = false;
     const dx = event.clientX - drag.current.x;
     if (panel.current) panel.current.style.transform = "";
     if (dx < -72) requestClose();
