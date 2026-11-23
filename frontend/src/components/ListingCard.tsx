@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Receipt, Ticket, User } from "lucide-react";
 import { formatPrice, formatPriceCompact, listingUnit, type Listing } from "@/lib/api";
-import { canonicalCategory, categoryConfig } from "@/lib/categories.config";
+import { canonicalCategory, categoryConfig, dealOf } from "@/lib/categories.config";
 import { PlotCardFacts } from "./PlotDetail";
 import { quoteStay, readFit } from "@/lib/pricing";
 import PriceBreakdown from "./PriceBreakdown";
@@ -21,6 +21,7 @@ import VerifiedBadge from "./VerifiedBadge";
 const RENTALS = new Set(["chumba_nyumba", "rooms-houses", "store_godown", "frame"]);
 
 function rateKey(item: Listing) {
+  if (dealOf(item) === "sale") return "";
   if (canonicalCategory(item.category) === "plots") return "";
   if (item.category === "vifaa") {
     const unit = listingUnit(item);
@@ -154,7 +155,8 @@ export default function ListingCard({
         <div className="card-copy">
           <p className="card-price">
             <span>TSh {money}</span>
-            {frame !== "rail" && shownRate ? <span className="card-rate">{shownRate}</span> : null}
+            {frame !== "rail" && dealOf(item) === "sale" && canonicalCategory(item.category) === "rooms-houses" ? <span className="card-rate">{t("deal.saleTag")}</span> : null}
+            {frame !== "rail" && shownRate && !(dealOf(item) === "sale" && canonicalCategory(item.category) === "rooms-houses") ? <span className="card-rate">{shownRate}</span> : null}
           </p>
           <p className="card-title">
             <span>{item.title}</span>
@@ -170,7 +172,7 @@ export default function ListingCard({
               ))}
             </div>
           ) : null}
-          {frame === "feed" && !grid && !plot && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
+          {frame === "feed" && !grid && !plot && dealOf(item) !== "sale" && quoteStay(item).due > Number(item.price || 0) ? <PriceBreakdown item={item} compact /> : null}
           {frame === "feed" && !grid && plot ? <PlotCardFacts item={item} /> : null}
           {seller && verified && frame === "feed" ? <p className="card-meta">{seller}</p> : null}
         </div>

@@ -6,11 +6,11 @@ export type SavedImage = {
   saved_at: string;
 };
 
-const KEY = "jengo_saved_images";
+import { readScoped, writeScoped } from "./userScope";
 
 export function readSavedImages(): SavedImage[] {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = readScoped("saved_images");
     const arr = raw ? JSON.parse(raw) : [];
     return Array.isArray(arr) ? arr : [];
   } catch {
@@ -28,6 +28,6 @@ export function toggleSavedImage(listingId: string, title: string, url: string):
   const next = exists
     ? cur.filter((x) => !(x.listing_id === listingId && x.url === url))
     : [{ id: crypto.randomUUID(), listing_id: listingId, title, url, saved_at: new Date().toISOString() }, ...cur];
-  localStorage.setItem(KEY, JSON.stringify(next.slice(0, 200)));
+  writeScoped("saved_images", JSON.stringify(next.slice(0, 200)));
   return !exists;
 }

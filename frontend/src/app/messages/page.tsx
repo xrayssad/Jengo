@@ -11,13 +11,14 @@ import { fetchInbox, getAuthUser, peekInbox, type ChatMessage } from "@/lib/api"
 import { useInboxLive } from "@/components/MqttInbox";
 import MenuButton from "@/components/MenuButton";
 import { useT } from "@/lib/i18n";
+import { readScoped, writeScoped } from "@/lib/userScope";
 
-const HIDDEN = "jengo_inbox_hidden";
-const ARCHIVED = "jengo_inbox_archived";
+const HIDDEN = "inbox_hidden";
+const ARCHIVED = "inbox_archived";
 
 function readIds(key: string) {
   try {
-    const raw = JSON.parse(localStorage.getItem(key) || "[]") as string[];
+    const raw = JSON.parse(readScoped(key) || "[]") as string[];
     return new Set(Array.isArray(raw) ? raw : []);
   } catch {
     return new Set<string>();
@@ -26,7 +27,7 @@ function readIds(key: string) {
 
 function writeIds(key: string, ids: Set<string>) {
   try {
-    localStorage.setItem(key, JSON.stringify([...ids]));
+    writeScoped(key, JSON.stringify([...ids]));
   } catch {
     /* quota */
   }

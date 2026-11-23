@@ -32,6 +32,38 @@ export function PlotCardFacts({ item }: { item: Listing }) {
   );
 }
 
+export function HomeSaleDetail({ item }: { item: Listing }) {
+  const { t } = useI18n();
+  const fit = readFit(item);
+  const docs = Array.isArray(fit.documents) ? fit.documents : [];
+  return (
+    <section className="plot-detail">
+      {fit.negotiable ? <p className="fit-badge">{t("wizard.negotiable")}</p> : null}
+      {fit.tenure ? <p className="fit-note">{t(`deal.tenure.${fit.tenure}`)}</p> : null}
+      {fit.condition ? <p className="fit-note">{t(`deal.condition.${fit.condition}`)}</p> : null}
+      {fit.payment ? <p className="fit-note">{t("deal.pay")}: {t(`deal.pay.${fit.payment}`)}</p> : null}
+      {fit.land_m2 ? <p className="fit-note">{t("deal.land")}: {fit.land_m2}</p> : null}
+      {fit.built_m2 ? <p className="fit-note">{t("deal.built")}: {fit.built_m2}</p> : null}
+      <div>
+        <p className="detail-heading">{t("plot.documents")}</p>
+        {docs.length ? (
+          <ul className="plot-docs">
+            {docs.map((id) => <li key={id}>{t(`deal.doc.${id}`)}</li>)}
+          </ul>
+        ) : <p className="fit-note">{t("plot.noDocs")}</p>}
+        <p className="fit-note">{t("plot.documentsNote")}</p>
+      </div>
+      <aside className="plot-check">
+        <p className="detail-heading">{t("plot.before")}</p>
+        <ul>
+          {CHECKS.map((id) => <li key={id}>{t(`plot.check.${id}`)}</li>)}
+        </ul>
+        <p className="fit-note">{t("plot.check.legal")}</p>
+      </aside>
+    </section>
+  );
+}
+
 export default function PlotDetail({ item }: { item: Listing }) {
   const { lang, t } = useI18n();
   const fit = readFit(item);

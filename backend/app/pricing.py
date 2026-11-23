@@ -46,7 +46,11 @@ PLOT_DOCS = {
     "family_consent",
     "mtaa_letter",
 }
-PROPERTY_TYPES = {"single", "master", "self", "house"}
+PROPERTY_TYPES = {"single", "master", "self", "house", "apartment"}
+HOME_CATEGORIES = {"rooms-houses", "chumba_nyumba"}
+SALE_TENURE = {"gro", "cro", "licence", "other"}
+SALE_DOCS = {"title", "survey", "search", "receipts", "seller_id"}
+SALE_PAY = {"full", "installments", "booking"}
 
 
 def _float(value, low: float, high: float):
@@ -169,7 +173,8 @@ def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True
         "negotiable": bool(src.get("negotiable")),
         "instant_book": bool(src.get("instant_book")),
     }
-    if role == "agent" and category != "plots" and require_agent_fee and out["agent_fee"] <= 0:
+    selling_home = category in HOME_CATEGORIES and str(src.get("listing_type") or "") == "sale"
+    if role == "agent" and category != "plots" and not selling_home and require_agent_fee and out["agent_fee"] <= 0:
         raise ValueError("agent_fee")
     if role == "owner":
         out["direct_owner"] = True
@@ -238,7 +243,38 @@ def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True
     if ptype in PROPERTY_TYPES:
         out["property_type"] = ptype
         out["room_type"] = ptype
-    if category == "plots" or src.get("plot_size") or src.get("listing_type") in {"sale", "lease"}:
+    if category in HOME_CATEGORIES:
+        kind = _choice(src.get("listing_type"), {"rent", "sale"}) or "rent"
+        out["listing_type"] = kind
+        if kind == "sale":
+            tenure = _choice(src.get("tenure"), SALE_TENURE)
+            if tenure:
+                out["tenure"] = tenure
+            docs = src.get("documents")
+            if isinstance(docs, list):
+                clean_docs = []
+                for name in docs:
+                    text = str(name or "").strip()
+                    if text in SALE_DOCS and text not in clean_docs:
+                        clean_docs.append(text)
+                if clean_docs:
+                    out["documents"] = clean_docs
+            land = money(src.get("land_m2"))
+            if land:
+                out["land_m2"] = land
+            built = money(src.get("built_m2"))
+            if built:
+                out["built_m2"] = built
+            pay = _choice(src.get("payment"), SALE_PAY)
+            if pay:
+                out["payment"] = pay
+            cond = _choice(src.get("condition"), {"new", "used"})
+            if cond:
+                out["condition"] = cond
+        rules = _text(src.get("house_rules"), 400)
+        if rules:
+            out["house_rules"] = rules
+    elif category == "plots" or src.get("plot_size") or src.get("listing_type") in {"sale", "lease"}:
         out.update(_clean_plot(src, price))
     return out
 
@@ -247,6 +283,8 @@ def public_fit(category: str, raw: dict | None) -> dict:
     """Validated fit for the API. Empty when the listing never stored these fields."""
     src = raw if isinstance(raw, dict) else {}
     if not src:
+        if category in HOME_CATEGORIES:
+            return {"listing_type": "rent"}
         return {}
     fit = clean_fit(category, src, require_agent_fee=False, price=src.get("price"))
     kept = {}
@@ -282,6 +320,11 @@ def quote_stay(category: str, price, fit: dict | None, stay: dict | None = None)
         push("extra_guests", money(src.get("extra_guest_fee")) * extra * nights)
         due = sum(line["amount"] for line in lines)
         return {"lines": lines, "due": due, "deposit": deposit, "total": due}
+
+    if category in HOME_CATEGORIES and src.get("listing_type") == "sale":
+        push("price", amount)
+        due = sum(line["amount"] for line in lines)
+        return {"lines": lines, "due": due, "deposit": 0, "total": due}
 
     if category == "plots":
         push("price", amount)

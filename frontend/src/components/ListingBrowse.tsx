@@ -9,6 +9,7 @@ import FeaturedStrip from "./FeaturedStrip";
 import { locationPermitSeen, markLocationPermit } from "@/lib/permit";
 import type { ReactNode } from "react";
 import { reversePlace, type Listing } from "@/lib/api";
+import { readScoped, writeScoped } from "@/lib/userScope";
 import JengoLoader from "@/components/JengoLoader";
 import JengoLogo from "@/components/JengoLogo";
 import {
@@ -37,7 +38,7 @@ import {
   type SortKey,
   type ViewMode,
 } from "@/lib/browse";
-import { CATEGORIES, canonicalCategory, categoryConfig, tileCopy } from "@/lib/categories.config";
+import { CATEGORIES, canonicalCategory, categoryConfig, dealOf, tileCopy } from "@/lib/categories.config";
 import { homeMode } from "@/lib/homeMode";
 import { rankListings, stickOrder } from "@/lib/productSearch";
 import { readFit } from "@/lib/pricing";
@@ -106,6 +107,7 @@ export default function ListingBrowse({
   omitIds = [],
   midFeed = null,
   chrome = "page",
+  deal = "",
 }: {
   items: Listing[];
   loading?: boolean;
@@ -126,6 +128,7 @@ export default function ListingBrowse({
   omitIds?: string[];
   midFeed?: ReactNode;
   chrome?: "home" | "page";
+  deal?: "" | "rent" | "sale";
 }) {
   const { t, lang } = useI18n();
   const path = usePathname() || "/";
@@ -438,6 +441,9 @@ export default function ListingBrowse({
     const sizeMax = amountOf(plotRange.sizeMax);
     const apply = (list: Listing[]) => {
       let next = want ? list.filter((item) => canonicalCategory(item.category) === want) : list;
+      if (want === "rooms-houses" && (deal === "rent" || deal === "sale")) {
+        next = next.filter((item) => dealOf(item) === deal);
+      }
       if (region === "near" && near) next = nearListings(next, near, nearNames);
       else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
       if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
@@ -468,7 +474,7 @@ export default function ListingBrowse({
     const base = exact.length ? exact : related;
     const shown = sort === "new" ? base : sortListings(base, sort === "featured" && !featured ? "new" : sort);
     return { shown, related: exact.length ? related.slice(0, 6) : [], loose };
-  }, [items, ranked, region, near, nearNames, sort, featured, verifiedOnly, fitFilters, category, plotRange, bedsMin]);
+  }, [items, ranked, region, near, nearNames, sort, featured, verifiedOnly, fitFilters, category, plotRange, bedsMin, deal]);
   const shown = narrowed.shown;
   const relatedShown = narrowed.related;
   const loose = narrowed.loose;
@@ -652,10 +658,10 @@ export default function ListingBrowse({
 
   const saveNotify = () => {
     try {
-      const saved = JSON.parse(localStorage.getItem("jengo_saved_searches") || "[]") as { q?: string }[];
+      const saved = JSON.parse(readScoped("searches") || "[]") as { q?: string }[];
       const row = { path: `${path}${window.location.search}`, q: queryText, notify: true, at: new Date().toISOString() };
       const next = [row, ...saved.filter((item) => item.q !== queryText)].slice(0, 8);
-      localStorage.setItem("jengo_saved_searches", JSON.stringify(next));
+      writeScoped("searches", JSON.stringify(next));
     } catch {
       /* keep the confirmation even if storage is blocked */
     }
@@ -722,7 +728,8 @@ export default function ListingBrowse({
 
   useEffect(() => {
     const onRegion = (event: Event) => {
-      const next = String((event as CustomEvent<string>).detail || "");
+      const detail = (event as CustomEvent<string | { region?: string }>).detail;
+      const next = typeof detail === "string" ? detail : String(detail?.region || "");
       if (!next || next === "near") return;
       if (next === "all") {
         setRegion("all");
@@ -747,12 +754,20 @@ export default function ListingBrowse({
       setBedsMin(0);
       setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
     };
+    const onReset = () => {
+      const remembered = readRememberedRegion();
+      setRegion(remembered && remembered !== "near" ? remembered : "all");
+      setNear(null);
+      setNearNames([]);
+    };
     window.addEventListener("jengo-region", onRegion);
+    window.addEventListener("jengo-user-reset", onReset);
     window.addEventListener("jengo-near", onNear);
     window.addEventListener("jengo-home-restore", onRestore);
     window.addEventListener("jengo-results-clear", onRestore);
     return () => {
       window.removeEventListener("jengo-region", onRegion);
+      window.removeEventListener("jengo-user-reset", onReset);
       window.removeEventListener("jengo-near", onNear);
       window.removeEventListener("jengo-home-restore", onRestore);
       window.removeEventListener("jengo-results-clear", onRestore);
@@ -959,9 +974,9 @@ export default function ListingBrowse({
           className="btn-secondary"
           style={{ margin: "8px 0" }}
           onClick={() => {
-            const saved = JSON.parse(localStorage.getItem("jengo_saved_searches") || "[]") as { path: string; at: string }[];
+            const saved = JSON.parse(readScoped("searches") || "[]") as { path: string; at: string }[];
             saved.unshift({ path, at: new Date().toISOString() });
-            localStorage.setItem("jengo_saved_searches", JSON.stringify(saved.slice(0, 8)));
+            writeScoped("searches", JSON.stringify(saved.slice(0, 8)));
             setToast(t("fit.savedSearch"));
           }}
         >
@@ -1137,6 +1152,16 @@ export default function ListingBrowse({
         ))}
       </BottomSheet>
       <BottomSheet open={sheet} title={t("chip.price")} onClose={() => setSheet(false)}>
+        {canonicalCategory(category) === "rooms-houses" ? (
+          <label>
+            {t(deal === "sale" ? "deal.budgetSale" : "deal.budgetRent")}
+            <input
+              inputMode="numeric"
+              value={plotRange.budget}
+              onChange={(event) => setPlotRange((cur) => ({ ...cur, budget: event.target.value.replace(/[^\d]/g, "").slice(0, 12) }))}
+            />
+          </label>
+        ) : null}
         {plots && chrome === "home" ? (
           <div className="plot-ranges">
             {([

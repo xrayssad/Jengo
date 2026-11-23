@@ -35,6 +35,11 @@ export type Fit = {
   booking_deposit?: number;
   land_use?: string;
   tenure?: string;
+  land_m2?: number;
+  built_m2?: number;
+  condition?: string;
+  negotiable?: boolean;
+  house_rules?: string;
   land_category?: string;
   documents?: string[];
   surveyed?: boolean;
@@ -70,7 +75,6 @@ export type Fit = {
   power_backup?: string;
   floor?: string;
   suitable?: string;
-  condition?: string;
   allowed_goods?: string;
   delivery_note?: string;
   ceiling?: string;
@@ -80,7 +84,6 @@ export type Fit = {
   available_from?: string;
   last_confirmed_at?: string;
   reply_within?: "hour" | "day" | "";
-  negotiable?: boolean;
   instant_book?: boolean;
 };
 
@@ -142,6 +145,12 @@ export function quoteStay(item: Priced, stay?: { nights?: number; guests?: numbe
     push("price", price);
     const due = lines.reduce((sum, line) => sum + line.amount, 0);
     return { lines, due, deposit: money(fit.booking_deposit), total: due };
+  }
+
+  if ((category === "rooms-houses" || category === "chumba_nyumba") && fit.listing_type === "sale") {
+    push("price", price);
+    const due = lines.reduce((sum, line) => sum + line.amount, 0);
+    return { lines, due, deposit: 0, total: due };
   }
 
   if (category === "vifaa") {

@@ -1,4 +1,5 @@
 import { getDeviceId } from "./deviceId";
+import { clearSharedSession, mergeAccount, readScoped, removeScoped, writeScoped } from "./userScope";
 import { mergeCounts, mergeRefresh } from "./views";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://jengo-qkq1.onrender.com";
@@ -122,22 +123,101 @@ async function dropSupabaseSession() {
 export function saveAuth(data: AuthUser) {
   if (typeof window === "undefined") return;
   const prev = getAuthUser();
-  const next: AuthUser = {
-    ...prev,
-    ...data,
-    access_token: data.access_token || prev?.access_token || "",
-    refresh_token: data.refresh_token || prev?.refresh_token,
-  };
+  const switching = Boolean(prev?.user_id && data.user_id && prev.user_id !== data.user_id);
+  const next = mergeAccount(prev, data);
   if (!next.access_token) return;
+  if (switching) resetUserScopedState();
   localStorage.setItem(TOKEN_KEY, next.access_token);
   localStorage.setItem(USER_KEY, JSON.stringify(next));
+  if (switching || !prev) {
+    preferencePushPaused = true;
+    window.dispatchEvent(new Event("jengo-user-reset"));
+    void bootPreferences();
+  }
 }
 
 export function clearAuth() {
   if (typeof window === "undefined") return;
+  resetUserScopedState();
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
   void dropSupabaseSession();
+  window.dispatchEvent(new Event("jengo-user-reset"));
+}
+
+export type UserPreferences = {
+  region?: string;
+  language?: string;
+  theme?: string;
+  notifications?: boolean;
+};
+
+export async function pullPreferences(): Promise<UserPreferences | null> {
+  if (!getToken()) return null;
+  try {
+    return await request<UserPreferences>("/auth/preferences");
+  } catch {
+    return null;
+  }
+}
+
+let preferencePushPaused = false;
+let preferencesReady = false;
+
+export function preferencesPaused() {
+  return preferencePushPaused;
+}
+
+export function preferencesSettled() {
+  return preferencesReady || !getToken();
+}
+
+export function pushPreferences(patch: UserPreferences) {
+  if (typeof window === "undefined" || !getToken() || preferencePushPaused) return;
+  void request<UserPreferences>("/auth/preferences", {
+    method: "PUT",
+    body: JSON.stringify(patch),
+  }).catch(() => undefined);
+}
+
+function applyServerPreferences(prefs: UserPreferences | null) {
+  if (!prefs || typeof window === "undefined") return;
+  if (typeof prefs.region === "string") {
+    if (prefs.region) writeScoped("region", prefs.region);
+    else removeScoped("region");
+  }
+  if (prefs.language === "en" || prefs.language === "sw") writeScoped("lang", prefs.language);
+  if (prefs.theme === "light" || prefs.theme === "dark" || prefs.theme === "system") writeScoped("theme", prefs.theme);
+  window.dispatchEvent(new Event("jengo-prefs"));
+  if (typeof prefs.region === "string") {
+    window.dispatchEvent(new CustomEvent("jengo-region", { detail: { region: prefs.region || "all", source: "server" } }));
+  }
+}
+
+/** Logged-in preferences replace whatever this device had for another account. */
+export async function bootPreferences() {
+  if (!getToken()) {
+    preferencesReady = true;
+    preferencePushPaused = false;
+    return;
+  }
+  preferencePushPaused = true;
+  const prefs = await pullPreferences();
+  applyServerPreferences(prefs);
+  window.requestAnimationFrame(() => {
+    preferencePushPaused = false;
+    preferencesReady = true;
+  });
+}
+
+export function resetUserScopedState() {
+  feedMem.clear();
+  listingMem.clear();
+  shownMem.clear();
+  feedFlight.clear();
+  feedHydrated = false;
+  shownHydrated = false;
+  clearSharedSession();
 }
 
 export function getToken(): string | null {
@@ -273,7 +353,7 @@ async function request<T>(path: string, options: RequestInit = {}, retried = fal
     const device = getDeviceId();
     if (device) headers["X-Device-Id"] = device;
   }
-  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers, cache: token ? "no-store" : options.cache });
   const data = await parseJson(await res.text());
   if (!res.ok) {
     if (res.status === 401 && !retried && path !== "/auth/refresh" && path !== "/auth/login") {
@@ -529,7 +609,9 @@ const listingMem = new Map<string, Listing>();
 let feedHydrated = false;
 
 function feedKey(params?: ListingQuery) {
+  const who = params?.mine ? getAuthUser()?.user_id || "guest" : "public";
   return [
+    who,
     params?.mine ? "mine" : params?.status || "active",
     params?.category || "",
     (params?.q || "").trim().toLowerCase(),
@@ -550,7 +632,7 @@ function hydrateFeeds() {
   if (feedHydrated || typeof window === "undefined") return;
   feedHydrated = true;
   try {
-    const raw = localStorage.getItem(FEED_KEY);
+    const raw = readScoped("feed");
     const parsed = raw ? (JSON.parse(raw) as { feeds?: Record<string, Listing[]> }) : {};
     const feeds = parsed.feeds || {};
     for (const [key, items] of Object.entries(feeds)) {
@@ -570,7 +652,7 @@ function persistFeeds() {
   try {
     const feeds: Record<string, Listing[]> = {};
     for (const [key, items] of feedMem) feeds[key] = items.slice(0, 40).map(slimListing);
-    localStorage.setItem(FEED_KEY, JSON.stringify({ feeds }));
+    writeScoped("feed", JSON.stringify({ feeds }));
   } catch {
     /* quota */
   }
@@ -599,7 +681,8 @@ export function peekListings(params?: ListingQuery): Listing[] {
   const status = params?.status || "active";
   let best: Listing[] = [];
   for (const [key, items] of feedMem) {
-    if (!key.startsWith(`${status}|`) || key.split("|")[1] || key.split("|")[2]) continue;
+    const parts = key.split("|");
+    if (parts[0] !== "public" || parts[1] !== status || parts[2] || parts[3]) continue;
     if (items.length > best.length) best = items;
   }
   return best;
@@ -818,10 +901,10 @@ export function patchListingCount(id: string, views_count: number) {
       /* ignore */
     }
     try {
-      const saved = localStorage.getItem("jengo_saved_posts");
+      const saved = readScoped("saved");
       const stamped = saved ? stampStored(saved, id, views_count) : "";
       if (stamped) {
-        localStorage.setItem("jengo_saved_posts", stamped);
+        writeScoped("saved", stamped);
         window.dispatchEvent(new Event("jengo-saved"));
       }
     } catch {
@@ -1415,7 +1498,7 @@ const INBOX_KEY = "jengo_inbox_cache";
 export function peekInbox(): ChatMessage[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(INBOX_KEY);
+    const raw = readScoped("inbox");
     const items = raw ? (JSON.parse(raw) as ChatMessage[]) : [];
     return Array.isArray(items) ? items : [];
   } catch {
@@ -1426,7 +1509,7 @@ export function peekInbox(): ChatMessage[] {
 export async function fetchInbox() {
   const data = await request<{ items: ChatMessage[] }>("/inbox");
   try {
-    localStorage.setItem(INBOX_KEY, JSON.stringify(data.items || []));
+    writeScoped("inbox", JSON.stringify(data.items || []));
   } catch {
     /* quota */
   }
@@ -1565,12 +1648,10 @@ export async function fetchMyPosts(listingIds?: string[], reelIds?: string[]) {
   });
 }
 
-const JOBS_KEY = "jengo_jobs_cache";
-
 export function peekJobs(): Job[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(JOBS_KEY);
+    const raw = readScoped("jobs");
     const items = raw ? (JSON.parse(raw) as Job[]) : [];
     return Array.isArray(items) ? items : [];
   } catch {
@@ -1584,7 +1665,7 @@ export async function fetchJobs(status = "open") {
   const data = await request<{ items?: Job[] }>(`/jobs?${sp}`);
   const items = data.items || [];
   try {
-    if (status === "open") localStorage.setItem(JOBS_KEY, JSON.stringify(items));
+    if (status === "open") writeScoped("jobs", JSON.stringify(items));
   } catch {
     /* quota */
   }

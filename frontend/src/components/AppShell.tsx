@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
+import { bootPreferences, getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
 import { SHOW_LANDING_PAGE } from "@/lib/productFlags";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";
@@ -81,6 +81,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
       window.location.replace("/username");
     }
   }, [path]);
+
+  useEffect(() => {
+    if (!hasUsableSession()) return;
+    void bootPreferences();
+  }, []);
 
   useEffect(() => {
     if (!hasUsableSession()) return;

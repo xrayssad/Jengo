@@ -6,7 +6,8 @@ import { Boxes, Building2, Camera, Check, Home, ImagePlus, LandPlot, Store, Ware
 import JengoLoader from "@/components/JengoLoader";
 import { queueInstallNudge } from "@/lib/install";
 import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
-import { canonicalCategory, categoryConfig, photoMinimum, CATEGORIES, type CategoryId } from "@/lib/categories.config";
+import { canonicalCategory, categoryConfig, photoMinimum, MAX_PHOTOS, CATEGORIES, type CategoryId } from "@/lib/categories.config";
+import { readScoped, removeScoped, writeScoped } from "@/lib/userScope";
 import { rememberListing } from "@/lib/mine";
 import { useI18n } from "@/lib/i18n";
 import { emptyPlot, plotPayload, plotReady, type PlotDraft } from "@/lib/plots";
@@ -18,7 +19,9 @@ import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
 import ScreenHeader from "@/components/ScreenHeader";
 import DateStrip from "@/components/DateStrip";
 
-const DRAFT_KEY = "jengo_listing_draft";
+const HOME_TENURE = ["gro", "cro", "licence", "other"] as const;
+const HOME_DOCS = ["title", "survey", "search", "receipts", "seller_id"] as const;
+const HOME_PAY = ["full", "installments", "booking"] as const;
 
 const CATEGORY_ICONS = {
   "rooms-houses": Home,
@@ -67,6 +70,7 @@ const roomTypes = [
   { id: "single", label: "Single room" },
   { id: "master", label: "Master" },
   { id: "self", label: "Self-contained" },
+  { id: "apartment", label: "Apartment unit" },
   { id: "house", label: "Whole house" },
 ];
 
@@ -93,6 +97,13 @@ type Draft = {
   bedrooms: number;
   bathrooms: number;
   roomType: string;
+  homeDeal: "rent" | "sale";
+  tenure: string;
+  homeDocs: string[];
+  landM2: string;
+  builtM2: string;
+  homePay: string;
+  houseRules: string;
   deposit: string;
   available: string;
   guests: number;
@@ -187,6 +198,13 @@ export default function WekaTangazoPage() {
   const [bedrooms, setBedrooms] = useState(1);
   const [bathrooms, setBathrooms] = useState(1);
   const [roomType, setRoomType] = useState("single");
+  const [homeDeal, setHomeDeal] = useState<"rent" | "sale">("rent");
+  const [tenure, setTenure] = useState("");
+  const [homeDocs, setHomeDocs] = useState<string[]>([]);
+  const [landM2, setLandM2] = useState("");
+  const [builtM2, setBuiltM2] = useState("");
+  const [homePay, setHomePay] = useState("full");
+  const [houseRules, setHouseRules] = useState("");
   const [deposit, setDeposit] = useState("");
   const [available, setAvailable] = useState("");
   const [guests, setGuests] = useState(2);
@@ -240,7 +258,7 @@ export default function WekaTangazoPage() {
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem(DRAFT_KEY);
+      const raw = readScoped("draft");
       if (raw) {
         draftRaw.current = raw;
         setAskDraft(true);
@@ -270,6 +288,13 @@ export default function WekaTangazoPage() {
       bedrooms,
       bathrooms,
       roomType,
+      homeDeal,
+      tenure,
+      homeDocs,
+      landM2,
+      builtM2,
+      homePay,
+      houseRules,
       deposit,
       available,
       guests,
@@ -312,7 +337,7 @@ export default function WekaTangazoPage() {
     }),
     [
       step, category, title, description, price, negotiable, period, unit, stock, bedrooms, bathrooms,
-      roomType, deposit, available, guests, minNights, size, frontage, market, frameSize, minOrder,
+      roomType, homeDeal, tenure, homeDocs, landM2, builtM2, homePay, houseRules, deposit, available, guests, minNights, size, frontage, market, frameSize, minOrder,
       amenities, photos, place, phones, whatsapp, sameWa, posterRole, freeViewing, directOwner, costsOk,
       advance, agentFee, cleaning, extraGuest, goodwill, landmark, directions, water, power, cancelPolicy,
       subtype, floor, suitable, condition, truck, allowedGoods, deliveryNote, ceiling, licenseNote, plot,
@@ -323,7 +348,7 @@ export default function WekaTangazoPage() {
     if (askDraft || done) return;
     const id = window.setTimeout(() => {
       try {
-        localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        writeScoped("draft", JSON.stringify(draft));
       } catch {
         /* ignore */
       }
@@ -349,6 +374,13 @@ export default function WekaTangazoPage() {
       if (typeof saved.bedrooms === "number") setBedrooms(saved.bedrooms);
       if (typeof saved.bathrooms === "number") setBathrooms(saved.bathrooms);
       if (typeof saved.roomType === "string") setRoomType(saved.roomType);
+      if (saved.homeDeal === "rent" || saved.homeDeal === "sale") setHomeDeal(saved.homeDeal);
+      if (typeof saved.tenure === "string") setTenure(saved.tenure);
+      if (Array.isArray(saved.homeDocs)) setHomeDocs(saved.homeDocs.filter((item) => typeof item === "string"));
+      if (typeof saved.landM2 === "string") setLandM2(saved.landM2);
+      if (typeof saved.builtM2 === "string") setBuiltM2(saved.builtM2);
+      if (typeof saved.homePay === "string") setHomePay(saved.homePay);
+      if (typeof saved.houseRules === "string") setHouseRules(saved.houseRules);
       if (typeof saved.deposit === "string") setDeposit(saved.deposit);
       if (typeof saved.available === "string") setAvailable(saved.available);
       if (typeof saved.guests === "number") setGuests(saved.guests);
@@ -359,7 +391,7 @@ export default function WekaTangazoPage() {
       if (typeof saved.frameSize === "string") setFrameSize(saved.frameSize);
       if (typeof saved.minOrder === "string") setMinOrder(saved.minOrder);
       if (Array.isArray(saved.amenities)) setAmenities(saved.amenities.filter((item) => typeof item === "string"));
-      if (Array.isArray(saved.photos)) setPhotos(saved.photos.filter((item) => typeof item === "string").slice(0, 10));
+      if (Array.isArray(saved.photos)) setPhotos(saved.photos.filter((item) => typeof item === "string").slice(0, MAX_PHOTOS));
       if (saved.place) setPlace({ ...emptyPlace, ...saved.place });
       if (Array.isArray(saved.phones) && saved.phones.length) setPhones(saved.phones.slice(0, 3));
       if (typeof saved.whatsapp === "string") setWhatsapp(saved.whatsapp);
@@ -390,7 +422,7 @@ export default function WekaTangazoPage() {
       if (typeof saved.step === "number") setStep(Math.min(5, Math.max(1, saved.step)));
     } catch {
       try {
-        localStorage.removeItem(DRAFT_KEY);
+        removeScoped("draft");
       } catch {
         /* ignore */
       }
@@ -401,7 +433,7 @@ export default function WekaTangazoPage() {
   const dropDraft = () => {
     draftRaw.current = null;
     try {
-      localStorage.removeItem(DRAFT_KEY);
+      removeScoped("draft");
     } catch {
       /* ignore */
     }
@@ -416,7 +448,7 @@ export default function WekaTangazoPage() {
     if (step === 2) {
       if (title.trim().length < 3 || !price) return false;
       if (category === "vifaa" && (stock === "" || Number(stock) < 0)) return false;
-      if (posterRole === "agent" && category !== "plots" && !agentFee) return false;
+      if (posterRole === "agent" && category !== "plots" && !(category === "rooms-houses" && homeDeal === "sale") && !agentFee) return false;
       if (category === "plots" && !plotReady(plot)) return false;
       return true;
     }
@@ -457,7 +489,7 @@ export default function WekaTangazoPage() {
   };
 
   const addFiles = async (files: FileList | null) => {
-    const room = 10 - photos.length - pending.filter((item) => !item.error).length;
+    const room = MAX_PHOTOS - photos.length - pending.filter((item) => !item.error).length;
     const batch = Array.from(files || []).slice(0, Math.max(0, room));
     if (!batch.length) return;
     for (const file of batch) {
@@ -469,7 +501,7 @@ export default function WekaTangazoPage() {
         const res = await uploadPhoto(ready, false, (value) => {
           setPending((cur) => cur.map((item) => (item.id === id ? { ...item, progress: value } : item)));
         });
-        if (res.url) setPhotos((cur) => (cur.length >= 10 ? cur : [...cur, res.url]));
+        if (res.url) setPhotos((cur) => (cur.length >= MAX_PHOTOS ? cur : [...cur, res.url]));
         setPending((cur) => cur.filter((item) => item.id !== id));
         URL.revokeObjectURL(preview);
       } catch {
@@ -484,7 +516,7 @@ export default function WekaTangazoPage() {
       const res = await uploadPhoto(item.file, false, (value) => {
         setPending((cur) => cur.map((row) => (row.id === item.id ? { ...row, progress: value } : row)));
       });
-      if (res.url) setPhotos((cur) => (cur.length >= 10 ? cur : [...cur, res.url]));
+      if (res.url) setPhotos((cur) => (cur.length >= MAX_PHOTOS ? cur : [...cur, res.url]));
       setPending((cur) => cur.filter((row) => row.id !== item.id));
       URL.revokeObjectURL(item.preview);
     } catch {
@@ -558,12 +590,23 @@ export default function WekaTangazoPage() {
     if (negotiable) extra.negotiable = true;
     if (amenities.length) extra.amenities = amenities;
     if (category === "rooms-houses") {
+      extra.listing_type = homeDeal;
       extra.bedrooms = bedrooms;
       extra.bathrooms = bathrooms;
       extra.room_type = roomType;
       extra.property_type = roomType;
-      if (deposit) extra.deposit = Number(deposit);
-      if (available) extra.available_from = available;
+      if (homeDeal === "sale") {
+        if (tenure) extra.tenure = tenure;
+        if (homeDocs.length) extra.documents = homeDocs;
+        if (landM2) extra.land_m2 = Number(landM2);
+        if (builtM2) extra.built_m2 = Number(builtM2);
+        extra.payment = homePay;
+        extra.condition = condition === "new" ? "new" : "used";
+      } else {
+        if (deposit) extra.deposit = Number(deposit);
+        if (available) extra.available_from = available;
+        if (houseRules.trim()) extra.house_rules = houseRules.trim();
+      }
     }
     if (category === "apartment_airbnb") {
       extra.guests = guests;
@@ -601,10 +644,10 @@ export default function WekaTangazoPage() {
         title: title.trim(),
         description: contact.length ? `${desc}${desc ? "\n\n" : ""}Phone: ${contact.join(", ")}` : desc,
         price: Number(price),
-        period: isVifaa || isPlot ? "" : period,
+        period: isVifaa || isPlot || (category === "rooms-houses" && homeDeal === "sale") ? "" : period,
         location: place.location.trim(),
         city: place.city.trim(),
-        images: photos.slice(0, 10),
+        images: photos.slice(0, MAX_PHOTOS),
         lat: place.lat,
         lng: place.lng,
         phones: contact,
@@ -613,7 +656,7 @@ export default function WekaTangazoPage() {
       });
       if (created?.id) rememberListing(String(created.id));
       try {
-        localStorage.removeItem(DRAFT_KEY);
+        removeScoped("draft");
       } catch {
         /* ignore */
       }
@@ -662,7 +705,7 @@ export default function WekaTangazoPage() {
     category,
     title: title || "Listing title",
     price: Number(price || 0),
-    period: category === "vifaa" || category === "plots" ? "" : period,
+    period: category === "vifaa" || category === "plots" || (category === "rooms-houses" && homeDeal === "sale") ? "" : period,
     location: place.location,
     city: place.city,
     images: photos,
@@ -683,6 +726,14 @@ export default function WekaTangazoPage() {
       subtype,
       room_type: roomType,
       property_type: roomType,
+      listing_type: category === "rooms-houses" ? homeDeal : undefined,
+      tenure: category === "rooms-houses" && homeDeal === "sale" ? tenure : undefined,
+      documents: category === "rooms-houses" && homeDeal === "sale" ? homeDocs : undefined,
+      land_m2: landM2 ? Number(landM2) : undefined,
+      built_m2: builtM2 ? Number(builtM2) : undefined,
+      payment: category === "rooms-houses" && homeDeal === "sale" ? homePay : undefined,
+      condition: category === "rooms-houses" && homeDeal === "sale" ? condition : undefined,
+      negotiable,
       ...(category === "plots" ? plotPayload(plot, Number(price || 0)) : {}),
     },
   };
@@ -794,6 +845,12 @@ export default function WekaTangazoPage() {
 
             {step === 2 && (
               <div>
+                {category === "rooms-houses" ? (
+                  <div className="deal-switch wizard-deal" role="tablist" aria-label={t("deal.rent")}>
+                    <button type="button" role="tab" aria-selected={homeDeal === "rent"} className={homeDeal === "rent" ? "is-on" : ""} onClick={() => setHomeDeal("rent")}>{t("deal.rent")}</button>
+                    <button type="button" role="tab" aria-selected={homeDeal === "sale"} className={homeDeal === "sale" ? "is-on" : ""} onClick={() => setHomeDeal("sale")}>{t("deal.sale")}</button>
+                  </div>
+                ) : null}
                 <label className="wizard-field">
                   <span className="wizard-label">Title <i>*</i> <span className="wizard-optional">{title.length}/80</span></span>
                   <input className="wizard-input" maxLength={80} value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -805,7 +862,7 @@ export default function WekaTangazoPage() {
                   <textarea className="wizard-input" rows={4} maxLength={500} value={description} onChange={(e) => setDescription(e.target.value)} />
                 </label>
                 <label className="wizard-field">
-                  <span className="wizard-label">Price (TSh) <i>*</i></span>
+                  <span className="wizard-label">{category === "rooms-houses" && homeDeal === "sale" ? t("deal.total") : "Price (TSh)"} <i>*</i></span>
                   <input
                     className="wizard-input"
                     inputMode="numeric"
@@ -832,13 +889,13 @@ export default function WekaTangazoPage() {
                     )}
                   </div>
                 </div>
-                {category !== "vifaa" && category !== "plots" ? (
+                {category !== "vifaa" && category !== "plots" && !(category === "rooms-houses" && homeDeal === "sale") ? (
                   <label className="wizard-field">
                     <span className="wizard-label">{t("fit.advance")}</span>
                     <input className="wizard-input" inputMode="numeric" value={advance} onChange={(e) => setAdvance(digits(e.target.value).slice(0, 2))} />
                   </label>
                 ) : null}
-                {posterRole === "agent" && category !== "plots" ? (
+                {posterRole === "agent" && category !== "plots" && !(category === "rooms-houses" && homeDeal === "sale") ? (
                   <label className="wizard-field">
                     <span className="wizard-label">{t("fit.agentFee")} <i>*</i></span>
                     <input className="wizard-input" inputMode="numeric" value={grouped(agentFee)} onChange={(e) => setAgentFee(digits(e.target.value))} />
@@ -920,7 +977,7 @@ export default function WekaTangazoPage() {
                 {category === "plots" ? (
                   <PlotFields part="deal" plot={plot} price={price} tried={tried} onChange={setPlot} />
                 ) : null}
-                {category === "rooms-houses" ? (
+                {category === "rooms-houses" && homeDeal === "rent" ? (
                   <>
                     <div className="wizard-field">
                       <span className="wizard-label">{t("fit.water")}</span>
@@ -961,7 +1018,7 @@ export default function WekaTangazoPage() {
                   <span>{t("fit.costsConfirm")}</span>
                   <button type="button" className={costsOk ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={costsOk} onClick={() => setCostsOk((v) => !v)}><i /></button>
                 </div>
-                {category !== "vifaa" && category !== "plots" && periods[category] ? (
+                {category !== "vifaa" && category !== "plots" && periods[category] && !(category === "rooms-houses" && homeDeal === "sale") ? (
                   <div className="wizard-field">
                     <span className="wizard-label">Rent period</span>
                     <div className="wizard-chips">
@@ -989,24 +1046,69 @@ export default function WekaTangazoPage() {
                 ) : null}
                 {category === "rooms-houses" && (
                   <>
-                    <div className="wizard-row">
-                      {stepper("Bedrooms", bedrooms, setBedrooms, 0, 20)}
-                      {stepper("Bathrooms", bathrooms, setBathrooms, 0, 20)}
-                    </div>
                     <div className="wizard-field">
                       <span className="wizard-label">Type</span>
                       <div className="wizard-chips">
                         {roomTypes.map((item) => chip(item.id, t(`fit.property.${item.id}`), roomType === item.id, () => setRoomType(item.id)))}
                       </div>
                     </div>
-                    <label className="wizard-field">
-                      <span className="wizard-label">Deposit <span className="wizard-optional">({t("optional")})</span></span>
-                      <input className="wizard-input" inputMode="numeric" value={grouped(deposit)} onChange={(e) => setDeposit(digits(e.target.value))} />
-                    </label>
-                    <div className="wizard-field">
-                      <span className="wizard-label">Available from <span className="wizard-optional">({t("optional")})</span></span>
-                      <DateStrip value={available} onChange={setAvailable} count={21} />
+                    <div className="wizard-row">
+                      {stepper("Bedrooms", bedrooms, setBedrooms, 0, 20)}
+                      {stepper("Bathrooms", bathrooms, setBathrooms, 0, 20)}
                     </div>
+                    {homeDeal === "rent" ? (
+                      <>
+                        <label className="wizard-field">
+                          <span className="wizard-label">Deposit <span className="wizard-optional">({t("optional")})</span></span>
+                          <input className="wizard-input" inputMode="numeric" value={grouped(deposit)} onChange={(e) => setDeposit(digits(e.target.value))} />
+                        </label>
+                        <div className="wizard-field">
+                          <span className="wizard-label">Available from <span className="wizard-optional">({t("optional")})</span></span>
+                          <DateStrip value={available} onChange={setAvailable} count={21} />
+                        </div>
+                        <label className="wizard-field">
+                          <span className="wizard-label">{t("deal.rules")} <span className="wizard-optional">({t("optional")})</span></span>
+                          <textarea className="wizard-input" rows={3} maxLength={400} value={houseRules} onChange={(e) => setHouseRules(e.target.value)} />
+                        </label>
+                      </>
+                    ) : (
+                      <>
+                        <div className="wizard-field">
+                          <span className="wizard-label">{t("deal.tenure")}</span>
+                          <div className="wizard-chips">
+                            {HOME_TENURE.map((id) => chip(id, t(`deal.tenure.${id}`), tenure === id, () => setTenure(id)))}
+                          </div>
+                        </div>
+                        <div className="wizard-field">
+                          <span className="wizard-label">{t("plot.documents")}</span>
+                          <div className="wizard-chips">
+                            {HOME_DOCS.map((id) => chip(id, t(`deal.doc.${id}`), homeDocs.includes(id), () => setHomeDocs((cur) => (cur.includes(id) ? cur.filter((item) => item !== id) : [...cur, id]))))}
+                          </div>
+                        </div>
+                        <div className="wizard-row">
+                          <label className="wizard-field">
+                            <span className="wizard-label">{t("deal.land")}</span>
+                            <input className="wizard-input" inputMode="numeric" value={landM2} onChange={(e) => setLandM2(digits(e.target.value))} />
+                          </label>
+                          <label className="wizard-field">
+                            <span className="wizard-label">{t("deal.built")}</span>
+                            <input className="wizard-input" inputMode="numeric" value={builtM2} onChange={(e) => setBuiltM2(digits(e.target.value))} />
+                          </label>
+                        </div>
+                        <div className="wizard-field">
+                          <span className="wizard-label">{t("fit.condition")}</span>
+                          <div className="wizard-chips">
+                            {(["new", "used"] as const).map((kind) => chip(kind, t(`deal.condition.${kind}`), condition === kind, () => setCondition(kind)))}
+                          </div>
+                        </div>
+                        <div className="wizard-field">
+                          <span className="wizard-label">{t("deal.pay")}</span>
+                          <div className="wizard-chips">
+                            {HOME_PAY.map((id) => chip(id, t(`deal.pay.${id}`), homePay === id, () => setHomePay(id)))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </>
                 )}
                 {category === "apartment_airbnb" && (
@@ -1092,7 +1194,7 @@ export default function WekaTangazoPage() {
                       )}
                     </div>
                   ))}
-                  {photos.length + pending.length < 10 ? (
+                  {photos.length + pending.length < MAX_PHOTOS ? (
                     <>
                       <button type="button" className="shot" onClick={() => cameraRef.current?.click()}>
                         <Camera size={18} />
@@ -1107,6 +1209,7 @@ export default function WekaTangazoPage() {
                 </div>
                 {tried && photos.length === 0 ? <p className="wizard-error" style={{ marginTop: 8 }}>Add at least one photo.</p> : null}
                 {category === "plots" ? <PlotFields part="media" plot={plot} price={price} onChange={setPlot} /> : null}
+                <p className="wizard-tip">{t("wizard.health")}</p>
                 <p className="wizard-tip">{t("wizard.tip")}</p>
                 {photos[0] ? (
                   <div className="wizard-preview-card" style={{ marginTop: 16 }}>

@@ -1,4 +1,5 @@
 import type { Listing } from "./api";
+import { readScoped, removeScoped, writeScoped } from "./userScope";
 import { VERIFIED_BOOST } from "./productFlags";
 import { moveInAmount } from "./pricing";
 import { pricePerM2Of } from "./plots";
@@ -40,7 +41,7 @@ export function asView(value: unknown): ViewMode {
 export function readView(): ViewMode {
   if (typeof window === "undefined") return "large";
   try {
-    return asView(localStorage.getItem(VIEW_KEY));
+    return asView(readScoped("view"));
   } catch {
     return "large";
   }
@@ -48,7 +49,7 @@ export function readView(): ViewMode {
 
 export function writeView(mode: ViewMode) {
   try {
-    localStorage.setItem(VIEW_KEY, mode);
+    writeScoped("view", mode);
   } catch {
     /* ignore */
   }
@@ -77,7 +78,7 @@ const RECENT_KEY = "jengo_recent_regions";
 export function readRememberedRegion() {
   if (typeof window === "undefined") return "";
   try {
-    return localStorage.getItem(REGION_KEY) || "";
+    return readScoped("region") || "";
   } catch {
     return "";
   }
@@ -85,17 +86,22 @@ export function readRememberedRegion() {
 
 export function writeRememberedRegion(region: string) {
   try {
-    if (!region || region === "all") localStorage.removeItem(REGION_KEY);
-    else localStorage.setItem(REGION_KEY, region);
+    if (!region || region === "all") removeScoped("region");
+    else writeScoped("region", region);
   } catch {
     /* ignore */
   }
+  if (typeof window === "undefined" || region === "near") return;
+  void import("./api").then((api) => {
+    if (!api.preferencesSettled() || api.preferencesPaused() || !api.getToken()) return;
+    api.pushPreferences({ region: !region || region === "all" ? "" : region });
+  });
 }
 
 export function readRecentRegions(): string[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") as unknown;
+    const raw = JSON.parse(readScoped("recent_regions") || "[]") as unknown;
     return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === "string" && item !== "all" && item !== "near") : [];
   } catch {
     return [];
@@ -106,7 +112,7 @@ export function pushRecentRegion(name: string) {
   if (!name || name === "all" || name === "near") return;
   const next = [name, ...readRecentRegions().filter((item) => item !== name)].slice(0, 5);
   try {
-    localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+    writeScoped("recent_regions", JSON.stringify(next));
   } catch {
     /* ignore */
   }

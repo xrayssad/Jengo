@@ -256,10 +256,33 @@ export function categoryConfig(id?: string | null): CategoryConfig | null {
   return CATEGORIES[key as CategoryId];
 }
 
-export function photoMinimum(id?: string | null): number {
-  const config = categoryConfig(id);
-  if (!config) return 1;
-  return config.photos.filter((slot) => slot.required).length;
+/** A listing can go live with one photo. The grid stops at twenty. */
+export const MIN_PHOTOS_TO_PUBLISH = 1;
+export const MAX_PHOTOS = 20;
+
+export type Deal = "rent" | "sale" | "lease";
+
+/** Homes are live. Shops, frames and godowns stay rent-only until their sale flow is turned on. */
+export function liveDeals(id?: string | null): Deal[] {
+  const key = canonicalCategory(id);
+  if (key === "rooms-houses") return ["rent", "sale"];
+  if (key === "plots") return ["sale", "lease"];
+  return [];
+}
+
+export function dealOf(item: { category?: string | null; period?: string | null; fit?: { listing_type?: string } | null }): Deal | "" {
+  const modes = liveDeals(item.category);
+  const raw = item.fit?.listing_type;
+  if ((raw === "rent" || raw === "sale" || raw === "lease") && (!modes.length || modes.includes(raw))) return raw;
+  if (modes.includes("rent") || item.period) {
+    if (canonicalCategory(item.category) === "rooms-houses") return "rent";
+  }
+  if (canonicalCategory(item.category) === "plots") return raw === "lease" ? "lease" : "sale";
+  return "";
+}
+
+export function photoMinimum(_id?: string | null): number {
+  return MIN_PHOTOS_TO_PUBLISH;
 }
 
 export function tileCopy(id: string, lang: "en" | "sw"): { label: string; short: string } {

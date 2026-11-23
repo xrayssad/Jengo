@@ -5569,14 +5569,21 @@ html[data-intro="1"] .install-sheet {
   left: 0;
   right: 0;
   z-index: 40;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
   height: calc(56px + env(safe-area-inset-top));
-  padding: env(safe-area-inset-top) 12px 0 16px;
+  padding: env(safe-area-inset-top) 12px 0;
   background: var(--bg-top);
   transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+button.home-brand {
+  justify-self: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
 
 html[data-home-bar="hide"] .home-appbar {
@@ -5618,9 +5625,10 @@ html[data-home-bar="hide"] .home-appbar {
 .home-appbar .home-tools {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px;
-  flex: none;
-  margin-left: auto;
+  justify-self: end;
+  min-width: 0;
 }
 
 .home-appbar .home-loc {
@@ -5663,6 +5671,60 @@ html[data-home-bar="hide"] .home-appbar {
 html[data-home-greet="off"] .home-line {
   max-height: 0;
   opacity: 0;
+}
+
+.home-loc-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  max-width: 100%;
+  height: 36px;
+  margin: 0 0 8px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.home-loc-pill span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deal-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  margin: 0 16px 12px;
+  padding: 4px;
+  border-radius: 999px;
+  background: var(--surface);
+}
+
+.deal-switch button {
+  min-height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.deal-switch button.is-on {
+  background: var(--primary);
+  color: #fff;
+}
+
+.wizard-deal {
+  grid-template-columns: 1fr 1fr;
+  margin: 0 0 16px;
 }
 
 .home-search-stick {
@@ -5797,9 +5859,10 @@ html[data-home-bar="show"][data-home-stick="1"] .home-settle .home-search {
 
 html[data-home-bar="hide"] .home-search-stick {
   top: 0;
-  height: 44px;
-  padding-top: 0;
-  padding-bottom: 0;
+  max-height: 96px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  overflow: hidden;
 }
 
 html[data-home-bar="hide"] .home-settle .home-search {
@@ -5809,7 +5872,7 @@ html[data-home-bar="hide"] .home-settle .home-search {
 
 html[data-home-bar="hide"] .home-tab-row {
   position: fixed;
-  top: 44px;
+  top: 96px;
   left: 0;
   right: 0;
   z-index: 34;

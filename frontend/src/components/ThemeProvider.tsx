@@ -45,16 +45,21 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     };
     const media = window.matchMedia("(prefers-color-scheme: dark)");
     const onMedia = () => {
-      if (localStorage.getItem(THEME_KEY) !== "system") return;
+      if (readTheme() !== "system") return;
       setThemeState(resolvedTheme("system"));
       applyTheme("system");
     };
+    const onReset = () => applyChoice(readTheme());
     window.addEventListener("storage", onStorage);
     window.addEventListener("jengo-theme", onTheme);
+    window.addEventListener("jengo-user-reset", onReset);
+    window.addEventListener("jengo-prefs", onReset);
     media.addEventListener("change", onMedia);
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("jengo-theme", onTheme);
+      window.removeEventListener("jengo-user-reset", onReset);
+      window.removeEventListener("jengo-prefs", onReset);
       media.removeEventListener("change", onMedia);
     };
   }, []);
@@ -67,6 +72,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
         setPreference(next);
         setThemeState(resolvedTheme(next));
         applyTheme(next);
+        void import("@/lib/api").then((api) => api.pushPreferences({ theme: next }));
       },
     }),
     [preference, theme],

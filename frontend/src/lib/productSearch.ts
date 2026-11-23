@@ -19,6 +19,7 @@
  */
 
 import { canonicalCategory } from "./categories.config";
+import { readScoped, removeScoped, writeScoped } from "./userScope";
 
 export const SYNONYM_GROUPS: string[][] = [
   ["chumba", "room", "rooms"],
@@ -33,7 +34,8 @@ export const SYNONYM_GROUPS: string[][] = [
   ["taa", "light", "lamp", "lights"],
   ["mlango", "door", "doors"],
   ["dirisha", "window", "windows"],
-  ["kupanga", "kodi", "rent", "rental"],
+  ["kupanga", "kodi", "kupangisha", "rent", "rental"],
+  ["kuuza", "inauzwa", "nunua", "sale", "buy"],
   ["apartment", "apato"],
   ["airbnb", "short stay", "stay"],
   ["self-contained", "self contained", "selfcontained"],
@@ -224,6 +226,20 @@ function scoreListing<T extends SearchListing>(
     if (loc === "exact" || loc === "prefix") base += 10;
     else if (synonymHit(word, locTokens)) base += 8;
   }
+  const deal = String((item as { fit?: { listing_type?: string } }).fit?.listing_type || "");
+  const home = canonicalCategory(item.category) === "rooms-houses";
+  for (const word of qTokens) {
+    const rentWord = word === "kodi" || word === "kupanga" || word === "kupangisha" || word === "rent" || word === "rental";
+    const saleWord = word === "kuuza" || word === "inauzwa" || word === "nunua" || word === "sale" || word === "buy";
+    if (rentWord && (deal === "rent" || (home && !deal))) {
+      base += 36;
+      exact = true;
+    }
+    if (saleWord && deal === "sale") {
+      base += 36;
+      exact = true;
+    }
+  }
   if (base <= 0) return null;
   let score = base;
   if (verified(item)) score += 8;
@@ -397,7 +413,7 @@ function splitMark(title: string, index: number, length: number): { text: string
 export function readRecent(): string[] {
   if (typeof localStorage === "undefined") return [];
   try {
-    const raw = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]") as unknown;
+    const raw = JSON.parse(readScoped("recent_search") || "[]") as unknown;
     return Array.isArray(raw) ? raw.filter((item): item is string => typeof item === "string").slice(0, 8) : [];
   } catch {
     return [];
@@ -409,17 +425,17 @@ export function rememberSearch(query: string): string[] {
   const current = readRecent();
   if (!text || typeof localStorage === "undefined") return current;
   const next = [text, ...current.filter((item) => item.toLowerCase() !== text.toLowerCase())].slice(0, 8);
-  localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  writeScoped("recent_search", JSON.stringify(next));
   return next;
 }
 
 export function removeRecent(query: string): string[] {
   const next = readRecent().filter((item) => item !== query);
-  if (typeof localStorage !== "undefined") localStorage.setItem(RECENT_KEY, JSON.stringify(next));
+  if (typeof localStorage !== "undefined") writeScoped("recent_search", JSON.stringify(next));
   return next;
 }
 
 export function clearRecent(): string[] {
-  if (typeof localStorage !== "undefined") localStorage.removeItem(RECENT_KEY);
+  if (typeof localStorage !== "undefined") removeScoped("recent_search");
   return [];
 }

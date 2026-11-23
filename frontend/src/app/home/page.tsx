@@ -5,8 +5,9 @@ import Link from "next/link";
 import FreshRail from "@/components/FreshRail";
 import HeroCarousel from "@/components/HeroCarousel";
 import PromoBanner from "@/components/PromoBanner";
-import { Bell, ChevronDown, MapPin, X } from "lucide-react";
+import { Bell, MapPin, X } from "lucide-react";
 import BottomSheet from "@/components/BottomSheet";
+import JengoLogo from "@/components/JengoLogo";
 import LocationSheet from "@/components/LocationSheet";
 import MenuButton from "@/components/MenuButton";
 import ListingBrowse from "@/components/ListingBrowse";
@@ -23,47 +24,26 @@ import { usePersistentScroll } from "@/lib/listSession";
 
 if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 });
 
-function HomeBar({ placeLabel, scoped, onLocate, onClear }: { placeLabel: string; scoped: boolean; onLocate: () => void; onClear: () => void }) {
+function HomeBar({ onHome }: { onHome: () => void }) {
   const t = useT();
   const inbox = useInboxLive();
   const [notes, setNotes] = useState(false);
 
   return (
-    <header className="home-appbar">
-      <MenuButton />
-      <button type="button" className="home-loc" onClick={onLocate}>
-        <MapPin size={18} aria-hidden />
-        <span>{placeLabel}</span>
-        {scoped ? (
-          <span
-            role="button"
-            tabIndex={0}
-            className="home-loc-x"
-            aria-label={t("loc.clear")}
-            onClick={(event) => {
-              event.stopPropagation();
-              onClear();
-            }}
-            onKeyDown={(event) => {
-              if (event.key !== "Enter" && event.key !== " ") return;
-              event.preventDefault();
-              event.stopPropagation();
-              onClear();
-            }}
-          >
-            <X size={14} />
-          </span>
-        ) : (
-          <ChevronDown size={16} aria-hidden />
-        )}
-      </button>
-      <div className="home-tools">
-        <button type="button" className="soft-icon-btn home-icon-btn" aria-label={t("notes")} onClick={() => setNotes(true)}>
-          <Bell size={18} />
-          {inbox.unread ? <span className="note-dot" /> : null}
+    <>
+      <header className="home-appbar">
+        <MenuButton />
+        <button type="button" className="home-brand" onClick={onHome} aria-label="Jengo">
+          <JengoLogo variant="wordmark" size={24} title="Jengo" />
         </button>
-        <InboxLink className="soft-icon-btn home-icon-btn" />
-      </div>
+        <div className="home-tools">
+          <button type="button" className="soft-icon-btn home-icon-btn" aria-label={t("notes")} onClick={() => setNotes(true)}>
+            <Bell size={18} />
+            {inbox.unread ? <span className="note-dot" /> : null}
+          </button>
+          <InboxLink className="soft-icon-btn home-icon-btn" />
+        </div>
+      </header>
       <BottomSheet open={notes} title={t("notes")} onClose={() => setNotes(false)}>
         {inbox.unread ? (
           <Link href="/messages" className="sheet-option" onClick={() => { inbox.clear(); setNotes(false); }}>
@@ -73,7 +53,7 @@ function HomeBar({ placeLabel, scoped, onLocate, onClear }: { placeLabel: string
           <p className="sheet-option">{t("notes.empty")}</p>
         )}
       </BottomSheet>
-    </header>
+    </>
   );
 }
 
@@ -84,6 +64,7 @@ export default function HomePage() {
   const [category, setCategory] = useState("");
   const [sheet, setSheet] = useState(false);
   const [place, setPlace] = useState("all");
+  const [deal, setDeal] = useState<"" | "rent" | "sale">("");
   const [locOpen, setLocOpen] = useState(false);
   const pendingQuery = useRef<string | null>(null);
   const [pool, setPool] = useState<Listing[] | null>(null);
@@ -93,9 +74,14 @@ export default function HomePage() {
   usePersistentScroll("cats", railRef, true);
 
   useEffect(() => {
+    const readType = (params: URLSearchParams) => {
+      const type = params.get("type");
+      return type === "rent" || type === "sale" ? type : "";
+    };
     const params = new URLSearchParams(window.location.search);
     setQuery(params.get("q") || "");
     setCategory(canonicalCategory(params.get("category")));
+    setDeal(readType(params));
     const onPop = () => {
       if (pendingQuery.current !== null) {
         const next = pendingQuery.current;
@@ -110,6 +96,7 @@ export default function HomePage() {
       const nextParams = new URLSearchParams(window.location.search);
       setQuery(nextParams.get("q") || "");
       setCategory(canonicalCategory(nextParams.get("category")));
+      setDeal(readType(nextParams));
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
@@ -122,11 +109,13 @@ export default function HomePage() {
     else url.searchParams.delete("q");
     if (category) url.searchParams.set("category", category);
     else url.searchParams.delete("category");
+    if (category === "rooms-houses" && deal) url.searchParams.set("type", deal);
+    else url.searchParams.delete("type");
     const next = `${url.pathname}${url.search}`;
     if (next !== `${window.location.pathname}${window.location.search}`) {
       window.history.replaceState(window.history.state, "", next);
     }
-  }, [query, category]);
+  }, [query, category, deal]);
 
   useEffect(() => {
     let gone = false;
@@ -146,6 +135,7 @@ export default function HomePage() {
     const root = document.documentElement;
     let last = window.scrollY;
     let hidden = false;
+    let down = 0;
     let fade = "";
     let greet = "";
     let stick = "";
@@ -154,11 +144,21 @@ export default function HomePage() {
     const apply = () => {
       raf = 0;
       const y = window.scrollY;
+      const delta = y - last;
       last = y;
+      if (y < 8) {
+        hidden = false;
+        down = 0;
+      } else if (delta > 0) {
+        down += delta;
+        if (down > 64) hidden = true;
+      } else if (delta < -24) {
+        hidden = false;
+        down = 0;
+      }
       const nextFade = y >= 40 ? "0" : String(Math.max(0, 1 - y / 40));
       const nextGreet = y > 40 ? "off" : "on";
       const nextStick = y > 8 ? "1" : "0";
-      hidden = false;
       const nextBar = hidden ? "hide" : "show";
       if (nextFade !== fade) {
         fade = nextFade;
@@ -183,14 +183,12 @@ export default function HomePage() {
     const reveal = () => {
       last = window.scrollY;
       hidden = false;
-      fade = "1";
-      greet = "on";
-      stick = window.scrollY > 8 ? "1" : "0";
-      bar = "show";
-      root.style.setProperty("--home-fade", fade);
-      root.dataset.homeGreet = greet;
-      root.dataset.homeStick = stick;
-      root.dataset.homeBar = bar;
+      down = 0;
+      fade = "";
+      greet = "";
+      stick = "";
+      bar = "";
+      apply();
     };
     apply();
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -240,6 +238,10 @@ export default function HomePage() {
     if (window.scrollY < 24) window.dispatchEvent(new Event("jengo-nav-show"));
   }, [locOpen]);
 
+  useEffect(() => {
+    window.dispatchEvent(new Event("jengo-nav-show"));
+  }, [place]);
+
   const hadCategory = useRef(false);
   useEffect(() => {
     if (category) {
@@ -254,7 +256,9 @@ export default function HomePage() {
   const restoreHome = () => {
     setQuery("");
     setCategory("");
+    setDeal("");
     window.dispatchEvent(new Event("jengo-results-clear"));
+    window.dispatchEvent(new Event("jengo-nav-show"));
   };
 
   const placeLabel = place === "near" ? t("near") : place !== "all" ? place : t("region.all");
@@ -273,14 +277,39 @@ export default function HomePage() {
 
   return (
     <main className="home-settle min-h-screen">
-      <HomeBar placeLabel={placeLabel} scoped={place !== "all"} onLocate={() => setLocOpen(true)} onClear={clearPlace} />
+      <HomeBar onHome={() => { restoreHome(); window.scrollTo({ top: 0, behavior: "smooth" }); }} />
 
       <div className="canvas home-body">
         <div className="home-top">
         <h1 className="home-line">
           {t("home.line.before")}<em>{t("home.line.accent")}</em>{t("home.line.after")}
         </h1>
+        </div>
         <div className="home-search-stick">
+          <button type="button" className="home-loc-pill" onClick={() => setLocOpen(true)}>
+            <MapPin size={16} aria-hidden />
+            <span>{placeLabel}</span>
+            {place !== "all" ? (
+              <span
+                role="button"
+                tabIndex={0}
+                className="home-loc-x"
+                aria-label={t("loc.clear")}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  clearPlace();
+                }}
+                onKeyDown={(event) => {
+                  if (event.key !== "Enter" && event.key !== " ") return;
+                  event.preventDefault();
+                  event.stopPropagation();
+                  clearPlace();
+                }}
+              >
+                <X size={14} />
+              </span>
+            ) : null}
+          </button>
           <ProductSearch
             query={query || ""}
             listings={pool?.length ? pool : items}
@@ -297,7 +326,6 @@ export default function HomePage() {
             }}
           />
         </div>
-        </div>
 
         <div ref={railRef}>
           <CategoryGrid
@@ -306,7 +334,11 @@ export default function HomePage() {
             onSheet={setSheet}
             onFilter={(id) => {
               if (!isFilterTile(id)) return;
-              setCategory((cur) => (cur === id ? "" : id));
+              setCategory((cur) => {
+                const next = cur === id ? "" : id;
+                if (next !== "rooms-houses") setDeal("");
+                return next;
+              });
             }}
           />
           {category ? (
@@ -316,6 +348,22 @@ export default function HomePage() {
                 <X size={14} aria-hidden />
                 {t("clear")}
               </button>
+            </div>
+          ) : null}
+          {category === "rooms-houses" ? (
+            <div className="deal-switch" role="tablist" aria-label={t("deal.rent")}>
+              {(["", "rent", "sale"] as const).map((key) => (
+                <button
+                  key={key || "all"}
+                  type="button"
+                  role="tab"
+                  aria-selected={deal === key}
+                  className={deal === key ? "is-on" : ""}
+                  onClick={() => setDeal(key)}
+                >
+                  {t(key === "rent" ? "deal.rent" : key === "sale" ? "deal.sale" : "deal.all")}
+                </button>
+              ))}
             </div>
           ) : null}
         </div>
@@ -338,7 +386,11 @@ export default function HomePage() {
               setQuery("");
               setCategory("");
             }}
-            onClearCategory={() => setCategory("")}
+            deal={deal}
+            onClearCategory={() => {
+              setCategory("");
+              setDeal("");
+            }}
             onRefresh={() => { void refresh(); }}
             beforeFeed={(list, region) => {
               const where = region === "near" ? t("near") : region;

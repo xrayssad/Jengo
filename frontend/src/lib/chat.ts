@@ -1,12 +1,13 @@
+import { readScoped, writeScoped } from "./userScope";
+
 export type ChatMsg = { id: string; text: string; mine: boolean; at: string };
 
-const key = (listingId: string) => `jengo_chat_${listingId}`;
-const INDEX = "jengo_chat_index";
+const threadKey = (listingId: string) => `chat:${listingId}`;
 
 export function readChat(listingId: string): ChatMsg[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(key(listingId));
+    const raw = readScoped(threadKey(listingId));
     const arr = raw ? JSON.parse(raw) : [];
     return Array.isArray(arr) ? arr : [];
   } catch {
@@ -23,10 +24,10 @@ export function sendChat(listingId: string, text: string, title: string) {
   };
   const all = readChat(listingId);
   all.push(msg);
-  localStorage.setItem(key(listingId), JSON.stringify(all));
+  writeScoped(threadKey(listingId), JSON.stringify(all));
   const idx = readIndex().filter((x) => x.listing_id !== listingId);
   idx.unshift({ listing_id: listingId, title, last: text, at: msg.at });
-  localStorage.setItem(INDEX, JSON.stringify(idx.slice(0, 50)));
+  writeScoped("chat_index", JSON.stringify(idx.slice(0, 50)));
   return all;
 }
 
@@ -35,7 +36,7 @@ export type ChatIndex = { listing_id: string; title: string; last: string; at: s
 export function readIndex(): ChatIndex[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(INDEX);
+    const raw = readScoped("chat_index");
     const arr = raw ? JSON.parse(raw) : [];
     return Array.isArray(arr) ? arr : [];
   } catch {

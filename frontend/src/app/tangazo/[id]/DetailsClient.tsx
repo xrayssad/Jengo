@@ -31,8 +31,9 @@ import { useT } from "@/lib/i18n";
 import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
 import AmenityRow from "@/components/AmenityRow";
 import ListingFacts, { shareText } from "@/components/ListingFacts";
-import PlotDetail from "@/components/PlotDetail";
-import { canonicalCategory } from "@/lib/categories.config";
+import PlotDetail, { HomeSaleDetail } from "@/components/PlotDetail";
+import PriceBreakdown from "@/components/PriceBreakdown";
+import { canonicalCategory, dealOf } from "@/lib/categories.config";
 import SaveButton from "@/components/SaveButton";
 import SocialActions from "@/components/SocialActions";
 import PhotoGallery from "@/components/PhotoGallery";
@@ -555,7 +556,9 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
                   <p className="detail-price">
                     TZS {formatPrice(item.price)}
                     <span className="detail-unit">
-                      {item.category === "vifaa"
+                      {canonicalCategory(item.category) === "rooms-houses" && dealOf(item) === "sale"
+                        ? t("deal.saleTag")
+                        : item.category === "vifaa"
                         ? listingUnit(item)
                           ? `/ ${unitLabel(listingUnit(item))}`
                           : ""
@@ -588,6 +591,8 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
             <AmenityRow item={item} />
             <ListingFacts item={item} />
             {canonicalCategory(item.category) === "plots" ? <PlotDetail item={item} /> : null}
+            {canonicalCategory(item.category) === "rooms-houses" && dealOf(item) === "sale" ? <HomeSaleDetail item={item} /> : null}
+            {canonicalCategory(item.category) === "rooms-houses" && dealOf(item) !== "sale" ? <PriceBreakdown item={item} /> : null}
             <div className="seller-card">
               <PosterName item={item} />
             </div>
@@ -659,7 +664,9 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
             <div className="detail-cta-price">
               <strong>TZS {formatPrice(item.price)}</strong>
               <span>
-                {item.category === "vifaa"
+                {canonicalCategory(item.category) === "rooms-houses" && dealOf(item) === "sale"
+                  ? t("deal.saleTag")
+                  : item.category === "vifaa"
                   ? listingUnit(item)
                     ? `/ ${unitLabel(listingUnit(item))}`
                     : ""

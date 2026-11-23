@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { readScoped } from "@/lib/userScope";
 
 export default function DisplayName() {
   const [name, setName] = useState("");
   useEffect(() => {
-    setName(localStorage.getItem("jengo_profile_name") || "");
+    setName(readScoped("profile_name") || "");
   }, []);
 
   return (

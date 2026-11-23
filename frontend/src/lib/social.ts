@@ -1,8 +1,6 @@
 import type { Listing, Reel } from "@/lib/api";
 import { queueInstallNudge } from "@/lib/install";
-
-const LIKED = "jengo_liked_ids";
-const SAVED = "jengo_saved_posts";
+import { readScoped, writeScoped } from "@/lib/userScope";
 
 export type SavedPost = {
   id: string;
@@ -26,7 +24,7 @@ export type SavedPost = {
 
 function readJson<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
+    const raw = readScoped(key);
     return raw ? JSON.parse(raw) : fallback;
   } catch {
     return fallback;
@@ -34,17 +32,17 @@ function readJson<T>(key: string, fallback: T): T {
 }
 
 export function isLiked(id: string): boolean {
-  return readJson<string[]>(LIKED, []).includes(id);
+  return readJson<string[]>("liked", []).includes(id);
 }
 
 export function setLiked(id: string, on: boolean) {
-  const cur = readJson<string[]>(LIKED, []).filter((x) => x !== id);
+  const cur = readJson<string[]>("liked", []).filter((x) => x !== id);
   if (on) cur.unshift(id);
-  localStorage.setItem(LIKED, JSON.stringify(cur.slice(0, 500)));
+  writeScoped("liked", JSON.stringify(cur.slice(0, 500)));
 }
 
 export function isSaved(id: string): boolean {
-  return readJson<SavedPost[]>(SAVED, []).some((p) => p.id === id);
+  return readJson<SavedPost[]>("saved", []).some((p) => p.id === id);
 }
 
 export function toggleSaved(item: Listing): boolean {
@@ -81,11 +79,11 @@ export function toggleSavedReel(item: Reel): boolean {
 }
 
 function writeSaved(item: SavedPost): boolean {
-  const cur = readJson<SavedPost[]>(SAVED, []);
+  const cur = readJson<SavedPost[]>("saved", []);
   const exists = cur.some((p) => p.id === item.id);
   const firstListing = !exists && cur.length === 0 && item.kind !== "reel";
   const next = exists ? cur.filter((p) => p.id !== item.id) : [item, ...cur];
-  localStorage.setItem(SAVED, JSON.stringify(next.slice(0, 200)));
+  writeScoped("saved", JSON.stringify(next.slice(0, 200)));
   if (firstListing) queueInstallNudge("save");
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("jengo-saved"));
@@ -94,5 +92,5 @@ function writeSaved(item: SavedPost): boolean {
 }
 
 export function readSaved(): SavedPost[] {
-  return readJson<SavedPost[]>(SAVED, []);
+  return readJson<SavedPost[]>("saved", []);
 }

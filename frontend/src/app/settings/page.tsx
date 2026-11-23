@@ -8,6 +8,7 @@ import ThemeToggle from "@/components/ThemeToggle";
 import { LangDrawer } from "@/components/HeaderTools";
 import { InstallMenuItem, useInstallPrompt } from "@/components/InstallUI";
 import { clearAuth } from "@/lib/api";
+import { readScoped, writeScoped } from "@/lib/userScope";
 import { useT } from "@/lib/i18n";
 import { haptic, hapticPref, setHapticPref } from "@/lib/motion";
 import BottomSheet from "@/components/BottomSheet";
@@ -26,7 +27,7 @@ export default function SettingsPage() {
   const [account, setAccount] = useState(false);
 
   useEffect(() => {
-    setName(localStorage.getItem(KEY) || "");
+    setName(readScoped("profile_name") || "");
     setHaptics(hapticPref());
   }, []);
 
@@ -51,7 +52,7 @@ export default function SettingsPage() {
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    localStorage.setItem(KEY, name.trim());
+    writeScoped("profile_name", name.trim());
     setSaved(true);
   };
 

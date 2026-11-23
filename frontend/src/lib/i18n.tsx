@@ -3,18 +3,19 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import en from "@/locales/en.json";
 import sw from "@/locales/sw.json";
+import { readScoped, writeScoped } from "./userScope";
 
 export const LANG_KEY = "jengo_lang";
 export type Lang = "en" | "sw";
 
 const dictionaries: Record<Lang, Record<string, string>> = { en, sw };
 
-export const LANG_BOOT = `(function(){try{var k="${LANG_KEY}";var s=localStorage.getItem(k);var nav=(navigator.languages&&navigator.languages[0])||navigator.language||"";var l=s==="sw"||s==="en"?s:(String(nav).toLowerCase().indexOf("sw")===0?"sw":"en");document.documentElement.lang=l==="sw"?"sw":"en";document.documentElement.setAttribute("data-lang",l)}catch(e){}})();`;
+export const LANG_BOOT = `(function(){try{var id="guest";var raw=localStorage.getItem("jengo_user");if(raw){var u=JSON.parse(raw);if(u&&u.user_id)id=u.user_id}var s=localStorage.getItem("jengo:"+id+":lang");if(s==null&&id==="guest")s=localStorage.getItem("${LANG_KEY}");var nav=(navigator.languages&&navigator.languages[0])||navigator.language||"";var l=s==="sw"||s==="en"?s:(String(nav).toLowerCase().indexOf("sw")===0?"sw":"en");document.documentElement.lang=l==="sw"?"sw":"en";document.documentElement.setAttribute("data-lang",l)}catch(e){}})();`;
 
 export function detectLang(): Lang {
   if (typeof window === "undefined") return "en";
   try {
-    const saved = localStorage.getItem(LANG_KEY);
+    const saved = readScoped("lang");
     if (saved === "en" || saved === "sw") return saved;
   } catch {
     /* ignore */
@@ -49,16 +50,26 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<Lang>("en");
 
   useEffect(() => {
-    const next = detectLang();
-    setLangState(next);
-    document.documentElement.lang = next === "sw" ? "sw" : "en";
-    document.documentElement.setAttribute("data-lang", next);
+    const apply = () => {
+      const next = detectLang();
+      setLangState(next);
+      document.documentElement.lang = next === "sw" ? "sw" : "en";
+      document.documentElement.setAttribute("data-lang", next);
+    };
+    apply();
+    window.addEventListener("jengo-user-reset", apply);
+    window.addEventListener("jengo-prefs", apply);
+    return () => {
+      window.removeEventListener("jengo-user-reset", apply);
+      window.removeEventListener("jengo-prefs", apply);
+    };
   }, []);
 
   const setLang = (next: Lang) => {
     setLangState(next);
     try {
-      localStorage.setItem(LANG_KEY, next);
+      writeScoped("lang", next);
+      void import("./api").then((api) => api.pushPreferences({ language: next }));
     } catch {
       /* ignore */
     }

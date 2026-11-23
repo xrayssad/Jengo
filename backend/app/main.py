@@ -4,12 +4,13 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, File, HTTPException, Request, UploadFile
+from fastapi import Depends, FastAPI, File, HTTPException, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from app import cloudinary_media, fit, jobs, mqtt_bus, phone_auth, places, posts, reels, social, trust
 from app.fit import merge_body_fit
+from app.prefs import merge_preferences, sanitize_preferences
 from app.pricing import clean_fit, is_stale
 from app.uploads import save_listing_photo
 from app.security import (
@@ -51,6 +52,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_PRIVATE_PREFIXES = ("/auth", "/inbox", "/bookings", "/admin", "/reviews", "/uploads")
+
+
+@app.middleware("http")
+async def private_user_cache(request: Request, call_next):
+    response = await call_next(request)
+    path = request.url.path
+    mine = request.query_params.get("mine") in {"1", "true", "True"}
+    if mine or any(path == prefix or path.startswith(prefix + "/") or path.startswith(prefix) for prefix in _PRIVATE_PREFIXES):
+        response.headers["Cache-Control"] = "private, no-store"
+        vary = response.headers.get("Vary")
+        response.headers["Vary"] = f"{vary}, Authorization, Cookie" if vary else "Authorization, Cookie"
+    return response
 
 UNITS = {"mfuko", "tani", "kipande", "dei"}
 
@@ -971,6 +986,41 @@ def auth_refresh(body: RefreshIn):
     return profile_from_session(user, session)
 
 
+class PreferencesIn(BaseModel):
+    region: str | None = None
+    language: str | None = None
+    theme: str | None = None
+    notifications: bool | None = None
+
+
+def _prefs_of(user_id: str) -> dict:
+    row = profile_of(user_id) or {}
+    raw = row.get("preferences")
+    return sanitize_preferences(raw if isinstance(raw, dict) else {})
+
+
+def _prefs_missing(exc: Exception) -> bool:
+    msg = str(exc).lower()
+    return "column" in msg or "pgrst204" in msg or "schema cache" in msg or "does not exist" in msg
+
+
+@app.get("/auth/preferences")
+def get_preferences(user=Depends(current_user)):
+    return _prefs_of(user.id)
+
+
+@app.put("/auth/preferences")
+def put_preferences(body: PreferencesIn, user=Depends(current_user)):
+    patch = body.model_dump(exclude_unset=True)
+    merged = merge_preferences(_prefs_of(user.id), patch)
+    try:
+        db().table("profiles").update({"preferences": merged}).eq("id", user.id).execute()
+    except Exception as exc:
+        if not _prefs_missing(exc):
+            raise
+    return merged
+
+
 @app.get("/auth/me")
 def me(user=Depends(current_user)):
     return public_profile(user)
@@ -1203,6 +1253,7 @@ def list_listings(
     sort: str = "new",
     mine: bool = False,
     limit: int = 40,
+    deal: str | None = Query(None, alias="type"),
 ):
     cap = max(1, min(int(limit or 40), 300 if mine else 100))
     if mine:
@@ -1249,6 +1300,8 @@ def list_listings(
             trust.attach_week_views(items)
         except Exception:
             pass
+    if deal in {"rent", "sale", "lease"}:
+        items = [item for item in items if str((item.get("fit") or {}).get("listing_type") or "") == deal]
     return {"items": items}
 
 
@@ -1289,11 +1342,15 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
     if body.stock is not None and body.stock < 0:
         raise HTTPException(status_code=400, detail="Invalid stock")
     if body.category == PLOTS:
-        if len([img for img in body.images if img]) < 4:
-            raise HTTPException(status_code=400, detail="Add the road, overall, boundary and landmark photos")
+        if len([img for img in body.images if img]) < 1:
+            raise HTTPException(status_code=400, detail="Add at least one photo")
         if body.lat is None or body.lng is None:
             raise HTTPException(status_code=400, detail="Add a map pin for the plot")
+    if len([img for img in body.images if img]) < 1:
+        raise HTTPException(status_code=400, detail="Add at least one photo")
     period = "" if body.category in {"vifaa", PLOTS} else body.period
+    if body.category == "rooms-houses" and str((body.attributes or {}).get("listing_type") or "") == "sale":
+        period = ""
     if body.category == "vifaa":
         period = unit or ""
     phones = _clean_phones(body.phones, body.phone)
@@ -1324,7 +1381,7 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         "period": period,
         "location": body.location.strip()[:200],
         "city": (body.city or "").strip()[:80],
-        "images": body.images[:6],
+        "images": body.images[:20],
         "status": "active",
         "verified": False,
         "likes_count": 0,
