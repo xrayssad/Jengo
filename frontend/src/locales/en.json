@@ -100,6 +100,7 @@
   "geo.map": "Map",
   "geo.nearPoor": "Accuracy is about ±{n} m, so nearby results may cover a wider area.",
   "geo.searchPlace": "Search a street, area, or landmark",
+  "geo.dragHint": "Drag the pin if this is not the right place.",
   "geo.find": "Search",
   "loc.recent": "Recent",
   "loc.popular": "Popular",

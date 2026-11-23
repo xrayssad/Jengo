@@ -59,6 +59,41 @@ test("watchPosition keeps the best fix and stops at the target accuracy", async 
   assert.equal(cleared, 7);
 });
 
+test("a watch timeout does not throw away a later fix", async () => {
+  const modes: boolean[] = [];
+  const watch: GeoWatch = {
+    watchPosition(success, error, options) {
+      modes.push(options.enableHighAccuracy);
+      if (options.enableHighAccuracy) {
+        queueMicrotask(() => {
+          error({ code: 3 });
+          success({ coords: { latitude: -6.7924, longitude: 39.2083, accuracy: 36 }, timestamp: 4 });
+        });
+      }
+      return modes.length;
+    },
+    clearWatch() {},
+  };
+  const result = await getPreciseLocation({ watch, targetAccuracyM: 50, timeoutMs: 1000, secure: true });
+  assert.equal(result.accuracy, 36);
+  assert.equal(result.lat, roundCoord(-6.7924));
+  assert.deepEqual(modes, [true, false]);
+});
+
+test("permission denied rejects when nothing has been found", async () => {
+  const watch: GeoWatch = {
+    watchPosition(_success, error) {
+      queueMicrotask(() => error({ code: 1 }));
+      return 2;
+    },
+    clearWatch() {},
+  };
+  await assert.rejects(
+    getPreciseLocation({ watch, secure: true, timeoutMs: 1000 }),
+    (err: { code?: number }) => err.code === 1,
+  );
+});
+
 test("a timeout returns the best fix collected so far", async () => {
   const watch: GeoWatch = {
     watchPosition(success) {

@@ -119,13 +119,21 @@ function clean(value?: string) {
   return text;
 }
 
+type GeoPosition = { coords: { latitude: number; longitude: number; accuracy: number }; timestamp: number };
+type GeoOptions = { enableHighAccuracy: boolean; maximumAge: number; timeout: number };
+
 export type GeoWatch = {
   watchPosition: (
-    success: (pos: { coords: { latitude: number; longitude: number; accuracy: number }; timestamp: number }) => void,
+    success: (pos: GeoPosition) => void,
     error: (err: { code?: number }) => void,
-    options: { enableHighAccuracy: boolean; maximumAge: number; timeout: number },
+    options: GeoOptions,
   ) => number;
   clearWatch: (id: number) => void;
+  getCurrentPosition?: (
+    success: (pos: GeoPosition) => void,
+    error: (err: { code?: number }) => void,
+    options: GeoOptions,
+  ) => void;
 };
 
 export function getPreciseLocation({
@@ -152,13 +160,14 @@ export function getPreciseLocation({
       return;
     }
     let best: PreciseFix | null = null;
-    let watchId = 0;
     let timer: ReturnType<typeof globalThis.setTimeout> | undefined;
     let settled = false;
+    let lowStarted = false;
+    const ids: number[] = [];
     const stop = () => {
       settled = true;
       if (timer) globalThis.clearTimeout(timer);
-      if (watchId) geo.clearWatch(watchId);
+      for (const id of ids.splice(0)) geo.clearWatch(id);
     };
     const succeed = (fix: PreciseFix) => {
       if (settled) return;
@@ -173,25 +182,41 @@ export function getPreciseLocation({
         reject(err);
       }
     };
-    watchId = geo.watchPosition(
-      (pos) => {
-        if (settled) return;
-        const next: PreciseFix = {
-          lat: roundCoord(pos.coords.latitude),
-          lng: roundCoord(pos.coords.longitude),
-          accuracy: pos.coords.accuracy,
-          timestamp: pos.timestamp || Date.now(),
-        };
-        best = pickBestFix(best, next);
-        onFix?.(best);
-        writeGeoLog({ lat: best.lat, lng: best.lng, order: "lat,lng", accuracy: best.accuracy, source: "gps", at: best.timestamp });
-        if (best.accuracy <= targetAccuracyM) succeed(best);
-      },
-      (err) => fail(err),
-      { enableHighAccuracy: true, maximumAge: 0, timeout: timeoutMs },
-    );
+    const take = (pos: { coords: { latitude: number; longitude: number; accuracy: number }; timestamp: number }) => {
+      if (settled) return;
+      const next: PreciseFix = {
+        lat: roundCoord(pos.coords.latitude),
+        lng: roundCoord(pos.coords.longitude),
+        accuracy: pos.coords.accuracy,
+        timestamp: pos.timestamp || Date.now(),
+      };
+      best = pickBestFix(best, next);
+      onFix?.(best);
+      writeGeoLog({ lat: best.lat, lng: best.lng, order: "lat,lng", accuracy: best.accuracy, source: "gps", at: best.timestamp });
+      if (best.accuracy <= targetAccuracyM) succeed(best);
+    };
+    const listen = (high: boolean) => {
+      const id = geo.watchPosition(
+        take,
+        (err) => {
+          if (settled) return;
+          if (err?.code === 1) {
+            fail(err);
+            return;
+          }
+          if (high && !lowStarted) {
+            lowStarted = true;
+            listen(false);
+          }
+        },
+        { enableHighAccuracy: high, maximumAge: 0, timeout: timeoutMs },
+      );
+      ids.push(id);
+      if (settled) geo.clearWatch(id);
+    };
+    listen(true);
+    geo.getCurrentPosition?.(take, () => {}, { enableHighAccuracy: false, maximumAge: 0, timeout: timeoutMs });
     timer = globalThis.setTimeout(() => fail(Object.assign(new Error("timeout"), { code: 3 })), timeoutMs);
-    if (settled && watchId) geo.clearWatch(watchId);
   });
 }
 

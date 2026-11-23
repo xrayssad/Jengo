@@ -100,6 +100,7 @@
   "geo.map": "Ramani",
   "geo.nearPoor": "Usahihi ni takriban ±{n} m, kwa hiyo matangazo ya karibu yanaweza kuwa mapana.",
   "geo.searchPlace": "Tafuta mtaa, eneo, au alama",
+  "geo.dragHint": "Sogeza pini ikiwa hapa si mahali sahihi.",
   "geo.find": "Tafuta",
   "loc.recent": "Za hivi karibuni",
   "loc.popular": "Maarufu",

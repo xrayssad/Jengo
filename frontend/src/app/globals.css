@@ -6163,10 +6163,10 @@ html[data-nav="away"] {
 }
 
 .drawer-panel {
-  --drawer-bg: #E4EBD6;
-  --drawer-ink: var(--text);
-  --drawer-muted: #5A5F45;
-  --drawer-bar: var(--accent);
+  --drawer-bg: #D5E6C2;
+  --drawer-ink: #2B2619;
+  --drawer-muted: #3E4A32;
+  --drawer-bar: #4F5A3A;
   position: absolute;
   top: 0;
   bottom: 0;
@@ -6183,10 +6183,10 @@ html[data-nav="away"] {
 }
 
 html[data-theme="dark"] .drawer-panel {
-  --drawer-bg: #1A2B21;
-  --drawer-ink: #E8EFE2;
-  --drawer-muted: #C9D5C4;
-  --drawer-bar: #D4A95A;
+  --drawer-bg: #D5E6C2;
+  --drawer-ink: #2B2619;
+  --drawer-muted: #3E4A32;
+  --drawer-bar: #4F5A3A;
 }
 
 .drawer-head {
@@ -6194,13 +6194,13 @@ html[data-theme="dark"] .drawer-panel {
   align-items: center;
   gap: 12px;
   padding: calc(20px + env(safe-area-inset-top)) 16px 16px;
-  background: linear-gradient(180deg, #D3E0BF, #C4D5AA);
-  color: var(--text);
+  background: linear-gradient(180deg, #C5DAA8, #B3CE90);
+  color: #2B2619;
 }
 
 html[data-theme="dark"] .drawer-head {
-  background: linear-gradient(180deg, #223829, #2D4634);
-  color: #E8EFE2;
+  background: linear-gradient(180deg, #C5DAA8, #B3CE90);
+  color: #2B2619;
 }
 
 .drawer-avatar {
@@ -6217,9 +6217,9 @@ html[data-theme="dark"] .drawer-head {
 }
 
 html[data-theme="dark"] .drawer-avatar {
-  border-color: #D4A95A;
-  background: rgba(212, 169, 90, 0.16);
-  color: #E8EFE2;
+  border-color: #4F5A3A;
+  background: rgba(79, 90, 58, 0.14);
+  color: #4F5A3A;
 }
 
 .drawer-id {
@@ -6248,11 +6248,11 @@ html[data-theme="dark"] .drawer-avatar {
 }
 
 .drawer-head .drawer-role {
-  color: #4A4F38;
+  color: #3E4A32;
 }
 
 html[data-theme="dark"] .drawer-head .drawer-role {
-  color: #D5E0D0;
+  color: #3E4A32;
 }
 
 .drawer-guest {
@@ -6288,13 +6288,14 @@ html[data-theme="dark"] .drawer-head .drawer-role {
 }
 
 .drawer-row.is-on {
-  background: #D3DEBF;
-  border-left-color: var(--drawer-bar, var(--accent));
+  background: #C8DEB0;
+  border-left-color: var(--drawer-bar, #4F5A3A);
   font-weight: 600;
 }
 
 html[data-theme="dark"] .drawer-row.is-on {
-  background: #2B4533;
+  background: #C8DEB0;
+  color: #2B2619;
 }
 
 .drawer-ico {
@@ -6311,8 +6312,8 @@ html[data-theme="dark"] .drawer-row.is-on {
 }
 
 html[data-theme="dark"] .drawer-ico {
-  background: rgba(232, 239, 226, 0.12);
-  color: #E8EFE2;
+  background: rgba(79, 90, 58, 0.14);
+  color: #4F5A3A;
 }
 
 .drawer-label {
@@ -6346,7 +6347,7 @@ html[data-theme="dark"] .drawer-ico {
 }
 
 .drawer-row.is-out {
-  color: var(--primary);
+  color: #4F5A3A;
 }
 
 .drawer-version {

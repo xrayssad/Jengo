@@ -9,6 +9,7 @@ import {
   debugGeoEnabled,
   getPreciseLocation,
   inTanzania,
+  KNOWN_POINTS,
   needsLandmark,
   reverseGeocode,
   roundCoord,
@@ -215,7 +216,10 @@ export default function PlacePicker({
     }, 600);
   };
 
-  const showMap = pin || (value.lat != null && value.lng != null);
+  const pinned = value.lat != null && value.lng != null;
+  const showMap = pin || pinned;
+  const mapLat = pinned ? value.lat! : KNOWN_POINTS["Dar es Salaam"].lat;
+  const mapLng = pinned ? value.lng! : KNOWN_POINTS["Dar es Salaam"].lng;
   const fallback = needsLandmark(value.location);
 
   return (
@@ -283,23 +287,27 @@ export default function PlacePicker({
           {(warn === t("geo.poor") || warn === t("geo.coarse")) ? <p className="wizard-tip">{t("geo.poorSteps")}</p> : null}
         </div>
       ) : null}
-      {showMap && value.lat != null && value.lng != null ? (
+      {showMap ? (
         <div className="mt-3 overflow-hidden" style={{ borderRadius: 18 }}>
           <MapPreview
-            lat={value.lat}
-            lng={value.lng}
+            lat={mapLat}
+            lng={mapLng}
             draggable
-            accuracyM={accuracy ?? value.accuracy_m ?? undefined}
+            accuracyM={pinned ? (accuracy ?? value.accuracy_m ?? undefined) : undefined}
             onMove={movePin}
           />
-          <button
-            type="button"
-            className="btn-primary sheet-submit"
-            style={{ marginTop: 8 }}
-            onClick={() => apply({ ...valueRef.current, confirmed: true })}
-          >
-            {value.confirmed ? t("geo.confirmed") : t("geo.confirm")}
-          </button>
+          {pinned ? (
+            <button
+              type="button"
+              className="btn-primary sheet-submit"
+              style={{ marginTop: 8 }}
+              onClick={() => apply({ ...valueRef.current, confirmed: true })}
+            >
+              {value.confirmed ? t("geo.confirmed") : t("geo.confirm")}
+            </button>
+          ) : (
+            <p className="wizard-tip">{t("geo.dragHint")}</p>
+          )}
         </div>
       ) : null}
       {fallback ? (
