@@ -199,6 +199,9 @@ def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True
         ("delivery_note", 160),
         ("ceiling", 40),
         ("license_note", 160),
+        ("frontage", 80),
+        ("market_name", 80),
+        ("frame_size", 40),
         ("reply_within", 12),
     ):
         text = _text(src.get(key), limit)

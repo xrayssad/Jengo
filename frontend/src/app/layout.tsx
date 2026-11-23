@@ -24,7 +24,7 @@ const sourceSans = Source_Sans_3({
 
 export const metadata: Metadata = {
   title: "Jengo",
-  description: "Rooms & Houses, Apartment & Airbnb, Shops Store & Godown, Shop Frames and Building Materials",
+  description: "Rooms & Houses, Apartment & Airbnb, Shop Frames and Building Materials",
   applicationName: "Jengo",
   appleWebApp: { capable: true, title: "Jengo", statusBarStyle: "black-translucent" },
   icons: {
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Jengo",
-    description: "Rooms & Houses, Apartment & Airbnb, Shops Store & Godown, Shop Frames and Building Materials",
+    description: "Rooms & Houses, Apartment & Airbnb, Shop Frames and Building Materials",
     images: [{ url: "/og.png", width: 1200, height: 630, alt: "Jengo" }],
   },
 };

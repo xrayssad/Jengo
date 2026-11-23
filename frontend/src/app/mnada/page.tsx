@@ -22,7 +22,7 @@ export default function MnadaPage() {
         <div className="empty-panel">
           <Gavel size={32} color="var(--caramel)" className="mx-auto mb-3" />
           <p className="lead">This service has not started</p>
-          <p className="hint">Jengo is rooms, houses, apartments, stores and shop frames.</p>
+          <p className="hint">Jengo is rooms, houses, apartments and shop frames.</p>
           <Link href="/home" className="btn-primary inline-block mt-4 px-6 py-3 text-sm">
             Back to Home
           </Link>

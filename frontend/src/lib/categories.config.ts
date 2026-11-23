@@ -1,6 +1,6 @@
 /** One description of every category. Home tiles, wizard, cards and filters read this. */
 
-export type CategoryId = "rooms-houses" | "apartment_airbnb" | "store_godown" | "frame" | "plots" | "vifaa";
+export type CategoryId = "rooms-houses" | "apartment_airbnb" | "store_godown" | "plots" | "vifaa";
 
 export type PhotoSlot = { id: string; en: string; sw: string; required: boolean };
 
@@ -105,10 +105,10 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
   },
   store_godown: {
     id: "store_godown",
-    en: "Shops, Store & Godown",
-    sw: "Maduka, stoo na godown",
-    short: { en: "Shops", sw: "Maduka" },
-    hint: { en: "A shop, store or warehouse", sw: "Duka, stoo au ghala" },
+    en: "Shop Frames",
+    sw: "Shop Frames",
+    short: { en: "Shop Frames", sw: "Shop Frames" },
+    hint: { en: "A shop frame in a market", sw: "A shop frame in a market" },
     dueKey: "start",
     photos: [
       { id: "facade", en: "Front", sw: "Mbele", required: true },
@@ -119,25 +119,6 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     safety: {
       en: "Check the size, access road and what goods are allowed before you pay.",
       sw: "Angalia ukubwa, njia na bidhaa zinazoruhusiwa kabla hujalipa.",
-    },
-    filters: ["direct", "free_viewing", "costs"],
-  },
-  frame: {
-    id: "frame",
-    en: "Shop Frames",
-    sw: "Fremu za maduka",
-    short: { en: "Frames", sw: "Fremu" },
-    hint: { en: "A frame inside a market", sw: "Fremu ndani ya soko" },
-    dueKey: "start",
-    photos: [
-      { id: "facade", en: "Front", sw: "Mbele", required: true },
-      { id: "interior", en: "Interior", sw: "Ndani", required: true },
-      { id: "sign", en: "Signboard", sw: "Bango", required: false },
-    ],
-    photoTip: daylight,
-    safety: {
-      en: "Ask what the goodwill is for, and do not pay a viewing fee.",
-      sw: "Uliza goodwill ni ya nini, wala usilipe ada ya kuona.",
     },
     filters: ["direct", "free_viewing", "costs"],
   },
@@ -215,6 +196,11 @@ export const LEGACY_CATEGORY: Record<string, CategoryId> = {
   chumba: "rooms-houses",
   vyumba: "rooms-houses",
   vyumba_na_nyumba: "rooms-houses",
+  frame: "store_godown",
+  frames: "store_godown",
+  fremu: "store_godown",
+  shop: "store_godown",
+  shops: "store_godown",
 };
 
 export type TileAction = "filter" | "route" | "sheet";
@@ -231,8 +217,7 @@ export const HOME_TILES: HomeTile[] = [
   { id: "rooms-houses", action: "filter", icon: "home" },
   { id: "apartment_airbnb", action: "filter", icon: "building" },
   { id: "plots", action: "filter", icon: "land" },
-  { id: "store_godown", action: "filter", icon: "warehouse" },
-  { id: "frame", action: "filter", icon: "store" },
+  { id: "store_godown", action: "filter", icon: "store" },
   { id: "vifaa", action: "filter", icon: "boxes" },
   { id: "jobs", action: "route", href: "/kazi", icon: "hammer" },
   { id: "all", action: "sheet", icon: "all" },
@@ -262,7 +247,7 @@ export const MAX_PHOTOS = 20;
 
 export type Deal = "rent" | "sale" | "lease";
 
-/** Homes are live. Shops, frames and godowns stay rent-only until their sale flow is turned on. */
+/** Homes are live. Shop frames stay rent-only until their sale flow is turned on. */
 export function liveDeals(id?: string | null): Deal[] {
   const key = canonicalCategory(id);
   if (key === "rooms-houses") return ["rent", "sale"];

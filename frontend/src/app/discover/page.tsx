@@ -10,8 +10,7 @@ const chips = [
   { id: "", label: "All" },
   { id: "rooms-houses", label: "Rooms & Houses" },
   { id: "apartment_airbnb", label: "Apartment & Airbnb" },
-  { id: "store_godown", label: "Shops Store & Godown" },
-  { id: "frame", label: "Shop Frames" },
+  { id: "store_godown", label: "Shop Frames" },
   { id: "plots", label: "Plots" },
   { id: "vifaa", label: "Building Materials" },
 ];

@@ -215,7 +215,7 @@ export default function Page() {
             </Link>
             <div className="min-w-0">
               <h1 className="page-title">My Posts</h1>
-              <p className="page-note">Rooms, Airbnb, shops, frames, materials and reels</p>
+              <p className="page-note">Rooms, Airbnb, shop frames, materials and reels</p>
             </div>
           </div>
         </header>

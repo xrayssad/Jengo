@@ -1092,7 +1092,7 @@ export const catLabel: Record<string, string> = {
   "rooms-houses": "Rooms & Houses",
   chumba_nyumba: "Rooms & Houses",
   apartment_airbnb: "Apartment & Airbnb",
-  store_godown: "Shops Store & Godown",
+  store_godown: "Shop Frames",
   frame: "Shop Frames",
   plots: "Plots",
   vifaa: "Building Materials",
@@ -1103,8 +1103,8 @@ export const catShort: Record<string, string> = {
   "rooms-houses": "Homes",
   chumba_nyumba: "Homes",
   apartment_airbnb: "Airbnb",
-  store_godown: "Godown",
-  frame: "Shop",
+  store_godown: "Shop Frames",
+  frame: "Shop Frames",
   plots: "Plots",
   vifaa: "Materials",
 };
@@ -1125,7 +1125,7 @@ export function timeAgo(iso?: string | null) {
   return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
 }
 
-export const shopCategories = ["frame"];
+export const shopCategories = ["store_godown", "frame"];
 
 export function listingPhones(item: { phones?: string[]; phone?: string; description?: string } | null | undefined): string[] {
   if (!item) return [];

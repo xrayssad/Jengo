@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Boxes, Building2, Camera, Check, Home, ImagePlus, LandPlot, Store, Warehouse } from "lucide-react";
+import { Boxes, Building2, Camera, Check, Home, ImagePlus, LandPlot, Store } from "lucide-react";
 import JengoLoader from "@/components/JengoLoader";
 import { queueInstallNudge } from "@/lib/install";
 import { createListing, fetchListings, formatPrice, uploadPhoto, type Listing } from "@/lib/api";
@@ -27,8 +27,7 @@ const HOME_PAY = ["full", "installments", "booking"] as const;
 const CATEGORY_ICONS = {
   "rooms-houses": Home,
   apartment_airbnb: Building2,
-  store_godown: Warehouse,
-  frame: Store,
+  store_godown: Store,
   plots: LandPlot,
   vifaa: Boxes,
 } as const;
@@ -59,12 +58,6 @@ const periods: Record<string, { id: string; label: string }[]> = {
     { id: "miezi_6", label: "6 months" },
     { id: "mwaka", label: "Year" },
   ],
-  frame: [
-    { id: "mwezi", label: "Month" },
-    { id: "miezi_3", label: "3 months" },
-    { id: "miezi_6", label: "6 months" },
-    { id: "mwaka", label: "Year" },
-  ],
 };
 
 const roomTypes = [
@@ -79,7 +72,6 @@ const amenitySets: Record<string, string[]> = {
   "rooms-houses": ["Water", "Electricity", "Fence", "Security", "Parking", "Wi-Fi", "Furnished", "Tiled"],
   apartment_airbnb: ["Water", "Electricity", "Security", "Parking", "Wi-Fi", "Furnished", "Tiled"],
   store_godown: ["Water", "Electricity", "Security", "Parking", "Road access"],
-  frame: ["Electricity", "Security", "Water"],
   vifaa: ["Delivery", "Parking"],
 };
 
@@ -674,8 +666,6 @@ export default function WekaTangazoPage() {
     if (category === "store_godown") {
       if (size) extra.size_m2 = Number(size);
       if (frontage.trim()) extra.frontage = frontage.trim();
-    }
-    if (category === "frame") {
       if (frameSize.trim()) extra.frame_size = frameSize.trim();
       if (market.trim()) extra.market_name = market.trim();
     }
@@ -974,7 +964,7 @@ export default function WekaTangazoPage() {
                     </label>
                   </div>
                 ) : null}
-                {category === "frame" || category === "store_godown" ? (
+                {category === "store_godown" ? (
                   <label className="wizard-field">
                     <span className="wizard-label">{t("fit.goodwill")}</span>
                     <input className="wizard-input" inputMode="numeric" value={grouped(goodwill)} onChange={(e) => setGoodwill(digits(e.target.value))} />
@@ -988,7 +978,7 @@ export default function WekaTangazoPage() {
                     </div>
                   </div>
                 ) : null}
-                {category === "frame" || category === "store_godown" ? (
+                {category === "store_godown" ? (
                   <>
                     <label className="wizard-field">
                       <span className="wizard-label">{t("fit.floor")}</span>
@@ -1179,28 +1169,28 @@ export default function WekaTangazoPage() {
                   </div>
                 )}
                 {category === "store_godown" && (
-                  <div className="wizard-row">
-                    <label className="wizard-field">
-                      <span className="wizard-label">Size m² <span className="wizard-optional">({t("optional")})</span></span>
-                      <input className="wizard-input" inputMode="numeric" value={size} onChange={(e) => setSize(digits(e.target.value))} />
-                    </label>
-                    <label className="wizard-field">
-                      <span className="wizard-label">Road frontage <span className="wizard-optional">({t("optional")})</span></span>
-                      <input className="wizard-input" value={frontage} onChange={(e) => setFrontage(e.target.value)} />
-                    </label>
-                  </div>
-                )}
-                {category === "frame" && (
-                  <div className="wizard-row">
-                    <label className="wizard-field">
-                      <span className="wizard-label">Size <span className="wizard-optional">({t("optional")})</span></span>
-                      <input className="wizard-input" value={frameSize} onChange={(e) => setFrameSize(e.target.value)} />
-                    </label>
-                    <label className="wizard-field">
-                      <span className="wizard-label">Market name <span className="wizard-optional">({t("optional")})</span></span>
-                      <input className="wizard-input" value={market} onChange={(e) => setMarket(e.target.value)} />
-                    </label>
-                  </div>
+                  <>
+                    <div className="wizard-row">
+                      <label className="wizard-field">
+                        <span className="wizard-label">Size m² <span className="wizard-optional">({t("optional")})</span></span>
+                        <input className="wizard-input" inputMode="numeric" value={size} onChange={(e) => setSize(digits(e.target.value))} />
+                      </label>
+                      <label className="wizard-field">
+                        <span className="wizard-label">Road frontage <span className="wizard-optional">({t("optional")})</span></span>
+                        <input className="wizard-input" value={frontage} onChange={(e) => setFrontage(e.target.value)} />
+                      </label>
+                    </div>
+                    <div className="wizard-row">
+                      <label className="wizard-field">
+                        <span className="wizard-label">Frame size <span className="wizard-optional">({t("optional")})</span></span>
+                        <input className="wizard-input" value={frameSize} onChange={(e) => setFrameSize(e.target.value)} />
+                      </label>
+                      <label className="wizard-field">
+                        <span className="wizard-label">Market name <span className="wizard-optional">({t("optional")})</span></span>
+                        <input className="wizard-input" value={market} onChange={(e) => setMarket(e.target.value)} />
+                      </label>
+                    </div>
+                  </>
                 )}
                 <div className="wizard-field">
                   <span className="wizard-label">Amenities <span className="wizard-optional">({t("optional")})</span></span>

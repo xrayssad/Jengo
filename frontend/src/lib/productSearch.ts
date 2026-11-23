@@ -24,8 +24,7 @@ import { readScoped, removeScoped, writeScoped } from "./userScope";
 export const SYNONYM_GROUPS: string[][] = [
   ["chumba", "room", "rooms"],
   ["nyumba", "house", "houses"],
-  ["duka", "shop", "shops", "store", "stores"],
-  ["fremu", "frame", "frames"],
+  ["duka", "shop", "shops", "store", "stores", "fremu", "frame", "frames", "maduka"],
   ["godown", "ghala", "warehouse", "stoo", "storage"],
   ["simenti", "cement"],
   ["bati", "iron sheet", "ironsheet"],
