@@ -61,6 +61,13 @@ export type Fit = {
   electricity?: string;
   amenities?: string[];
   landmark?: string;
+  location_text?: string;
+  location_source?: "gps" | "pin" | "search" | "manual";
+  accuracy_m?: number;
+  region?: string;
+  district?: string;
+  ward?: string;
+  show_exact?: boolean;
   directions?: string;
   whatsapp?: string;
   size_m2?: number;

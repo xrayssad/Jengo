@@ -5,7 +5,7 @@ import Link from "next/link";
 import FreshRail from "@/components/FreshRail";
 import HeroCarousel from "@/components/HeroCarousel";
 import PromoBanner from "@/components/PromoBanner";
-import { Bell, MapPin, X } from "lucide-react";
+import { Bell, ChevronDown, MapPin, X } from "lucide-react";
 import BottomSheet from "@/components/BottomSheet";
 import JengoLogo from "@/components/JengoLogo";
 import LocationSheet from "@/components/LocationSheet";
@@ -22,7 +22,7 @@ import { useI18n, useT } from "@/lib/i18n";
 import { useListings } from "@/lib/useListings";
 import { usePersistentScroll } from "@/lib/listSession";
 
-if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 });
+if (typeof window !== "undefined") void fetchListings({ status: "active", limit: 40 }).catch(() => {});
 
 function HomeBar({ onHome }: { onHome: () => void }) {
   const t = useT();
@@ -63,7 +63,7 @@ export default function HomePage() {
   const [query, setQuery] = useState<string | null>(null);
   const [category, setCategory] = useState("");
   const [sheet, setSheet] = useState(false);
-  const [place, setPlace] = useState("all");
+  const [place, setPlace] = useState("");
   const [deal, setDeal] = useState<"" | "rent" | "sale">("");
   const [locOpen, setLocOpen] = useState(false);
   const pendingQuery = useRef<string | null>(null);
@@ -220,8 +220,9 @@ export default function HomePage() {
 
   useEffect(() => {
     const onPlace = (event: Event) => {
-      const region = ((event as CustomEvent).detail || {}).region;
-      if (typeof region === "string") setPlace(region);
+      const detail = (event as CustomEvent<string | { region?: string }>).detail;
+      const region = typeof detail === "string" ? detail : detail?.region;
+      if (typeof region === "string") setPlace(!region || region === "all" ? "" : region);
     };
     window.addEventListener("jengo-browse-state", onPlace);
     return () => window.removeEventListener("jengo-browse-state", onPlace);
@@ -261,10 +262,11 @@ export default function HomePage() {
     window.dispatchEvent(new Event("jengo-nav-show"));
   };
 
-  const placeLabel = place === "near" ? t("near") : place !== "all" ? place : t("region.all");
+  const LOCATION_EMPTY_LABEL = "";
+  const placeLabel = place === "near" ? t("near") : place;
   const placeChoices = regionsFor(pool?.length ? pool : items);
   const clearPlace = () => {
-    window.dispatchEvent(new CustomEvent("jengo-region", { detail: "all" }));
+    window.dispatchEvent(new CustomEvent("jengo-region", { detail: "" }));
   };
   const started = useRef(Date.now());
   const source = query ? (pool?.length ? pool : items) : items;
@@ -286,30 +288,18 @@ export default function HomePage() {
         </h1>
         </div>
         <div className="home-search-stick">
-          <button type="button" className="home-loc-pill" onClick={() => setLocOpen(true)}>
-            <MapPin size={16} aria-hidden />
-            <span>{placeLabel}</span>
-            {place !== "all" ? (
-              <span
-                role="button"
-                tabIndex={0}
-                className="home-loc-x"
-                aria-label={t("loc.clear")}
-                onClick={(event) => {
-                  event.stopPropagation();
-                  clearPlace();
-                }}
-                onKeyDown={(event) => {
-                  if (event.key !== "Enter" && event.key !== " ") return;
-                  event.preventDefault();
-                  event.stopPropagation();
-                  clearPlace();
-                }}
-              >
+          <div className="home-loc-pill">
+            <button type="button" className="home-loc-open" aria-label={place ? placeLabel : t("loc.aria")} onClick={() => setLocOpen(true)}>
+              <MapPin size={16} aria-hidden />
+              {place ? <span>{placeLabel}</span> : LOCATION_EMPTY_LABEL ? <span className="is-placeholder">{LOCATION_EMPTY_LABEL}</span> : null}
+              <ChevronDown size={16} aria-hidden />
+            </button>
+            {place ? (
+              <button type="button" className="home-loc-x" aria-label={t("loc.clear")} onClick={clearPlace}>
                 <X size={14} />
-              </span>
+              </button>
             ) : null}
-          </button>
+          </div>
           <ProductSearch
             query={query || ""}
             listings={pool?.length ? pool : items}
@@ -394,7 +384,7 @@ export default function HomePage() {
             onRefresh={() => { void refresh(); }}
             beforeFeed={(list, region) => {
               const where = region === "near" ? t("near") : region;
-              const scoped = region !== "all";
+              const scoped = Boolean(region) && region !== "all";
               return (
                 <>
                   <HeroCarousel
@@ -423,7 +413,8 @@ export default function HomePage() {
         places={placeChoices}
         onClose={() => setLocOpen(false)}
         onSelect={(name) => {
-          if (name === "near") window.dispatchEvent(new Event("jengo-near"));
+          if (!name) window.dispatchEvent(new CustomEvent("jengo-region", { detail: "" }));
+          else if (name === "near") window.dispatchEvent(new Event("jengo-near"));
           else window.dispatchEvent(new CustomEvent("jengo-region", { detail: name }));
           setLocOpen(false);
         }}

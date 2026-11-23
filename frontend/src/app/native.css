@@ -138,6 +138,7 @@ html[data-home-compact="1"] .home-search-row {
 
 .sheet-option {
   display: flex;
+  gap: 10px;
   width: 100%;
   min-height: 52px;
   align-items: center;

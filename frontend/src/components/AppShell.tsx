@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { bootPreferences, getAuthUser, hasUsableSession, startSilentRenew } from "@/lib/api";
+import "@/lib/viewState";
 import { SHOW_LANDING_PAGE } from "@/lib/productFlags";
 import { hushAllReels } from "@/lib/reelsMedia";
 import BottomNav from "./BottomNav";

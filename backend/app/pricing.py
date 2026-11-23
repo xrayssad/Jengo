@@ -276,6 +276,26 @@ def clean_fit(category: str, raw: dict | None, *, require_agent_fee: bool = True
             out["house_rules"] = rules
     elif category == "plots" or src.get("plot_size") or src.get("listing_type") in {"sale", "lease"}:
         out.update(_clean_plot(src, price))
+    for key, limit in (
+        ("location_text", 200),
+        ("region", 80),
+        ("district", 80),
+        ("ward", 80),
+    ):
+        text = _text(src.get(key), limit)
+        if text:
+            out[key] = text
+    source = _text(src.get("location_source"), 16).lower()
+    if source in {"gps", "pin", "search", "manual"}:
+        out["location_source"] = source
+    try:
+        accuracy = float(src.get("accuracy_m"))
+    except (TypeError, ValueError):
+        accuracy = 0
+    if accuracy == accuracy and 0 < accuracy <= 100000:
+        out["accuracy_m"] = round(accuracy, 1)
+    if category in {"rooms-houses", "chumba_nyumba", "apartment_airbnb", "nyumba", "house", "houses"} and "show_exact" in src:
+        out["show_exact"] = bool(src.get("show_exact"))
     return out
 
 

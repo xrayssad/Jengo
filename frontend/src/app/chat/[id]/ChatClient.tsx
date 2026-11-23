@@ -8,6 +8,7 @@ import AuthGate from "@/components/AuthGate";
 import { ChatThreadSkeleton } from "@/components/Skeletons";
 import VerifiedBadge from "@/components/VerifiedBadge";
 import { fetchListing, fetchListingDm, formatPrice, sendListingDm, type ChatMessage, type Listing } from "@/lib/api";
+import { getPreciseLocation } from "@/lib/geo";
 import { useT } from "@/lib/i18n";
 
 function stampLabel(iso?: string) {
@@ -78,17 +79,15 @@ export default function ChatClient({ id, title, peer }: { id: string; title: str
   }, [id, peer]);
 
   const sharePlace = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async (pos) => {
-      const body = `https://maps.google.com/?q=${pos.coords.latitude.toFixed(5)},${pos.coords.longitude.toFixed(5)}`;
-      try {
+    if (!navigator.geolocation || !window.isSecureContext) return;
+    getPreciseLocation()
+      .then(async (fix) => {
+        const body = `https://maps.google.com/?q=${fix.lat.toFixed(6)},${fix.lng.toFixed(6)}`;
         const msg = await sendListingDm(id, body, peer);
         setItems((cur) => [...cur, msg]);
         setError("");
-      } catch (err) {
-        setError(err instanceof Error ? err.message : "Message was not sent");
-      }
-    });
+      })
+      .catch(() => setError(t("geo.unavailable")));
   };
 
   const submit = async (e: React.FormEvent) => {

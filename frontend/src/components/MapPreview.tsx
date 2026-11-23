@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { approximateCenter } from "@/lib/geo";
 
 const icon = L.icon({
   iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
@@ -20,6 +21,8 @@ export default function MapPreview({
   polygon = [],
   draw = false,
   onPolygon,
+  accuracyM,
+  approximate = false,
 }: {
   lat: number;
   lng: number;
@@ -28,10 +31,13 @@ export default function MapPreview({
   polygon?: [number, number][];
   draw?: boolean;
   onPolygon?: (points: [number, number][]) => void;
+  accuracyM?: number;
+  approximate?: boolean;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const shapeRef = useRef<L.Layer | null>(null);
+  const circleRef = useRef<L.Circle | null>(null);
   const onMoveRef = useRef(onMove);
   const onPolygonRef = useRef(onPolygon);
   const polygonRef = useRef(polygon);
@@ -41,11 +47,13 @@ export default function MapPreview({
 
   useEffect(() => {
     if (!ref.current) return;
+    const shown = approximate ? approximateCenter(lat, lng) : { lat, lng };
     const placeMarker = (map: L.Map) => {
       map.eachLayer((layer) => {
         if (layer instanceof L.Marker) map.removeLayer(layer);
       });
-      const marker = L.marker([lat, lng], { icon, draggable }).addTo(map);
+      if (approximate) return;
+      const marker = L.marker([shown.lat, shown.lng], { icon, draggable }).addTo(map);
       if (draggable) {
         marker.on("dragend", () => {
           const point = marker.getLatLng();
@@ -54,15 +62,31 @@ export default function MapPreview({
       }
     };
     if (!mapRef.current) {
-      mapRef.current = L.map(ref.current, { zoomControl: false, attributionControl: false }).setView([lat, lng], 16);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19 }).addTo(mapRef.current);
+      mapRef.current = L.map(ref.current, { zoomControl: false, attributionControl: true }).setView([shown.lat, shown.lng], approximate ? 14 : 16);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        maxZoom: 19,
+        attribution: "&copy; OpenStreetMap",
+      }).addTo(mapRef.current);
       placeMarker(mapRef.current);
     } else {
       const center = mapRef.current.getCenter();
-      if (Math.abs(center.lat - lat) > 0.00002 || Math.abs(center.lng - lng) > 0.00002) {
-        mapRef.current.setView([lat, lng], mapRef.current.getZoom());
+      if (Math.abs(center.lat - shown.lat) > 0.00002 || Math.abs(center.lng - shown.lng) > 0.00002) {
+        mapRef.current.setView([shown.lat, shown.lng], mapRef.current.getZoom());
       }
       placeMarker(mapRef.current);
+    }
+    if (circleRef.current) {
+      mapRef.current.removeLayer(circleRef.current);
+      circleRef.current = null;
+    }
+    if (accuracyM && accuracyM > 0) {
+      circleRef.current = L.circle([shown.lat, shown.lng], {
+        radius: accuracyM,
+        color: "#4F5A3A",
+        weight: 1,
+        fillColor: "#4F5A3A",
+        fillOpacity: 0.15,
+      }).addTo(mapRef.current);
     }
     const map = mapRef.current;
     if (shapeRef.current) {
@@ -75,7 +99,7 @@ export default function MapPreview({
     }
     const t = window.setTimeout(() => map.invalidateSize(), 80);
     return () => window.clearTimeout(t);
-  }, [lat, lng, polygon]);
+  }, [lat, lng, polygon, accuracyM, approximate]);
 
   useEffect(() => {
     const map = mapRef.current;

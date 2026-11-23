@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowUp, ArrowUpDown, LayoutGrid, LocateFixed, RectangleVertical, X } from "lucide-react";
@@ -9,12 +9,15 @@ import FeaturedStrip from "./FeaturedStrip";
 import { locationPermitSeen, markLocationPermit } from "@/lib/permit";
 import type { ReactNode } from "react";
 import { reversePlace, type Listing } from "@/lib/api";
+import { debugGeoEnabled, getPreciseLocation } from "@/lib/geo";
+import GeoDebug from "./GeoDebug";
 import { readScoped, writeScoped } from "@/lib/userScope";
 import JengoLoader from "@/components/JengoLoader";
 import JengoLogo from "@/components/JengoLogo";
 import {
   anyFeatured,
   asView,
+  blankRegion,
   hasCoords,
   inRegion,
   isSortKey,
@@ -24,7 +27,6 @@ import {
   pickFresh,
   pushRecentRegion,
   readBrowse,
-  readRememberedRegion,
   readView,
   regionFromParam,
   regionSlug,
@@ -32,7 +34,6 @@ import {
   sellerVerified,
   sortListings,
   writeBrowse,
-  writeRememberedRegion,
   writeView,
   type NearPoint,
   type SortKey,
@@ -136,7 +137,7 @@ export default function ListingBrowse({
   const routeRef = useRef(route || "/home");
   if (route) routeRef.current = route;
   const reduce = usePrefersReducedMotion();
-  const [region, setRegion] = useState("all");
+  const [region, setRegion] = useState("");
   const [sort, setSort] = useState<SortKey>("new");
   const [view, setView] = useState<ViewMode>("large");
   const [near, setNear] = useState<NearPoint | null>(null);
@@ -153,6 +154,7 @@ export default function ListingBrowse({
   const plots = canonicalCategory(category) === "plots";
   const seenCategory = useRef(category);
   const [locating, setLocating] = useState(false);
+  const [nearAccuracy, setNearAccuracy] = useState<number | null>(null);
   const [sheet, setSheet] = useState(false);
   const [permit, setPermit] = useState(false);
   const [toast, setToast] = useState("");
@@ -177,7 +179,7 @@ export default function ListingBrowse({
 
   const regions = useMemo(() => {
     const list = regionsFor(items);
-    if (region !== "all" && region !== "near" && !list.some((name) => name.toLowerCase() === region.toLowerCase())) {
+    if (!blankRegion(region) && region !== "near" && !list.some((name) => name.toLowerCase() === region.toLowerCase())) {
       return [...list, region];
     }
     return list;
@@ -218,18 +220,12 @@ export default function ListingBrowse({
     const savedSort = saved?.sort && isSortKey(saved.sort) ? saved.sort : "new";
     const nextSort = savedSort === "verified" && !VERIFIED_FIRST_SORT ? "new" : savedSort;
     const hasNear = typeof saved?.nearLat === "number" && typeof saved?.nearLng === "number";
-    const remembered = readRememberedRegion();
-    const storedRegion = saved?.region === "near" && hasNear
-      ? "near"
-      : saved?.region && saved.region !== "near" && saved.region !== "all"
-        ? saved.region
-        : remembered || "all";
     const param = new URLSearchParams(window.location.search).get("region") || "";
-    const nextRegion = param ? regionFromParam(param, regionsFor(items)) : storedRegion;
+    const nextRegion = param ? regionFromParam(param, regionsFor(items)) : "";
     setView(nextView);
     setSort(nextSort);
     setRegion(nextRegion);
-    setNear(hasNear ? { lat: saved!.nearLat as number, lng: saved!.nearLng as number } : null);
+    setNear(nextRegion === "near" && hasNear ? { lat: saved!.nearLat as number, lng: saved!.nearLng as number } : null);
     if (nextRegion === "near" && hasNear) setLocating(true);
     setVerifiedOnly(Boolean(saved?.verifiedOnly));
     const openingFilter = (nextSort !== "new" && nextSort !== "featured" && nextSort !== "views") || Boolean(saved?.verifiedOnly);
@@ -445,7 +441,7 @@ export default function ListingBrowse({
         next = next.filter((item) => dealOf(item) === deal);
       }
       if (region === "near" && near) next = nearListings(next, near, nearNames);
-      else if (region !== "all" && region !== "near") next = next.filter((item) => inRegion(item, region));
+      else if (!blankRegion(region) && region !== "near") next = next.filter((item) => inRegion(item, region));
       if (verifiedOnly) next = next.filter((item) => sellerVerified(item));
       if (bedsMin > 0) next = next.filter((item) => (bedCount(item) || 0) >= bedsMin);
       for (const key of fitFilters) next = next.filter((item) => fitOn(item, key));
@@ -490,14 +486,14 @@ export default function ListingBrowse({
     ranged,
     sort,
   }) === "results";
-  const userFiltered = chrome === "home" ? resultsMode : region !== "all" || layoutFiltered;
+  const userFiltered = chrome === "home" ? resultsMode : !blankRegion(region) || layoutFiltered;
   const homeChrome = userFiltered;
   const sectionIds = useMemo(() => {
     if (chrome !== "home") return new Set(omitIds);
     if (resultsMode) return new Set(pickFeatured(shown).slice(0, 6).map((item) => item.id));
     const featuredIds = pickFeatured(shown).map((item) => item.id);
     const fresh = pickFresh(shown, 8, freshAt);
-    const freshIds = (region !== "all" ? fresh.length >= 1 : fresh.length >= 2) ? fresh.map((item) => item.id) : [];
+    const freshIds = (!blankRegion(region) ? fresh.length >= 1 : fresh.length >= 2) ? fresh.map((item) => item.id) : [];
     return new Set([...featuredIds, ...freshIds]);
   }, [chrome, omitIds, resultsMode, shown, freshAt, region]);
   const pooled = shown.filter((item) => !sectionIds.has(item.id));
@@ -505,7 +501,7 @@ export default function ListingBrowse({
   const feedIds = useMemo(() => feed.map((item) => item.id), [feed]);
   const summaryLabel = region === "near"
     ? t("near")
-    : region !== "all"
+    : !blankRegion(region)
       ? region
       : queryText
         ? queryText
@@ -517,7 +513,7 @@ export default function ListingBrowse({
               ? t(`sort.${sort === "featured" && !featured ? "new" : sort}`)
               : categoryIsFilter && fitConfig
                 ? (lang === "sw" ? fitConfig.sw : fitConfig.en)
-                : scope || t("region.all");
+                : scope;
 
   regionsRef.current = regions;
 
@@ -545,8 +541,7 @@ export default function ListingBrowse({
   }, []);
   useEffect(() => {
     if (!booted) return;
-    writeRememberedRegion(region);
-    if (region !== "all" && region !== "near") pushRecentRegion(region);
+    if (!blankRegion(region) && region !== "near") pushRecentRegion(region);
   }, [booted, region]);
 
   useEffect(() => {
@@ -585,7 +580,7 @@ export default function ListingBrowse({
       return;
     }
     const param = new URLSearchParams(window.location.search).get("region") || "";
-    const wantSlug = region === "all" ? "" : regionSlug(region);
+    const wantSlug = blankRegion(region) ? "" : regionSlug(region);
     if (param === wantSlug) {
       urlReady.current = true;
       return;
@@ -594,7 +589,7 @@ export default function ListingBrowse({
     if (wantSlug) url.searchParams.set("region", wantSlug);
     else url.searchParams.delete("region");
     const nextUrl = `${url.pathname}${url.search}${url.hash}`;
-    const state = { ...(window.history.state || {}), jengoRegion: region || "all" };
+    const state = { ...(window.history.state || {}), jengoRegion: blankRegion(region) ? "" : region };
     if (urlReady.current) window.history.pushState(state, "", nextUrl);
     else window.history.replaceState(state, "", nextUrl);
     urlReady.current = true;
@@ -607,7 +602,7 @@ export default function ListingBrowse({
         return;
       }
       const param = new URLSearchParams(window.location.search).get("region") || "";
-      const next = param ? regionFromParam(param, regionsRef.current) : "all";
+      const next = param ? regionFromParam(param, regionsRef.current) : "";
       fromHistory.current = true;
     setRegion(next);
     if (next !== "near") {
@@ -631,10 +626,15 @@ export default function ListingBrowse({
     }, reduce ? 0 : 150);
   };
 
-  const clearBrowse = () => {
-    setRegion("all");
+  const clearRegion = () => {
+    setRegion("");
     setNear(null);
     setNearNames([]);
+    setNearAccuracy(null);
+  };
+
+  const clearBrowse = () => {
+    clearRegion();
     setSort("new");
     setVerifiedOnly(false);
     setFitFilters([]);
@@ -669,8 +669,8 @@ export default function ListingBrowse({
   };
 
   const pickRegion = (next: string) => {
-    if (next === "all") {
-      clearBrowse();
+    if (blankRegion(next) || next === region) {
+      clearRegion();
       return;
     }
     setRegion(next);
@@ -680,32 +680,37 @@ export default function ListingBrowse({
     }
   };
 
-  const locate = () => {
+  const locate = useCallback(() => {
     if (locating) return;
     if (!locationPermitSeen()) {
       setPermit(true);
       return;
     }
     if (!navigator.geolocation) {
-      setToast(t("near.unsupported"));
+      setToast(t("geo.unavailable"));
+      return;
+    }
+    if (!window.isSecureContext) {
+      setToast(t("geo.https"));
       return;
     }
     setLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        const point = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    setNearAccuracy(null);
+    getPreciseLocation({ onFix: (fix) => setNearAccuracy(fix.accuracy) })
+      .then((fix) => {
         announceNear.current = true;
         setNearNames([]);
-        setNear(point);
+        setNearAccuracy(fix.accuracy);
+        setNear({ lat: fix.lat, lng: fix.lng });
         setRegion("near");
-      },
-      (err) => {
+      })
+      .catch((err: { code?: number }) => {
         setLocating(false);
-        setToast(err.code === err.PERMISSION_DENIED ? t("near.denied") : t("near.failed"));
-      },
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 },
-    );
-  };
+        if (err.code === 1) setToast(t("geo.denied"));
+        else if (err.code === 3) setToast(t("geo.timeout"));
+        else setToast(t("geo.unavailable"));
+      });
+  }, [locating, t]);
 
   useEffect(() => {
     if (region !== "near" || !near) return;
@@ -730,11 +735,9 @@ export default function ListingBrowse({
     const onRegion = (event: Event) => {
       const detail = (event as CustomEvent<string | { region?: string }>).detail;
       const next = typeof detail === "string" ? detail : String(detail?.region || "");
-      if (!next || next === "near") return;
-      if (next === "all") {
-        setRegion("all");
-        setNear(null);
-        setNearNames([]);
+      if (next === "near") return;
+      if (blankRegion(next)) {
+        clearRegion();
       } else {
         setRegion(next);
         setNear(null);
@@ -755,10 +758,7 @@ export default function ListingBrowse({
       setPlotRange({ budget: "", sqmMin: "", sqmMax: "", sizeMin: "", sizeMax: "" });
     };
     const onReset = () => {
-      const remembered = readRememberedRegion();
-      setRegion(remembered && remembered !== "near" ? remembered : "all");
-      setNear(null);
-      setNearNames([]);
+      clearRegion();
     };
     window.addEventListener("jengo-region", onRegion);
     window.addEventListener("jengo-user-reset", onReset);
@@ -774,9 +774,9 @@ export default function ListingBrowse({
     };
   }, [chrome, locate]);
 
-  const regionLabel = region !== "all" && region !== "near" ? region : (queryText || scope || summaryLabel);
+  const regionLabel = !blankRegion(region) && region !== "near" ? region : (queryText || scope || summaryLabel);
   const showSummary = homeChrome || Boolean(scope);
-  const placeName = region === "near" ? t("near") : region !== "all" ? region : "";
+  const placeName = region === "near" ? t("near") : !blankRegion(region) ? region : "";
   const beforeNode = showExtras ? (typeof beforeFeed === "function" ? beforeFeed(shown, region) : beforeFeed) : null;
   const homeTabs = chrome === "home" && !queryText;
   const browseTools = (
@@ -803,7 +803,7 @@ export default function ListingBrowse({
       <div ref={chipsRef} className={chrome === "home" ? "browse-stack" : showSummary ? "browse-pin" : "browse-stack"}>
       {chrome === "home" ? (
         <div className="loc-rail quick-chips no-scrollbar rail-fade" aria-label={t("near")}>
-          <button type="button" className={region === "near" ? "loc-chip is-on" : "loc-chip"} aria-pressed={region === "near"} onClick={() => setQuick("near")}>{t("near")}</button>
+          <button type="button" className={region === "near" ? "loc-chip is-on" : "loc-chip"} aria-pressed={region === "near"} aria-busy={locating} onClick={() => setQuick("near")}>{locating ? `${t("geo.searching")}${nearAccuracy != null ? ` ±${Math.round(nearAccuracy)} m` : ""}` : t("near")}</button>
           <button type="button" className={verifiedOnly ? "loc-chip is-on" : "loc-chip"} aria-pressed={verifiedOnly} onClick={() => setQuick("verified")}>{t("filter.verified")}</button>
           <button type="button" className={fitFilters.includes("free_viewing") ? "loc-chip is-on" : "loc-chip"} aria-pressed={fitFilters.includes("free_viewing")} onClick={() => setQuick("free")}>{t("fit.free")}</button>
           <button type="button" className={sort === "price_asc" || sort === "price_desc" ? "loc-chip is-on" : "loc-chip"} onClick={() => setSheet(true)}>{t("chip.price")}</button>
@@ -816,18 +816,10 @@ export default function ListingBrowse({
           className={region === "near" ? "loc-chip is-on" : "loc-chip"}
           aria-pressed={region === "near"}
           aria-busy={locating}
-          onClick={locate}
+          onClick={() => { if (region === "near") clearRegion(); else locate(); }}
         >
           {locating ? <JengoLoader size={16} /> : <LocateFixed size={14} aria-hidden />}
-          {t("near")}
-        </button>
-        <button
-          type="button"
-          className={region === "all" ? "loc-chip is-on" : "loc-chip"}
-          aria-pressed={region === "all"}
-          onClick={() => pickRegion("all")}
-        >
-          {t("region.all")}
+          {locating ? `${t("geo.searching")}${nearAccuracy != null ? ` ±${Math.round(nearAccuracy)} m` : ""}` : t("near")}
         </button>
         <button
           type="button"
@@ -850,6 +842,9 @@ export default function ListingBrowse({
         ))}
       </div>
       )}
+      {region === "near" && nearAccuracy != null && nearAccuracy > 100 ? (
+        <p className="near-note">{nearAccuracy > 1000 ? t("geo.coarse") : t("geo.nearPoor", { n: Math.round(nearAccuracy) })}</p>
+      ) : null}
       {fitConfig && fitConfig.filters.length ? (
         <div className="loc-rail no-scrollbar rail-fade" aria-label={t("sort")}>
           {fitConfig.filters.map((key) => (
@@ -885,9 +880,12 @@ export default function ListingBrowse({
           ))}
         </div>
       ) : null}
-      {chrome === "home" && (resultsMode || region !== "all") ? (
+      {chrome === "home" && (resultsMode || !blankRegion(region)) ? (
         <div className="browse-summary">
-          <p>{`${shown.length} ${t("listings")}${placeName ? ` - ${placeName}` : ""}`}</p>
+          <p>{`${shown.length} ${t("listings")}`}</p>
+          {placeName ? (
+            <button type="button" onClick={() => pickRegion(region)}>{placeName}<X size={12} /></button>
+          ) : null}
           {resultsMode ? <button type="button" onClick={resetFilters}>{t("filter.clear")}</button> : null}
         </div>
       ) : showSummary ? (
@@ -895,13 +893,17 @@ export default function ListingBrowse({
           <p>
             {queryText
               ? `${t("search.results", { query: queryText })} - ${shown.length}`
-              : `${summaryLabel} - ${shown.length} ${t("listings")}`}
+              : `${shown.length} ${t("listings")}`}
           </p>
+          {placeName ? (
+            <button type="button" onClick={() => pickRegion(region)}>{placeName}<X size={12} /></button>
+          ) : null}
           <button type="button" onClick={resetFilters}>{t("filter.clear")}</button>
         </div>
       ) : null}
       {resultsMode ? (
         <div className="result-chips no-scrollbar">
+          {placeName ? <button type="button" onClick={() => pickRegion(region)}>{placeName}<X size={12} /></button> : null}
           {queryText ? <button type="button" onClick={() => onQuery?.("")}>{queryText}<X size={12} /></button> : null}
           {category ? <button type="button" onClick={() => onClearCategory?.()}>{tileCopy(category, lang).label}<X size={12} /></button> : null}
           {verifiedOnly ? <button type="button" onClick={() => setVerifiedOnly(false)}>{t("filter.verified")}<X size={12} /></button> : null}
@@ -924,11 +926,7 @@ export default function ListingBrowse({
             aria-selected={region !== "near" && (sort === "featured" || sort === "views")}
             className={region !== "near" && (sort === "featured" || sort === "views") ? "is-on" : ""}
             onClick={() => {
-              if (region === "near") {
-                setRegion("all");
-                setNear(null);
-                setNearNames([]);
-              }
+              if (region === "near") clearRegion();
               setSort(featured ? "featured" : "views");
             }}
           >
@@ -940,11 +938,7 @@ export default function ListingBrowse({
             aria-selected={region !== "near" && sort === "new"}
             className={region !== "near" && sort === "new" ? "is-on" : ""}
             onClick={() => {
-              if (region === "near") {
-                setRegion("all");
-                setNear(null);
-                setNearNames([]);
-              }
+              if (region === "near") clearRegion();
               setSort("new");
             }}
           >
@@ -960,7 +954,7 @@ export default function ListingBrowse({
               locate();
             }}
           >
-            {t("feed.nearby")}
+            {locating ? `${t("geo.searching")}${nearAccuracy != null ? ` ±${Math.round(nearAccuracy)} m` : ""}` : t("feed.nearby")}
           </button>
         </div>
         {homeTabs ? browseTools : null}
@@ -1027,11 +1021,11 @@ export default function ListingBrowse({
             <p className="lead">
               {queryText
                 ? t("search.none", { query: queryText })
-                : chrome === "home" && region !== "all"
+                : chrome === "home" && !blankRegion(region)
                   ? t("home.emptyPlace", { place: placeName })
                 : region === "near"
                   ? t("empty.near")
-                  : region !== "all"
+                  : !blankRegion(region)
                     ? t("empty.region", { region: regionLabel })
                     : t("empty.all")}
             </p>
@@ -1046,17 +1040,13 @@ export default function ListingBrowse({
                   {t("search.saveNotify")}
                 </button>
               ) : null}
-              {chrome === "home" && region !== "all" ? (
+              {chrome === "home" && !blankRegion(region) ? (
                 <button
                   type="button"
                   className="btn-secondary browse-empty-btn"
-                  onClick={() => {
-                    setRegion("all");
-                    setNear(null);
-                    setNearNames([]);
-                  }}
+                  onClick={clearRegion}
                 >
-                  {t("region.all")}
+                  {t("loc.clear")}
                 </button>
               ) : null}
               {showSummary ? (
@@ -1138,7 +1128,7 @@ export default function ListingBrowse({
       </BottomSheet>
       <BottomSheet open={quick === "verified"} title={t("filter.verified")} onClose={() => setQuick("")}>
         <button type="button" className={verifiedOnly ? "sheet-option is-on" : "sheet-option"} onClick={() => { setVerifiedOnly(true); setQuick(""); }}>{t("filter.verified")}</button>
-        <button type="button" className={!verifiedOnly ? "sheet-option is-on" : "sheet-option"} onClick={() => { setVerifiedOnly(false); setQuick(""); }}>{t("region.all")}</button>
+        <button type="button" className={!verifiedOnly ? "sheet-option is-on" : "sheet-option"} onClick={() => { setVerifiedOnly(false); setQuick(""); }}>{t("filter.any")}</button>
       </BottomSheet>
       <BottomSheet open={quick === "free"} title={t("fit.free")} onClose={() => setQuick("")}>
         <p className="sheet-copy">{t("badge.free")}</p>
@@ -1147,7 +1137,7 @@ export default function ListingBrowse({
       <BottomSheet open={quick === "beds"} title={t("chip.beds")} onClose={() => setQuick("")}>
         {[0, 1, 2, 3, 4].map((count) => (
           <button key={count} type="button" className={bedsMin === count ? "sheet-option is-on" : "sheet-option"} onClick={() => { setBedsMin(count); setQuick(""); }}>
-            {count === 0 ? t("region.all") : t("bed", { n: count })}
+            {count === 0 ? t("filter.any") : t("bed", { n: count })}
           </button>
         ))}
       </BottomSheet>
@@ -1199,6 +1189,7 @@ export default function ListingBrowse({
       </BottomSheet>
 
       {toast ? <div className="browse-toast" role="status">{toast}</div> : null}
+      {debugGeoEnabled() ? <GeoDebug /> : null}
 
       {scrollTop && (
         <button

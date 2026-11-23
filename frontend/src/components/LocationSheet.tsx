@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { LocateFixed, X } from "lucide-react";
 import BottomSheet from "./BottomSheet";
-import { REGIONS, readRecentRegions } from "@/lib/browse";
+import { REGIONS, blankRegion, readRecentRegions } from "@/lib/browse";
 import { useT } from "@/lib/i18n";
 
 export default function LocationSheet({
@@ -35,10 +35,11 @@ export default function LocationSheet({
   const match = (name: string) => !needle || name.toLowerCase().includes(needle);
   const recentShown = recent.filter(match);
   const popularShown = popular.filter((name) => match(name) && !recentShown.includes(name));
+  const chosen = !blankRegion(value);
 
   const pick = (name: string) => {
     setQuery("");
-    onSelect(name);
+    onSelect(value === name ? "" : name);
   };
 
   return (
@@ -56,21 +57,16 @@ export default function LocationSheet({
         placeholder={t("loc.search")}
         onChange={(event) => setQuery(event.target.value)}
       />
-      {!needle || t("region.all").toLowerCase().includes(needle) ? (
-        <button type="button" className={value === "all" ? "sheet-option is-on" : "sheet-option"} onClick={() => pick("all")}>
-          {t("region.all")}
+      {chosen ? (
+        <button type="button" className="sheet-option" onClick={() => pick("")}>
+          <X size={16} aria-hidden />
+          {t("loc.clear")}
         </button>
       ) : null}
       <button type="button" className={value === "near" ? "sheet-option is-on" : "sheet-option"} onClick={() => pick("near")}>
         <LocateFixed size={16} aria-hidden />
         {t("near")}
       </button>
-      {value !== "all" && value !== "near" ? (
-        <button type="button" className="sheet-option" onClick={() => pick("all")}>
-          <X size={16} aria-hidden />
-          {t("loc.clear")}
-        </button>
-      ) : null}
       {recentShown.length ? (
         <div className="loc-group">
           <p>{t("loc.recent")}</p>

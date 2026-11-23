@@ -1,5 +1,5 @@
 import { getDeviceId } from "./deviceId";
-import { clearSharedSession, mergeAccount, readScoped, removeScoped, writeScoped } from "./userScope";
+import { clearSharedSession, mergeAccount, readScoped, writeScoped } from "./userScope";
 import { mergeCounts, mergeRefresh } from "./views";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://jengo-qkq1.onrender.com";
@@ -182,16 +182,9 @@ export function pushPreferences(patch: UserPreferences) {
 
 function applyServerPreferences(prefs: UserPreferences | null) {
   if (!prefs || typeof window === "undefined") return;
-  if (typeof prefs.region === "string") {
-    if (prefs.region) writeScoped("region", prefs.region);
-    else removeScoped("region");
-  }
   if (prefs.language === "en" || prefs.language === "sw") writeScoped("lang", prefs.language);
   if (prefs.theme === "light" || prefs.theme === "dark" || prefs.theme === "system") writeScoped("theme", prefs.theme);
   window.dispatchEvent(new Event("jengo-prefs"));
-  if (typeof prefs.region === "string") {
-    window.dispatchEvent(new CustomEvent("jengo-region", { detail: { region: prefs.region || "all", source: "server" } }));
-  }
 }
 
 /** Logged-in preferences replace whatever this device had for another account. */
@@ -1557,46 +1550,25 @@ export async function placeDetails(placeId: string) {
   return request<PlaceHit>(`/places/details?${sp}`);
 }
 
-function placeNames(raw: unknown): string[] {
-  const props = (raw && typeof raw === "object" ? raw : {}) as Record<string, unknown>;
-  const bag = (props.properties && typeof props.properties === "object" ? props.properties : props) as Record<string, unknown>;
-  const feature = Array.isArray(props.features) ? props.features[0] : null;
-  const fromFeature = feature && typeof feature === "object" && feature.properties && typeof feature.properties === "object" ? feature.properties as Record<string, unknown> : bag;
-  const names = ["district", "city", "county", "state", "locality", "name"]
-    .map((key) => String(fromFeature[key] || "").trim())
-    .filter((value) => value && !/^(tanzania|tz)$/i.test(value) && !/\b(road|street|avenue|lane|rd)\b/i.test(value));
-  return [...new Set(names)].slice(0, 8);
-}
-
-/** Area names around a point. Listings usually store a place name, not a map pin. */
+/** Area names around a point. The browser asks our proxy, never a public geocoder directly. */
 export async function reversePlace(lat: number, lng: number): Promise<{ names: string[] }> {
-  const api = (async () => {
-    const sp = new URLSearchParams({ lat: String(lat), lng: String(lng) });
-    const row = await request<{ names?: string[] }>(`/places/reverse?${sp}`, { signal: AbortSignal.timeout(6000) });
-    return (row.names || []).map((name) => name.trim()).filter(Boolean);
-  })();
-  const photon = (async () => {
-    const res = await fetch(`https://photon.komoot.io/reverse?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lng)}&lang=en`, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return [] as string[];
-    return placeNames(await res.json());
-  })();
-  return {
-    names: await new Promise<string[]>((resolve) => {
-      let settled = false;
-      const done = (names: string[]) => {
-        if (settled) return;
-        settled = true;
-        resolve(names);
-      };
-      api.then((names) => { if (names.length) done(names); }).catch(() => {});
-      photon.then((names) => { if (names.length) setTimeout(() => done(names), 700); }).catch(() => {});
-      void Promise.allSettled([api, photon]).then(([left, right]) => {
-        const fromApi = left.status === "fulfilled" ? left.value : [];
-        const fromPhoton = right.status === "fulfilled" ? right.value : [];
-        done(fromApi.length ? fromApi : fromPhoton);
-      });
-    }),
-  };
+  const sp = new URLSearchParams({ lat: String(lat), lng: String(lng) });
+  try {
+    const res = await fetch(`/api/geo/reverse?${sp}`, { signal: AbortSignal.timeout(4000) });
+    if (res.ok) {
+      const row = (await res.json()) as { names?: string[] };
+      const names = (row.names || []).map((name) => name.trim()).filter(Boolean);
+      if (names.length) return { names };
+    }
+  } catch {
+    /* the proxy can be down in local dev */
+  }
+  try {
+    const row = await request<{ names?: string[] }>(`/places/reverse?${sp}`, { signal: AbortSignal.timeout(4000) });
+    return { names: (row.names || []).map((name) => name.trim()).filter(Boolean) };
+  } catch {
+    return { names: [] };
+  }
 }
 
 export async function fetchMqttSession() {

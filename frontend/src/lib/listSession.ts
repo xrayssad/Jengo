@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 import { usePathname } from "next/navigation";
+import { prepareFreshView } from "./viewState";
 
 const KEY = "jengo_list_session_v1";
 
@@ -54,6 +55,7 @@ function load(): SessionShape {
   if (memory) return memory;
   memory = empty();
   if (typeof window === "undefined") return memory;
+  prepareFreshView();
   try {
     const raw = sessionStorage.getItem(KEY);
     if (!raw) return memory;

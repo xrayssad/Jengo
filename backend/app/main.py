@@ -68,6 +68,12 @@ async def private_user_cache(request: Request, call_next):
     return response
 
 UNITS = {"mfuko", "tani", "kipande", "dei"}
+_BANNED_PLACE = re.compile(
+    r"^(my current location|use my current location|pinned location|tumia eneo langu|eneo langu|eneo la sasa)$",
+    re.IGNORECASE,
+)
+_RESOLVING_PLACE = re.compile(r"^(inatafuta jina la eneo|finding the place name)\.{0,3}$", re.IGNORECASE)
+_COORD_PLACE = re.compile(r"^(eneo lililochaguliwa|selected place)\b", re.IGNORECASE)
 
 
 class ListingIn(BaseModel):
@@ -1349,6 +1355,11 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
     if len([img for img in body.images if img]) < 1:
         raise HTTPException(status_code=400, detail="Add at least one photo")
     period = "" if body.category in {"vifaa", PLOTS} else body.period
+    place = body.location.strip()
+    if _BANNED_PLACE.match(place) or _RESOLVING_PLACE.match(place):
+        raise HTTPException(status_code=400, detail="Add a street, area, or landmark")
+    if _COORD_PLACE.match(place) and len(str((body.attributes or {}).get("landmark") or "").strip()) < 2:
+        raise HTTPException(status_code=400, detail="Add a nearby landmark")
     if body.category == "rooms-houses" and str((body.attributes or {}).get("listing_type") or "") == "sale":
         period = ""
     if body.category == "vifaa":
@@ -1379,7 +1390,7 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         "description": desc,
         "price": body.price,
         "period": period,
-        "location": body.location.strip()[:200],
+        "location": place[:200],
         "city": (body.city or "").strip()[:80],
         "images": body.images[:20],
         "status": "active",
@@ -1394,9 +1405,9 @@ def create_listing(body: ListingIn, user=Depends(current_user)):
         if body.stock is not None:
             extras["stock"] = body.stock
     if body.lat is not None:
-        extras["lat"] = body.lat
+        extras["lat"] = round(float(body.lat), 6)
     if body.lng is not None:
-        extras["lng"] = body.lng
+        extras["lng"] = round(float(body.lng), 6)
     if phones:
         extras["phones"] = phones
     extras["attributes"] = fit

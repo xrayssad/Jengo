@@ -16,6 +16,7 @@ import { usePrefersReducedMotion } from "@/lib/motion";
 import AuthGate from "@/components/AuthGate";
 import ListingCard from "@/components/ListingCard";
 import PlacePicker, { type PlaceValue } from "@/components/PlacePicker";
+import { bannedLocation, coordLabel, needsLandmark, resolvingLocation, reverseGeocode, roundCoord } from "@/lib/geo";
 import ScreenHeader from "@/components/ScreenHeader";
 import DateStrip from "@/components/DateStrip";
 
@@ -129,6 +130,7 @@ type Draft = {
   extraGuest: string;
   goodwill: string;
   landmark: string;
+  showExact: boolean;
   directions: string;
   water: string;
   power: string;
@@ -231,6 +233,7 @@ export default function WekaTangazoPage() {
   const [extraGuest, setExtraGuest] = useState("");
   const [goodwill, setGoodwill] = useState("");
   const [landmark, setLandmark] = useState("");
+  const [showExact, setShowExact] = useState(false);
   const [directions, setDirections] = useState("");
   const [water, setWater] = useState("");
   const [power, setPower] = useState("");
@@ -253,6 +256,7 @@ export default function WekaTangazoPage() {
   const [preview, setPreview] = useState<"card" | "detail">("card");
   const draftRaw = useRef<string | null>(null);
   const lock = useRef(false);
+  const plotPinTimer = useRef(0);
   const cameraRef = useRef<HTMLInputElement>(null);
   const libraryRef = useRef<HTMLInputElement>(null);
 
@@ -320,6 +324,7 @@ export default function WekaTangazoPage() {
       extraGuest,
       goodwill,
       landmark,
+      showExact,
       directions,
       water,
       power,
@@ -339,7 +344,7 @@ export default function WekaTangazoPage() {
       step, category, title, description, price, negotiable, period, unit, stock, bedrooms, bathrooms,
       roomType, homeDeal, tenure, homeDocs, landM2, builtM2, homePay, houseRules, deposit, available, guests, minNights, size, frontage, market, frameSize, minOrder,
       amenities, photos, place, phones, whatsapp, sameWa, posterRole, freeViewing, directOwner, costsOk,
-      advance, agentFee, cleaning, extraGuest, goodwill, landmark, directions, water, power, cancelPolicy,
+      advance, agentFee, cleaning, extraGuest, goodwill, landmark, showExact, directions, water, power, cancelPolicy,
       subtype, floor, suitable, condition, truck, allowedGoods, deliveryNote, ceiling, licenseNote, plot,
     ],
   );
@@ -406,6 +411,7 @@ export default function WekaTangazoPage() {
       if (typeof saved.extraGuest === "string") setExtraGuest(saved.extraGuest);
       if (typeof saved.goodwill === "string") setGoodwill(saved.goodwill);
       if (typeof saved.landmark === "string") setLandmark(saved.landmark);
+      if (typeof saved.showExact === "boolean") setShowExact(saved.showExact);
       if (typeof saved.directions === "string") setDirections(saved.directions);
       if (typeof saved.water === "string") setWater(saved.water);
       if (typeof saved.power === "string") setPower(saved.power);
@@ -429,6 +435,48 @@ export default function WekaTangazoPage() {
     }
     setAskDraft(false);
   };
+
+  const movePlotPin = (lat: number, lng: number) => {
+    const nextLat = roundCoord(lat);
+    const nextLng = roundCoord(lng);
+    const speech = lang === "sw" ? "sw" : "en";
+    setPlace((cur) => ({
+      ...cur,
+      lat: nextLat,
+      lng: nextLng,
+      location_source: "pin",
+      confirmed: false,
+      accuracy_m: null,
+    }));
+    window.clearTimeout(plotPinTimer.current);
+    plotPinTimer.current = window.setTimeout(() => {
+      void reverseGeocode(nextLat, nextLng, speech)
+        .then((described) => {
+          const label = described.label && !bannedLocation(described.label) ? described.label : coordLabel(nextLat, nextLng, speech);
+          setPlace((cur) => {
+            if (cur.lat !== nextLat || cur.lng !== nextLng) return cur;
+            return {
+              ...cur,
+              location: label,
+              city: described.city || cur.city,
+              region: described.region || "",
+              district: described.district || "",
+              ward: described.ward || "",
+              location_source: "pin",
+              confirmed: false,
+            };
+          });
+        })
+        .catch(() => {
+          setPlace((cur) => {
+            if (cur.lat !== nextLat || cur.lng !== nextLng) return cur;
+            return { ...cur, location: coordLabel(nextLat, nextLng, speech), location_source: "pin", confirmed: false };
+          });
+        });
+    }, 600);
+  };
+
+  useEffect(() => () => window.clearTimeout(plotPinTimer.current), []);
 
   const dropDraft = () => {
     draftRaw.current = null;
@@ -454,7 +502,10 @@ export default function WekaTangazoPage() {
     }
     if (step === 3) return photos.length >= photoMinimum(category) && pending.every((item) => item.error);
     if (step === 4) {
-      if (place.location.trim().length < 2) return false;
+      const label = place.location.trim();
+      if (label.length < 2 || bannedLocation(label) || resolvingLocation(label)) return false;
+      if (needsLandmark(label) && !(landmark.trim() || place.landmark)) return false;
+      if (place.lat != null && place.location_source && place.location_source !== "manual" && !place.confirmed) return false;
       if (category === "plots" && (place.lat == null || place.lng == null)) return false;
       if (phoneErrors.some(Boolean) || waError) return false;
       return true;
@@ -573,7 +624,14 @@ export default function WekaTangazoPage() {
     if (cleaning) extra.cleaning_fee = Number(cleaning);
     if (extraGuest) extra.extra_guest_fee = Number(extraGuest);
     if (goodwill) extra.goodwill = Number(goodwill);
-    if (landmark.trim()) extra.landmark = landmark.trim();
+    if (landmark.trim() || place.landmark) extra.landmark = (landmark.trim() || place.landmark || "").trim();
+    if (place.accuracy_m != null) extra.accuracy_m = place.accuracy_m;
+    if (place.location_source) extra.location_source = place.location_source;
+    if (place.region) extra.region = place.region;
+    if (place.district) extra.district = place.district;
+    if (place.ward) extra.ward = place.ward;
+    extra.location_text = place.location.trim();
+    if (category === "rooms-houses" || category === "apartment_airbnb") extra.show_exact = showExact;
     if (directions.trim()) extra.directions = directions.trim();
     if (water) extra.water = water;
     if (power) extra.electricity = power;
@@ -683,6 +741,8 @@ export default function WekaTangazoPage() {
     setPhotos([]);
     setPending([]);
     setPlace(emptyPlace);
+    setLandmark("");
+    setShowExact(false);
     setPhones([""]);
     setWhatsapp("");
     setSameWa(false);
@@ -1225,16 +1285,7 @@ export default function WekaTangazoPage() {
               <div>
                 <div className="wizard-field">
                   <span className="wizard-label">Location <i>*</i></span>
-                  <PlacePicker
-                    pin
-                    value={place}
-                    onChange={(next) => {
-                      setPlace({
-                        ...next,
-                        location: next.location.trim() || (next.lat != null ? "Pinned location" : ""),
-                      });
-                    }}
-                  />
+                  <PlacePicker pin value={place} onChange={setPlace} />
                   {tried && place.location.trim().length < 2 ? <span className="wizard-error">Add a street or area.</span> : null}
                   {category === "plots" && tried && (place.lat == null || place.lng == null) ? <span className="wizard-error">{t("plot.pinRequired")}</span> : null}
                 </div>
@@ -1246,13 +1297,24 @@ export default function WekaTangazoPage() {
                     place={place}
                     tried={tried}
                     onChange={setPlot}
-                    onPlace={(lat, lng) => setPlace((cur) => ({ ...cur, lat, lng, location: cur.location || "Pinned location" }))}
+                    onPlace={movePlotPin}
                   />
                 ) : null}
                 <label className="wizard-field">
-                  <span className="wizard-label">{t("fit.landmark")} <span className="wizard-optional">({t("optional")})</span></span>
-                  <input className="wizard-input" value={landmark} maxLength={160} onChange={(e) => setLandmark(e.target.value)} placeholder="Near the market, opposite the school" />
+                  <span className="wizard-label">{t("fit.landmark")} {needsLandmark(place.location) ? <i>*</i> : <span className="wizard-optional">({t("optional")})</span>}</span>
+                  <input className="wizard-input" value={landmark} maxLength={160} onChange={(e) => setLandmark(e.target.value)} placeholder={t("geo.landmarkHint")} />
                 </label>
+                {category === "rooms-houses" || category === "apartment_airbnb" ? (
+                  <>
+                    <div className="wizard-toggle">
+                      <span>{t("geo.exactToggle")}</span>
+                      <button type="button" className={showExact ? "wizard-switch is-on" : "wizard-switch"} aria-pressed={showExact} onClick={() => setShowExact((on) => !on)}>
+                        <i />
+                      </button>
+                    </div>
+                    {showExact ? null : <p className="wizard-tip">{t("geo.approxNote")}</p>}
+                  </>
+                ) : null}
                 <label className="wizard-field">
                   <span className="wizard-label">{t("fit.directions")} <span className="wizard-optional">({t("optional")})</span></span>
                   <textarea className="wizard-input" rows={3} maxLength={400} value={directions} onChange={(e) => setDirections(e.target.value)} />

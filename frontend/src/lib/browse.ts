@@ -1,5 +1,6 @@
 import type { Listing } from "./api";
-import { readScoped, removeScoped, writeScoped } from "./userScope";
+import { prepareFreshView } from "./viewState";
+import { readScoped, writeScoped } from "./userScope";
 import { VERIFIED_BOOST } from "./productFlags";
 import { moveInAmount } from "./pricing";
 import { pricePerM2Of } from "./plots";
@@ -61,6 +62,7 @@ export function browseKey(path: string) {
 
 export function readBrowse(path: string): BrowsePersist | null {
   if (typeof window === "undefined") return null;
+  prepareFreshView();
   try {
     const raw = sessionStorage.getItem(browseKey(path));
     if (!raw) return null;
@@ -75,27 +77,13 @@ export function readBrowse(path: string): BrowsePersist | null {
 const REGION_KEY = "jengo_region";
 const RECENT_KEY = "jengo_recent_regions";
 
+/** The chosen region is not stored. A reload always starts blank. */
 export function readRememberedRegion() {
-  if (typeof window === "undefined") return "";
-  try {
-    return readScoped("region") || "";
-  } catch {
-    return "";
-  }
+  return "";
 }
 
-export function writeRememberedRegion(region: string) {
-  try {
-    if (!region || region === "all") removeScoped("region");
-    else writeScoped("region", region);
-  } catch {
-    /* ignore */
-  }
-  if (typeof window === "undefined" || region === "near") return;
-  void import("./api").then((api) => {
-    if (!api.preferencesSettled() || api.preferencesPaused() || !api.getToken()) return;
-    api.pushPreferences({ region: !region || region === "all" ? "" : region });
-  });
+export function writeRememberedRegion(_region: string) {
+  /* selection stays in memory and history only */
 }
 
 export function readRecentRegions(): string[] {
@@ -198,9 +186,13 @@ export function regionSlug(name: string) {
   return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+export function blankRegion(region: string) {
+  return !region || region === "all";
+}
+
 export function regionFromParam(param: string, regions: readonly string[]) {
   const raw = param.trim().toLowerCase();
-  if (!raw || raw === "all") return "all";
+  if (!raw || raw === "all") return "";
   if (raw === "near") return "near";
   const slug = regionSlug(raw);
   const hit = regions.find((name) => regionSlug(name) === slug || name.toLowerCase() === raw);

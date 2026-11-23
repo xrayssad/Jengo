@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
   Bell,
@@ -27,6 +28,7 @@ import type { ThemeChoice } from "@/lib/theme";
 const APP_VERSION = "0.1.0";
 
 export default function SideDrawer() {
+  const path = usePathname() || "";
   const { t, lang, setLang } = useI18n();
   const { preference, setTheme } = useTheme();
   const { canInstall } = useInstallPrompt();
@@ -132,6 +134,7 @@ export default function SideDrawer() {
   const user = open ? getAuthUser() : null;
   const name = user?.full_name || user?.username || "";
   const role = user?.is_admin || user?.role === "admin" ? t("profile.admin") : user?.role && user.role !== "user" ? user.role : "";
+  const here = (href: string) => (href === "/home" ? path === "/" || path === "/home" : path === href || path.startsWith(`${href}/`));
 
   if (!open) return null;
 
@@ -171,13 +174,13 @@ export default function SideDrawer() {
           )}
         </header>
         <nav className="drawer-list">
-          <DrawerLink href="/home" icon={<Home size={18} />} label={t("nav.home")} onClick={leave} />
-          <DrawerLink href="/mypost" icon={<FileText size={18} />} label={t("drawer.mine")} onClick={leave} />
-          <DrawerLink href="/favorites" icon={<Bookmark size={18} />} label={t("drawer.saved")} onClick={leave} />
-          <DrawerLink href="/messages" icon={<MessageCircle size={18} />} label={t("messages")} badge={inbox.unread} onClick={leave} />
-          <DrawerLink href="/weka-tangazo" icon={<Plus size={18} />} label={t("post")} onClick={leave} />
-          <DrawerLink href="/hakiki" icon={<BadgeCheck size={18} />} label={t("verify.menu")} onClick={leave} />
-          <DrawerLink href="/messages" icon={<Bell size={18} />} label={t("notes")} onClick={leave} />
+          <DrawerLink href="/home" icon={<Home size={18} />} label={t("nav.home")} active={here("/home")} onClick={leave} />
+          <DrawerLink href="/mypost" icon={<FileText size={18} />} label={t("drawer.mine")} active={here("/mypost")} onClick={leave} />
+          <DrawerLink href="/favorites" icon={<Bookmark size={18} />} label={t("drawer.saved")} active={here("/favorites")} onClick={leave} />
+          <DrawerLink href="/messages" icon={<MessageCircle size={18} />} label={t("messages")} badge={inbox.unread} active={here("/messages")} onClick={leave} />
+          <DrawerLink href="/weka-tangazo" icon={<Plus size={18} />} label={t("post")} active={here("/weka-tangazo")} onClick={leave} />
+          <DrawerLink href="/hakiki" icon={<BadgeCheck size={18} />} label={t("verify.menu")} active={here("/hakiki")} onClick={leave} />
+          <DrawerLink href="/messages" icon={<Bell size={18} />} label={t("notes")} active={false} onClick={leave} />
           <div className="drawer-row">
             <span className="drawer-ico" aria-hidden><span>Aa</span></span>
             <span className="drawer-label">{t("language")}</span>
@@ -203,10 +206,10 @@ export default function SideDrawer() {
               <InstallMenuItem />
             </div>
           ) : null}
-          <DrawerLink href="/about" icon={<CircleHelp size={18} />} label={t("drawer.help")} onClick={leave} />
-          <DrawerLink href="/about" icon={<Info size={18} />} label={t("drawer.about")} onClick={leave} />
-          <DrawerLink href="/about" icon={<FileText size={18} />} label={t("drawer.policy")} onClick={leave} />
-          <DrawerLink href="/about" icon={<Shield size={18} />} label={t("drawer.privacy")} onClick={leave} />
+          <DrawerLink href="/about" icon={<CircleHelp size={18} />} label={t("drawer.help")} active={false} onClick={leave} />
+          <DrawerLink href="/about" icon={<Info size={18} />} label={t("drawer.about")} active={here("/about")} onClick={leave} />
+          <DrawerLink href="/about" icon={<FileText size={18} />} label={t("drawer.policy")} active={false} onClick={leave} />
+          <DrawerLink href="/about" icon={<Shield size={18} />} label={t("drawer.privacy")} active={false} onClick={leave} />
           {authed ? (
             <button
               type="button"
@@ -233,16 +236,18 @@ function DrawerLink({
   icon,
   label,
   badge = false,
+  active = false,
   onClick,
 }: {
   href: string;
   icon: ReactNode;
   label: string;
   badge?: boolean;
+  active?: boolean;
   onClick: () => void;
 }) {
   return (
-    <Link href={href} className="drawer-row" onClick={onClick}>
+    <Link href={href} className={active ? "drawer-row is-on" : "drawer-row"} aria-current={active ? "page" : undefined} onClick={onClick}>
       <span className="drawer-ico" aria-hidden>{icon}</span>
       <span className="drawer-label">{label}</span>
       {badge ? <i className="drawer-badge" /> : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import dynamic from "next/dynamic";
 import { ViewTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -30,6 +31,7 @@ import { VIEW_DWELL_MS } from "@/lib/productFlags";
 import { useT } from "@/lib/i18n";
 import { listingHref, markMissing, moveBrowse, readFrozen, setBrowseDir, takeBrowseDir } from "@/lib/listSession";
 import AmenityRow from "@/components/AmenityRow";
+const ListingMap = dynamic(() => import("@/components/ListingMap"), { ssr: false });
 import ListingFacts, { shareText } from "@/components/ListingFacts";
 import PlotDetail, { HomeSaleDetail } from "@/components/PlotDetail";
 import PriceBreakdown from "@/components/PriceBreakdown";
@@ -590,6 +592,7 @@ export default function DetailsClient({ id: routeId, overlay = false }: { id: st
             <div className="detail-sheet-scroll">
             <AmenityRow item={item} />
             <ListingFacts item={item} />
+            <ListingMap item={item} />
             {canonicalCategory(item.category) === "plots" ? <PlotDetail item={item} /> : null}
             {canonicalCategory(item.category) === "rooms-houses" && dealOf(item) === "sale" ? <HomeSaleDetail item={item} /> : null}
             {canonicalCategory(item.category) === "rooms-houses" && dealOf(item) !== "sale" ? <PriceBreakdown item={item} /> : null}
